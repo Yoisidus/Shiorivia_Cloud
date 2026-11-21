@@ -39,14 +39,9 @@ export const MusicProvider = ({ children }: { children: React.ReactNode }) => {
   const [activeTab, setActiveTab] = useState<'band' | 'solo'>('solo');
   const [localTracks, setLocalTracks] = useState<BGMTrack[]>([]);
   const [selectedPlaylist, setSelectedPlaylist] = useState<string | null>(null);
-  const refreshLibrary = useCallback(async () => {
-    const res = await fetch('/api/local/music', { cache: 'no-store' });
-    if (!res.ok) throw new Error('Unable to load the local music index');
-    const data = await res.json();
-    if (Array.isArray(data.tracks)) setLocalTracks(data.tracks);
-  }, []);
-  useEffect(() => { void refreshLibrary().catch(() => {}); }, [refreshLibrary]);
-  const allTracks = useMemo(() => [...BGM_LIBRARY, ...localTracks], [localTracks]);
+  // Cloud exposes only its bundled demo track. No server music scan or local paths.
+  const refreshLibrary = useCallback(async () => {}, []);
+  const allTracks = useMemo(() => BGM_LIBRARY.slice(0, 1), []);
   const currentTrack = useMemo(() =>
     allTracks.find(t => t.id === currentTrackId) || allTracks[0],
   [currentTrackId, allTracks]);

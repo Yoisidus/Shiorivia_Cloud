@@ -4,7 +4,7 @@ export type ImageSettings = {
 };
 export type ProviderCapability = { llm: boolean; image: boolean };
 export const DEFAULT_IMAGE_SETTINGS: ImageSettings = {
-  provider: "comfyui", model: "", positive: "masterpiece, high quality illustration",
+  provider: "", model: "", positive: "masterpiece, high quality illustration",
   negative: "low quality, blurry, text, watermark", width: 768, height: 1024, steps: 24, cfg: 7,
 };
 export const capabilityFor = (id: string, map: Record<string, ProviderCapability>): ProviderCapability =>

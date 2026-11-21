@@ -164,10 +164,10 @@ export default function Home() {
                     danmakuCount: Number.isFinite(saved.danmakuCount) ? Math.min(24, Math.max(1, Math.round(saved.danmakuCount))) : 8,
                     debugDrawTags: saved.debugDrawTags === true,
                     imageSettings: saved.imageSettings && typeof saved.imageSettings === "object"
-                        ? { ...DEFAULT_IMAGE_SETTINGS, ...Object.fromEntries(Object.entries(saved.imageSettings).filter(([k]) => k in DEFAULT_IMAGE_SETTINGS)) }
+                        ? (() => { const next = { ...DEFAULT_IMAGE_SETTINGS, ...Object.fromEntries(Object.entries(saved.imageSettings).filter(([k]) => k in DEFAULT_IMAGE_SETTINGS)) }; return { ...next, provider: next.provider === "comfyui" ? "" : next.provider }; })()
                         : prev.imageSettings,
                     tts: false, // TTS is under development
-                    musicControl: typeof saved.musicControl === "boolean" ? saved.musicControl : prev.musicControl,
+                    musicControl: false,
                     terminalRequestLog: saved.terminalRequestLog === true,
                     terminalLog: saved.terminalLog === true,
                     engineeringTransition: typeof saved.engineeringTransition === "boolean" ? saved.engineeringTransition : false,
@@ -237,7 +237,16 @@ export default function Home() {
     );
 
     const toggleSetting = async (key: SettingKey) => {
-        if (!config[key] && key !== "webSearch") {
+        if (key === "musicControl" || key === "tts") return;
+        if (key === "imageGen" && !config.imageGen) {
+            if (!config.imageSettings.model.trim() || !allProviders.some(p =>
+                p.id === config.imageSettings.provider && p.configured &&
+                (p.id === "fal" || p.id === "google" || p.id === "openrouter" || (p.custom && capabilityFor(p.id, providerCapabilities).image)))) {
+                ui.showToast(deepText(locale, "cloud.image.requiresModel"));
+                return;
+            }
+        }
+        if (!config[key] && key !== "webSearch" && key !== "imageGen") {
             try {
                 const res = await fetch("/api/check_env");
                 if (!res.ok) throw new Error("Environment check failed");

@@ -2,6 +2,10 @@ import type { Locale } from "./locale";
 
 /** Localizable interface copy; never use these strings as persisted IDs. */
 const strings: Record<string, readonly [string, string, string, string, string]> = {
+  "cloud.music.unavailable": ["云端版暂不支持 Auto DJ。", "雲端版暫不支援 Auto DJ。", "Auto DJ is not available in Cloud.", "Cloud 版では Auto DJ を利用できません。", "Cloud에서는 Auto DJ를 사용할 수 없습니다."],
+  "cloud.music.demoOnly": ["云端版只提供一首 Demo 音乐，不支持扫描或上传曲库。", "雲端版只提供一首 Demo 音樂，不支援掃描或上傳曲庫。", "Cloud provides only one demo track; music scanning and uploads are unavailable.", "Cloud ではデモ曲1曲のみ再生できます。曲のスキャンやアップロードはできません。", "Cloud에서는 데모 음악 한 곡만 제공하며 음악 검색이나 업로드는 지원하지 않습니다."],
+  "cloud.music.getLocal": ["完整音乐与 Auto DJ 功能请使用本地版", "完整音樂與 Auto DJ 功能請使用本地版", "Use Shiorivia Local for full music and Auto DJ", "音楽・Auto DJ の全機能は Local 版で", "전체 음악 및 Auto DJ 기능은 Local 버전에서"],
+  "cloud.image.requiresModel": ["请先配置可用的云端图像供应商，并手动填写图像模型 ID，才能启用生图。", "請先設定可用的雲端圖像供應商，並手動填入圖像模型 ID，才能啟用生圖。", "Configure a cloud image provider and enter its model ID before enabling image generation.", "画像生成を有効にするにはクラウド画像プロバイダーとモデル ID を設定してください。", "이미지 생성을 켜려면 클라우드 이미지 공급자와 모델 ID를 설정하세요."],
   "cloud.charta.imageLocalOnly": ["云端版只保存文字设定和预设 Emoji 头像。立绘和自定义图片头像请使用本地版。", "雲端版只儲存文字設定和預設 Emoji 頭像。立繪與自訂圖片頭像請使用本地版。", "Cloud keeps text profiles and preset emoji avatars only. Use Local for portraits and uploaded avatars.", "Cloud ではテキスト設定と絵文字アイコンのみ保存できます。立ち絵や画像アイコンは Local 版をご利用ください。", "Cloud는 텍스트 설정과 기본 이모지 아바타만 저장합니다. 스탠딩 일러스트와 이미지 아바타는 Local 버전을 이용하세요."],
   "cloud.image.noGallery": ["云端版不将生成图片写入公共服务器图库。", "雲端版不會將生成圖片寫入公用伺服器圖庫。", "Cloud does not store generated images in a shared server gallery.", "Cloud は生成画像を共有サーバーのギャラリーに保存しません。", "Cloud는 생성 이미지를 공유 서버 갤러리에 저장하지 않습니다."],
   "viae.actionOpen": ["开启", "開啟", "Start", "始める", "시작"],

@@ -123,7 +123,7 @@ export async function POST(req: Request) {
     const independentRepair = body.stateRepair === true || body.novelStateRepair === true || body.metadataRepair === true;
     const webEnabled = memoryMode === "infinite" && useWebSearch === true && !independentRepair;
     const imageEnabled = useImageGen === true && ["infinite", "novel", "sliding", "chat"].includes(memoryMode) && !independentRepair;
-    const autoDjEnabled = useMusicControl === true && ["sliding", "novel"].includes(memoryMode) && !independentRepair;
+    const autoDjEnabled = false; // Cloud demo music never enters prompt/tool orchestration.
     const danmakuEnabled = body.danmakuEnabled === true && ["sliding", "novel"].includes(memoryMode) && !independentRepair;
     const danmakuCount = Math.min(24, Math.max(1, Number.isFinite(body.danmakuCount) ? Math.round(body.danmakuCount) : 8));
     const toolPlan = await planOptionalTools({

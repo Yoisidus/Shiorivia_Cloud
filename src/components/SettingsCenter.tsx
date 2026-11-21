@@ -15,7 +15,7 @@ import { useAppDialog } from "../context/DialogContext";
 import { LANGUAGE_OPTIONS, type Locale } from "../lib/locale";
 import { CONTEXT_WINDOW_OPTIONS, type ContextWindowTokens } from "../lib/contextWindow";
 
-import { useMusic } from "../context/MusicContext";
+
 
 export type SettingKey = "webSearch" | "imageGen" | "tts" | "musicControl";
 export type StoryTheme = "sky" | "sage" | "rose";
@@ -116,21 +116,7 @@ function SwitchRow({ title, description, checked, onClick, icon: Icon }: {
 export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onToggleDebug, debugDrawTagsEnabled, onToggleDebugDrawTags, danmakuEnabled, onToggleDanmaku, danmakuCount, onDanmakuCountChange, terminalRequestLogEnabled, onToggleTerminalRequestLog, terminalLogEnabled, onToggleTerminalLog, engineeringTransitionEnabled, onToggleEngineeringTransition, curtainTransitionEnabled, onToggleCurtainTransition, geminiNarrativeStyleEnabled, onToggleGeminiNarrativeStyle, engineeringLoreRelationshipsEnabled, engineeringLoreExperiencesEnabled, onToggleEngineeringLoreRelationships, onToggleEngineeringLoreExperiences, onTestEffect, isStory, activeMode, contextWindowTokens, onContextWindowChange, storyTheme, onStoryThemeChange, activeProvider, providers, disabledProviders, onToggleProvider, autoSync, autoSyncInterval, onAutoSyncChange, onAutoSyncIntervalChange, webToolConfig, onWebToolConfigChange, providerAliases, onProviderAliasChange, imageSettings, onImageSettingsChange, providerCapabilities, onProviderCapabilitiesChange, falConfigured }: Props) {
   const dialog = useAppDialog();
   const [activeTab, setActiveTab] = useState<Tab>("general");
-  const { refreshLibrary, allTracks } = useMusic();
-  const [scanningMusic, setScanningMusic] = useState(false);
-  const [scanNotice, setScanNotice] = useState("");
-  const scanMusic = async () => {
-    if (scanningMusic || !await dialog.confirm(deepText(locale, "settings.musicConfirm"))) return;
-    setScanningMusic(true); setScanNotice("");
-    try {
-      const response = await fetch("/api/local/music", { method: "POST" });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || deepText(locale, "settings.musicScanFailed"));
-      await refreshLibrary();
-      setScanNotice(`${deepText(locale, "settings.musicScanned")}${result.count} ${deepText(locale, "settings.musicScannedSuffix")}`);
-    } catch (error) { setScanNotice(error instanceof Error ? error.message : deepText(locale, "settings.musicScanFailed")); }
-    finally { setScanningMusic(false); }
-  };
+
   const { t, locale, setLocale } = useLanguage();
 
   useEffect(() => {
@@ -146,7 +132,7 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-900/50 p-2 backdrop-blur-sm sm:p-5" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div role="dialog" aria-modal="true" aria-label={t("settings.title")} className="flex max-h-[calc(100dvh-1rem)] w-full max-w-[960px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#fbfcfb] text-slate-700 shadow-2xl sm:max-h-[calc(100dvh-3rem)]">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3"><Settings2 size={20} className="text-[#517d69]" /><div><h2 className="text-lg font-bold">{t("settings.title")}</h2><p className="text-[11px] text-slate-400">Shiorivia · Local</p></div></div>
+          <div className="flex items-center gap-3"><Settings2 size={20} className="text-[#517d69]" /><div><h2 className="text-lg font-bold">{t("settings.title")}</h2><p className="text-[11px] text-slate-400">Shiorivia · Cloud</p></div></div>
           <button type="button" onClick={onClose} aria-label={t("settings.close")} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X size={20} /></button>
         </header>
 
@@ -318,23 +304,23 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
                   </div>}
                 </>}
                 {(["sliding", "novel", "infinite", "chat"].includes(activeMode)) && <>
-                <SwitchRow title={t("settings.imageGen")} description={t("settings.imageGen.description")} checked={values.imageGen} onClick={() => onToggle("imageGen")} icon={ImageIcon} />
+                <SwitchRow title={t("settings.imageGen")} description={deepText(locale, "cloud.image.requiresModel")} checked={values.imageGen} onClick={() => onToggle("imageGen")} icon={ImageIcon} />
                 {values.imageGen && <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-xs font-semibold tracking-wide text-slate-700">Image Studio · {deepText(locale, "settings.imageHeading")}</p>
                   <label className="block text-xs text-slate-600">{deepText(locale, "settings.imageProvider")}<select value={imageSettings.provider} onChange={e => onImageSettingsChange({provider: e.target.value})} className="mt-1 block w-full rounded-lg border bg-white p-2 text-sm">
-                    <option value="comfyui">ComfyUI · Local</option>
+
                     {falConfigured && !disabledProviders.includes("fal") && <option value="fal">fal.ai</option>}
                     {providers.filter(p => p.configured && (p.id === 'google' || p.id === 'openrouter' || (p.custom && capabilityFor(p.id, providerCapabilities).image))).map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
                   </select></label>
-                  <label className="block text-xs text-slate-600">{imageSettings.provider === "comfyui" ? deepText(locale, "settings.imageCheckpoint") : deepText(locale, "settings.imageModel")}<input value={imageSettings.model} onChange={e => onImageSettingsChange({model:e.target.value})} placeholder={imageSettings.provider === "comfyui" ? deepText(locale, "settings.imageModelComfyHelp") : deepText(locale, "settings.imageModelPlaceholder")} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50/40 p-2 text-sm text-slate-700 outline-none focus:border-slate-400"/></label>
-                  {imageSettings.provider !== "comfyui" && <div className="space-y-3">
+                  <label className="block text-xs text-slate-600">{deepText(locale, "settings.imageModel")}<input value={imageSettings.model} onChange={e => onImageSettingsChange({model:e.target.value})} placeholder={deepText(locale, "settings.imageModelPlaceholder")} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50/40 p-2 text-sm text-slate-700 outline-none focus:border-slate-400"/></label>
+                  <div className="space-y-3">
                   <label className="block text-xs text-slate-600">{deepText(locale, "settings.imagePositive")}<textarea rows={2} value={imageSettings.positive} onChange={e => onImageSettingsChange({positive:e.target.value})} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50/40 p-2 text-sm text-slate-700 outline-none focus:border-slate-400"/></label>
                   <label className="block text-xs text-slate-600">{deepText(locale, "settings.imageNegative")}<textarea rows={2} value={imageSettings.negative} onChange={e => onImageSettingsChange({negative:e.target.value})} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50/40 p-2 text-sm text-slate-700 outline-none focus:border-slate-400"/></label>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                     {([['width',deepText(locale, "settings.imageWidth")],['height',deepText(locale, "settings.imageHeight")],['steps',deepText(locale, "settings.imageSteps")],['cfg','CFG']] as const).map(([key,label]) => <label key={key} className="text-xs text-slate-600">{label}<input type="number" min={1} max={2048} value={imageSettings[key]} onChange={e => onImageSettingsChange({[key]:Number(e.target.value)})} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50/40 p-2 text-sm text-slate-700 outline-none focus:border-slate-400"/></label>)}
                   </div>
                   </div>}
-                  <p className="text-[11px] leading-5 text-slate-500">{deepText(locale, "settings.comfyHelp")} {"{{SHIORIVIA_SCENE}}"}</p>
+                  <p className="text-[11px] leading-5 text-slate-500">{deepText(locale, "cloud.image.requiresModel")}</p>
                 </div>}
                 </>}
               </section>
@@ -346,17 +332,13 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
                 <p className="mb-8 text-sm text-slate-400">{t("settings.media.description")}</p>
                 <SectionTitle>{t("settings.voiceAndMusic")}</SectionTitle>
                 <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-400"><Mic size={18}/><span>{t("settings.tts")} · {deepText(locale, "settings.developing")}</span></div>
-                {(activeMode === "sliding" || activeMode === "novel") && <SwitchRow
-                  title={t("settings.autoDJ")}
-                  description={deepText(locale, "settings.autoDJDetail")}
-                  checked={values.musicControl} onClick={() => onToggle("musicControl")} icon={Music2}
-                />}
-                <div className="mt-6 rounded-2xl border border-[#dfE8df] bg-white p-5">
-                  <div className="flex items-start justify-between gap-4"><div><h3 className="text-sm font-semibold text-[#345b48]">{deepText(locale, "settings.musicScan")}</h3><p className="mt-2 text-xs leading-6 text-slate-500">{deepText(locale, "settings.musicScanHelp")}</p></div><Music2 size={19} className="shrink-0 text-[#8ca58f]"/></div>
-                  <div className="mt-4 flex flex-wrap items-center gap-3"><button type="button" disabled={scanningMusic} onClick={() => void scanMusic()} className="rounded-xl border border-[#bed1c2] bg-[#edf5ef] px-4 py-2 text-xs font-semibold text-[#416952] transition hover:bg-[#e1eee4] disabled:opacity-50">{scanningMusic ? deepText(locale, "settings.musicScanning") : deepText(locale, "settings.musicScanButton")}</button><span className="text-xs text-slate-400">{deepText(locale, "settings.musicLibrary")}{allTracks.filter(track => track.id.startsWith("local_")).length} {deepText(locale, "settings.musicTracks")}</span></div>
-                  {scanNotice && <p role="status" className="mt-3 text-xs leading-6 text-[#607866]">{scanNotice}</p>}
-                  <p className="mt-3 text-[11px] leading-5 text-slate-400">{deepText(locale, "settings.musicNamingHelp")}</p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                  <strong>{t("settings.autoDJ")}</strong> · {deepText(locale, "cloud.music.unavailable")}
                 </div>
+                <p className="mt-4 text-xs leading-6 text-slate-500">{deepText(locale, "cloud.music.demoOnly")}</p>
+                <a href="https://github.com/seemoon1/Shiorivia" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs text-[#3c735c] underline">
+                  {deepText(locale, "cloud.music.getLocal")}
+                </a>
               </section>
             )}
 
