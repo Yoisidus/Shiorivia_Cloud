@@ -24,6 +24,7 @@ import { lastStoryGameState, storyProseWithoutState, stripStoryThinking } from "
 import { aiConversationMessages, isEngineeringCharacterLocked } from "../lib/engineeringSession";
 import { engineeringOutputIncomplete, OFFICINA_COMPLETION_REQUEST } from "../lib/engineeringCompletion";
 import { extractIdeEditBlocks } from "../lib/ideEdits";
+import { browserIde } from "../lib/browserIde";
 import { useAppDialog } from "../context/DialogContext";
 
 export const useChatEngine = ({
@@ -690,15 +691,8 @@ export const useChatEngine = ({
                     if (!currentSession.engineeringProjectRoot) throw new Error("请先绑定 IDE 项目才能局部修改代码。");
                     const parsed = extractIdeEditBlocks(currentText);
                     currentText = parsed.text;
-                    const ideEditRequest = async (action: "previewEdit" | "applyEdit", args: Record<string, unknown>) => {
-                        const response = await fetch("/api/ide", {
-                            method: "POST", headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ action, project: currentSession.engineeringProjectRoot, ...args }),
-                        });
-                        const data = await response.json();
-                        if (!response.ok) throw new Error(data.error || "代码局部编辑失败");
-                        return data;
-                    };
+                    const ideEditRequest = (action: "previewEdit" | "applyEdit", args: Record<string, unknown>) =>
+                        browserIde(action, {project:currentSession.engineeringProjectRoot,...args});
                     const previews: Array<{ path: string; version: string; edits: typeof parsed.blocks[number]["edits"] }> = [];
                     for (const block of parsed.blocks) {
                         const preview = await ideEditRequest("previewEdit", { path: block.path, edits: block.edits });
@@ -723,13 +717,13 @@ export const useChatEngine = ({
                                 }
                                 ideEditedFiles.push({ path: file.path, operations: file.edits.length, added, removed });
                             }
-                            showToast(`已局部修改 ${applied.length} 个 IDE 文件`);
+                            showToast(`已在浏览器 IDE 修改 ${applied.length} 个文件`);
                         } catch (editError: any) {
                             currentText += `\n\n**IDE 局部修改未全部应用：** 已修改 ${applied.join(", ") || "无"}；${editError.message}`;
                             dialog.notify(`IDE 局部编辑失败：${editError.message}`);
                         }
                     } else if (previews.length) {
-                        currentText += "\n\n*IDE 局部修改已取消，磁盘文件未更改。*";
+                        currentText += "\n\n*IDE 局部修改已取消，浏览器项目文件未更改。*";
                     }
                 } catch (editError: any) {
                     console.warn("IDE edit rejected:", editError);
@@ -749,22 +743,15 @@ export const useChatEngine = ({
                 return ""; 
             }).trim();
 
-            // AI-produced source is saved into a real root under Shiorivia/IDE,
-            // not silently flattened into the session's in-memory dictionary.
+            // AI-produced source is saved only into this browser's virtual IDE root,
+            // never into any server's filesystem or other user's session.
             let outputProject = currentSession.memoryMode === "infinite"
                 ? String(currentSession.engineeringProjectRoot || "") : "";
             let diskWriteSucceeded = false;
             if (currentSession.memoryMode === "infinite" && Object.keys(newFiles).length) {
                 const rootTag = currentText.match(/<project\s+name=["']([^"']+)["']\s*\/\s*>/i);
                 currentText = currentText.replace(/<project\s+name=["'][^"']+["']\s*\/\s*>/gi, "").trim();
-                const idePost = async (action: string, detail: Record<string, unknown>) => {
-                    const response = await fetch("/api/ide", { method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ action, ...detail }) });
-                    const data = await response.json();
-                    if (!response.ok) throw new Error(data.error || "IDE 文件操作失败");
-                    return data;
-                };
+                const idePost = browserIde;
                 try {
                     if (!outputProject) {
                         const suffix = String(currentSessionId).replace(/[^a-zA-Z0-9_-]/g, "").slice(-10) || "new";
@@ -772,19 +759,14 @@ export const useChatEngine = ({
                         let preferred = rootTag?.[1]?.trim() || fallback;
                         // Never accidentally bind an unassigned conversation to an
                         // unrelated existing folder chosen by an AI model.
-                        const projectsResponse = await fetch("/api/ide?action=projects", { cache: "no-store" });
-                        const listed = await projectsResponse.json();
-                        if (!projectsResponse.ok) throw new Error(listed.error || "无法核对现有项目");
+                        const listed = await browserIde("projects");
                         if (Array.isArray(listed.projects) && listed.projects.includes(preferred)) {
                             preferred = `${preferred.slice(0, 75)}-${suffix}`;
                         }
                         const created = await idePost("createProject", { name: preferred });
                         outputProject = created.project;
                     }
-                    const existingResponse = await fetch(
-                        `/api/ide?action=tree&project=${encodeURIComponent(outputProject)}`, { cache: "no-store" });
-                    const existingData = await existingResponse.json();
-                    if (!existingResponse.ok) throw new Error(existingData.error || "无法核对目标文件");
+                    const existingData = await browserIde("tree",{project:outputProject});
                     const previousPaths = new Set((existingData.entries || [])
                         .filter((item: any) => item.type === "file").map((item: any) => item.path));
                     const collisions = Object.keys(newFiles).filter(name => previousPaths.has(name));
@@ -798,7 +780,7 @@ export const useChatEngine = ({
                             path: relative, content: file.content });
                     }
                     diskWriteSucceeded = true;
-                    showToast(`已写入 IDE/${outputProject} · ${Object.keys(newFiles).length} 个文件`);
+                    showToast(`已保存到浏览器 IDE/${outputProject} · ${Object.keys(newFiles).length} 个文件`);
                 } catch (error: any) {
                     console.warn("Officina project write failed:", error);
                     showToast(`IDE 文件写入失败；代码已附在回复下方：${error.message}`);
