@@ -9,6 +9,7 @@ import type { PublicLocalProvider } from "../lib/localProviders";
 import type { ImageSettings, ProviderCapability } from "../lib/imageSettings";
 import type { WebToolConfig } from "../lib/webToolSettings";
 import { capabilityFor } from "../lib/imageSettings";
+import type { CloudCredentials, CloudCredential } from "../lib/cloudCredentials";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
 import { useAppDialog } from "../context/DialogContext";
@@ -71,6 +72,8 @@ type Props = {
   providerCapabilities: Record<string, ProviderCapability>;
   onProviderCapabilitiesChange: (id: string, changes: Partial<ProviderCapability>) => void;
   falConfigured: boolean;
+  cloudCredentials: CloudCredentials;
+  onCloudCredentialChange: (id:string, next:CloudCredential) => Promise<void>;
 };
 
 type Tab = "general" | "ai" | "media" | "developer";
@@ -113,7 +116,7 @@ function SwitchRow({ title, description, checked, onClick, icon: Icon }: {
   );
 }
 
-export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onToggleDebug, debugDrawTagsEnabled, onToggleDebugDrawTags, danmakuEnabled, onToggleDanmaku, danmakuCount, onDanmakuCountChange, terminalRequestLogEnabled, onToggleTerminalRequestLog, terminalLogEnabled, onToggleTerminalLog, engineeringTransitionEnabled, onToggleEngineeringTransition, curtainTransitionEnabled, onToggleCurtainTransition, geminiNarrativeStyleEnabled, onToggleGeminiNarrativeStyle, engineeringLoreRelationshipsEnabled, engineeringLoreExperiencesEnabled, onToggleEngineeringLoreRelationships, onToggleEngineeringLoreExperiences, onTestEffect, isStory, activeMode, contextWindowTokens, onContextWindowChange, storyTheme, onStoryThemeChange, activeProvider, providers, disabledProviders, onToggleProvider, autoSync, autoSyncInterval, onAutoSyncChange, onAutoSyncIntervalChange, webToolConfig, onWebToolConfigChange, providerAliases, onProviderAliasChange, imageSettings, onImageSettingsChange, providerCapabilities, onProviderCapabilitiesChange, falConfigured }: Props) {
+export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onToggleDebug, debugDrawTagsEnabled, onToggleDebugDrawTags, danmakuEnabled, onToggleDanmaku, danmakuCount, onDanmakuCountChange, terminalRequestLogEnabled, onToggleTerminalRequestLog, terminalLogEnabled, onToggleTerminalLog, engineeringTransitionEnabled, onToggleEngineeringTransition, curtainTransitionEnabled, onToggleCurtainTransition, geminiNarrativeStyleEnabled, onToggleGeminiNarrativeStyle, engineeringLoreRelationshipsEnabled, engineeringLoreExperiencesEnabled, onToggleEngineeringLoreRelationships, onToggleEngineeringLoreExperiences, onTestEffect, isStory, activeMode, contextWindowTokens, onContextWindowChange, storyTheme, onStoryThemeChange, activeProvider, providers, disabledProviders, onToggleProvider, autoSync, autoSyncInterval, onAutoSyncChange, onAutoSyncIntervalChange, webToolConfig, onWebToolConfigChange, providerAliases, onProviderAliasChange, imageSettings, onImageSettingsChange, providerCapabilities, onProviderCapabilitiesChange, falConfigured, cloudCredentials, onCloudCredentialChange }: Props) {
   const dialog = useAppDialog();
   const [activeTab, setActiveTab] = useState<Tab>("general");
 
@@ -210,6 +213,30 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
               <section>
                 <h2 className="mb-2 text-xl font-bold">{t("settings.ai")}</h2>
                 <p className="mb-8 text-sm text-slate-400">{t("settings.ai.description")}</p>
+                <SectionTitle>{deepText(locale, "cloud.byok.heading")}</SectionTitle>
+                <p className="mb-4 text-xs leading-6 text-slate-500">{deepText(locale,"cloud.byok.warning")}</p>
+                <div className="mb-7 grid gap-3">
+                  {providers.map(p => {
+                    const value=cloudCredentials[p.id] || {apiKey:"",baseURL:""};
+                    return <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                      <p className="mb-3 text-sm font-semibold text-slate-700">{p.label}</p>
+                      {p.custom && <label className="block text-xs text-slate-600">
+                        {deepText(locale,"cloud.byok.url")}
+                        <input type="url" autoComplete="off" value={value.baseURL}
+                          onChange={e=>void onCloudCredentialChange(p.id,{...value,baseURL:e.target.value})}
+                          placeholder="https://example.com/v1" maxLength={500}
+                          className="mt-1 mb-3 w-full rounded-lg border p-2 font-mono text-xs"/>
+                      </label>}
+                      <label className="block text-xs text-slate-600">
+                        {deepText(locale,"cloud.byok.key")}
+                        <input type="password" autoComplete="new-password" spellCheck={false}
+                          value={value.apiKey} onChange={e=>void onCloudCredentialChange(p.id,{...value,apiKey:e.target.value})}
+                          placeholder="••••••••••" maxLength={400}
+                          className="mt-1 w-full rounded-lg border p-2 font-mono text-xs"/>
+                      </label>
+                    </div>;
+                  })}
+                </div>
                 <SectionTitle>{deepText(locale, "settings.providerHeading")} · {t("settings.providers")}</SectionTitle>
                 <div className="mb-7 space-y-2">
                   {providers.map((provider) => (

@@ -32,7 +32,7 @@ export const useChatEngine = ({
     config, 
     setTrackId, showToast, setIsGlobalGenerating,
     manualOutfitId,
-    apiProvider, customCharacters = [], customSelves = [], activeSelfId = null, storyWorlds = []
+    apiProvider, cloudCredentials = {}, customCharacters = [], customSelves = [], activeSelfId = null, storyWorlds = []
 }: any) => {
     
     const { locale } = useLanguage();
@@ -212,7 +212,7 @@ export const useChatEngine = ({
                     charStatus: currentSession.charStatus,
                     codeRepository: currentSession.engineeringProjectRoot ? undefined : currentSession.codeRepository,
                     engineeringProjectRoot: currentSession.memoryMode === "infinite" ? currentSession.engineeringProjectRoot || "" : "",
-                    provider: apiProvider, 
+                    provider: apiProvider, byok: cloudCredentials[apiProvider], 
                     uiLanguage: locale,
                     debugRequestPayload: config.terminalRequestLog === true,
                     debugFullOutput: config.terminalLog === true,
@@ -459,7 +459,7 @@ export const useChatEngine = ({
 
                         const configRes = await fetch("/api/draw", {
                             method: "POST", headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(drawPayload)
+                            body: JSON.stringify({...drawPayload, byok:cloudCredentials[drawPayload.provider || ""]})
                         });
                         
                         const drawData = await configRes.json();
@@ -639,7 +639,7 @@ export const useChatEngine = ({
 
                                 const configRes = await fetch("/api/draw", {
                                     method: "POST", headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify(drawPayload)
+                                    body: JSON.stringify({...drawPayload, byok:cloudCredentials[drawPayload.provider || ""]})
                                 });
                                 const drawData = await configRes.json();
                                 
@@ -941,7 +941,7 @@ export const useChatEngine = ({
         try {
             const response = await fetch('/api/draw', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+                body: JSON.stringify({...payload, byok:cloudCredentials[payload.provider || ""]}),
             });
             const result = await response.json();
             if (!response.ok || !result.success || !result.image) throw new Error(result.error || `生图服务返回 HTTP ${response.status}`);
@@ -1112,7 +1112,7 @@ export const useChatEngine = ({
                     stateRepair: true, repairMemory: target.memoryRepairMissing === true,
                     memoryTurnCount: parseLocalMemoryEntries(currentSession.stm).length,
                     memoryMode: "sliding", model: modelToUse,
-                    provider: apiProvider, uiLanguage: locale,
+                    provider: apiProvider, byok: cloudCredentials[apiProvider], uiLanguage: locale,
                     debugRequestPayload: config.terminalRequestLog === true,
                     debugFullOutput: config.terminalLog === true,
                     storyRole: currentSession.storyRole || "observer",
@@ -1275,7 +1275,7 @@ export const useChatEngine = ({
                 body: JSON.stringify({
                     metadataRepair: true, repairMemory: needMemory,
                     repairState: needState, memoryMode: mode, model: chosenModel,
-                    provider: apiProvider, uiLanguage: locale,
+                    provider: apiProvider, byok: cloudCredentials[apiProvider], uiLanguage: locale,
                     memoryTurnCount: parseLocalMemoryEntries(previous.stm).length,
                     debugRequestPayload: config.terminalRequestLog === true,
                     debugFullOutput: config.terminalLog === true,

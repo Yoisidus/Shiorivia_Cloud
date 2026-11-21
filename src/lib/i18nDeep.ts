@@ -2,6 +2,11 @@ import type { Locale } from "./locale";
 
 /** Localizable interface copy; never use these strings as persisted IDs. */
 const strings: Record<string, readonly [string, string, string, string, string]> = {
+  "cloud.byok.heading": ["云端 API 配置 · BYOK", "雲端 API 設定 · BYOK", "Cloud API configuration · BYOK", "Cloud API 設定 · BYOK", "Cloud API 설정 · BYOK"],
+  "cloud.byok.warning": ["密钥仅保存在此浏览器的 IndexedDB（不加密），模型请求时会发送给云端代理和所选供应商。请勿在共享设备保存密钥。", "金鑰僅儲存於此瀏覽器的 IndexedDB（未加密），呼叫模型時會傳給雲端代理及供應商。請勿在共用裝置儲存金鑰。", "Keys stay in this browser's IndexedDB (not encrypted). They are sent to the Cloud proxy and provider when making requests. Avoid saving keys on shared devices.", "キーはこのブラウザの IndexedDB に保存されます（暗号化なし）。リクエスト時には Cloud プロキシとプロバイダーへ送信されます。共有端末での保存は避けてください。", "키는 이 브라우저의 IndexedDB에 암호화 없이 저장됩니다. 모델 요청 시 Cloud 프록시와 공급자로 전송됩니다. 공용 기기에 저장하지 마세요."],
+  "cloud.byok.url": ["自定义供应商 URL（HTTPS）", "自訂供應商 URL（HTTPS）", "Custom provider URL (HTTPS)", "カスタムプロバイダー URL（HTTPS）", "사용자 지정 공급자 URL(HTTPS)"],
+  "cloud.byok.key": ["API 密钥（遮蔽显示）", "API 金鑰（遮蔽顯示）", "API key (masked)", "API キー（マスク表示）", "API 키(마스킹)"],
+  "cloud.byok.storageError": ["无法读取或保存浏览器中的 API 设置。", "無法讀取或儲存瀏覽器內的 API 設定。", "Could not read or save API settings in this browser.", "ブラウザの API 設定を読み書きできませんでした。", "브라우저 API 설정을 읽거나 저장하지 못했습니다."],
   "cloud.music.unavailable": ["云端版暂不支持 Auto DJ。", "雲端版暫不支援 Auto DJ。", "Auto DJ is not available in Cloud.", "Cloud 版では Auto DJ を利用できません。", "Cloud에서는 Auto DJ를 사용할 수 없습니다."],
   "cloud.music.demoOnly": ["云端版只提供一首 Demo 音乐，不支持扫描或上传曲库。", "雲端版只提供一首 Demo 音樂，不支援掃描或上傳曲庫。", "Cloud provides only one demo track; music scanning and uploads are unavailable.", "Cloud ではデモ曲1曲のみ再生できます。曲のスキャンやアップロードはできません。", "Cloud에서는 데모 음악 한 곡만 제공하며 음악 검색이나 업로드는 지원하지 않습니다."],
   "cloud.music.getLocal": ["完整音乐与 Auto DJ 功能请使用本地版", "完整音樂與 Auto DJ 功能請使用本地版", "Use Shiorivia Local for full music and Auto DJ", "音楽・Auto DJ の全機能は Local 版で", "전체 음악 및 Auto DJ 기능은 Local 버전에서"],

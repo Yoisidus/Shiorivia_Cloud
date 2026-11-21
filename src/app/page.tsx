@@ -35,6 +35,8 @@ import { DEFAULT_IMAGE_SETTINGS, capabilityFor, type ImageSettings, type Provide
 import { DEFAULT_WEB_TOOL_CONFIG, normalizeWebToolConfig, normalizeProviderAliases, type WebToolConfig } from "../lib/webToolSettings";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
+import { browserRead, browserWrite } from "../lib/browserStore";
+import { safeCloudCredentials, type CloudCredentials, type CloudCredential } from "../lib/cloudCredentials";
 import { defaultSessionTitle, sessionGreeting, officinaUnassignedWelcome, umbraUnassignedWelcome } from "../lib/sessionTitles";
 import { isEngineeringCharacterLocked } from "../lib/engineeringSession";
 import { canExtendWorldline } from "../lib/worldlineLock";
@@ -136,7 +138,36 @@ export default function Home() {
     const [providerCapabilities, setProviderCapabilities] = useState<Record<string, ProviderCapability>>({});
     const [providerAliases, setProviderAliases] = useState<Record<string, string>>({});
     const [falConfigured, setFalConfigured] = useState(false);
+    const [cloudCredentials, setCloudCredentials] = useState<CloudCredentials>({});
     const [allProviders, setAllProviders] = useState<PublicLocalProvider[]>(DEFAULT_LOCAL_PROVIDERS);
+    useEffect(() => {
+        let mounted = true;
+        void browserRead<CloudCredentials>("cloud:byok",{}).then(saved => {
+            if (mounted) setCloudCredentials(safeCloudCredentials(saved));
+        }).catch(() => ui.showToast(deepText(locale,"cloud.byok.storageError")));
+        return () => {mounted=false};
+    }, []);
+    const updateCloudCredential = async (id:string, next:CloudCredential) => {
+        const updated = safeCloudCredentials({...cloudCredentials,[id]:next});
+        try {
+            await browserWrite("cloud:byok",updated);
+            setCloudCredentials(updated);
+        } catch {
+            ui.showToast(deepText(locale,"cloud.byok.storageError"));
+        }
+    };
+    useEffect(() => {
+        const builtins = DEFAULT_LOCAL_PROVIDERS.map(p => ({
+            ...p, configured: Boolean(cloudCredentials[p.id]?.apiKey),
+        }));
+        const custom = ([1,2,3,4] as const).map(n => {
+            const id = `custom_${n}`;
+            const item = cloudCredentials[id];
+            return { id: id as PublicLocalProvider["id"], label: `Custom_${n}`,
+                configured: Boolean(item?.apiKey && item?.baseURL), custom: true };
+        });
+        setAllProviders([...custom,...builtins]);
+    }, [cloudCredentials]);
     useEffect(() => {
         try {
             const raw = window.localStorage.getItem("shiorivia_local_preferences_v1");
@@ -159,7 +190,7 @@ export default function Home() {
                     ...prev,
                     webSearch: typeof saved.webSearch === "boolean" ? saved.webSearch : prev.webSearch,
                     webToolConfig: normalizeWebToolConfig(saved.webToolConfig),
-                    imageGen: typeof saved.imageGen === "boolean" ? saved.imageGen : prev.imageGen,
+                    imageGen: false, // re-enable only after Cloud BYOK image model validation
                     danmakuEnabled: saved.danmakuEnabled === true,
                     danmakuCount: Number.isFinite(saved.danmakuCount) ? Math.min(24, Math.max(1, Math.round(saved.danmakuCount))) : 8,
                     debugDrawTags: saved.debugDrawTags === true,
@@ -201,14 +232,7 @@ export default function Home() {
         ...p, label: p.custom ? providerAliases[p.id] || p.label : p.label,
     })), [allProviders, providerAliases]);
     const visibleProviders = useMemo(() => getVisibleLocalProviders(displayProviders.filter(p => !p.custom || capabilityFor(p.id, providerCapabilities).llm), disabledProviders), [displayProviders, disabledProviders, providerCapabilities]);
-    useEffect(() => { fetch('/api/check_env').then(r => r.json()).then(d => setFalConfigured(Boolean(d.hasFal))).catch(() => {}); }, []);
-    useEffect(() => {
-        let active = true;
-        fetch('/api/providers', { cache: 'no-store' }).then(r => r.json()).then(data => {
-            if (active && Array.isArray(data.providers)) setAllProviders(data.providers);
-        }).catch(() => ui.showToast(deepText(locale, "app.providerLoadFailed")));
-        return () => { active = false; };
-    }, []);
+    useEffect(() => { setFalConfigured(Boolean(cloudCredentials.fal?.apiKey)); }, [cloudCredentials]);
     useEffect(() => {
         if (!settingsHydrated || !allProviders.some(p => p.configured)) return;
         if (!visibleProviders.some(p => p.id === apiProvider)) {
@@ -312,7 +336,7 @@ export default function Home() {
         showToast: ui.showToast,
         setIsGlobalGenerating,
         manualOutfitId,
-        apiProvider,
+        apiProvider, cloudCredentials,
         customCharacters: charta.characters,
         storyWorlds: worldLibrary.worlds,
         customSelves: selfLibrary.selves,
@@ -667,6 +691,8 @@ export default function Home() {
                         providerCapabilities={providerCapabilities}
                         onProviderCapabilitiesChange={(id, capability) => setProviderCapabilities(prev => ({ ...prev, [id]: { ...capabilityFor(id, prev), ...capability } }))}
                         falConfigured={falConfigured}
+                cloudCredentials={cloudCredentials}
+                onCloudCredentialChange={updateCloudCredential}
                 />
                 <TransitionEffects key={curtainCycle} effect={ui.effect} onComplete={handleEffectComplete} />
             </>
@@ -751,6 +777,8 @@ export default function Home() {
                     providerCapabilities={providerCapabilities}
                     onProviderCapabilitiesChange={(id, capability) => setProviderCapabilities(prev => ({ ...prev, [id]: { ...capabilityFor(id, prev), ...capability } }))}
                     falConfigured={falConfigured}
+                cloudCredentials={cloudCredentials}
+                onCloudCredentialChange={updateCloudCredential}
                 />
 
             </>
@@ -865,6 +893,8 @@ export default function Home() {
                 providerCapabilities={providerCapabilities}
                 onProviderCapabilitiesChange={(id, capability) => setProviderCapabilities(prev => ({ ...prev, [id]: { ...capabilityFor(id, prev), ...capability } }))}
                 falConfigured={falConfigured}
+                cloudCredentials={cloudCredentials}
+                onCloudCredentialChange={updateCloudCredential}
             />
             </>
         );
@@ -1206,6 +1236,8 @@ export default function Home() {
                 providerCapabilities={providerCapabilities}
                 onProviderCapabilitiesChange={(id, capability) => setProviderCapabilities(prev => ({ ...prev, [id]: { ...capabilityFor(id, prev), ...capability } }))}
                 falConfigured={falConfigured}
+                cloudCredentials={cloudCredentials}
+                onCloudCredentialChange={updateCloudCredential}
             />
             <MemoryVaultModal
                 open={showMemoryVault && currentSession?.memoryMode !== "infinite"}
