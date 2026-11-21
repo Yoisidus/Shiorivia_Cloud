@@ -734,13 +734,12 @@ export const useChatEngine = ({
                         previews.push({ path: block.path, version: preview.version, edits: block.edits });
                     }
                     if (previews.length && await dialog.reviewEdits(previews)) {
-                        const applied: string[] = [];
                         try {
+                            // Commit every reviewed file as one IndexedDB transaction.
+                            await browserIde("applyEditsBatch", {
+                                project: currentSession.engineeringProjectRoot, files: previews,
+                            });
                             for (const file of previews) {
-                                await ideEditRequest("applyEdit", {
-                                    path: file.path, version: file.version, edits: file.edits,
-                                });
-                                applied.push(file.path);
                                 let added = 0;
                                 let removed = 0;
                                 for (const edit of file.edits) {
@@ -752,9 +751,9 @@ export const useChatEngine = ({
                                 }
                                 ideEditedFiles.push({ path: file.path, operations: file.edits.length, added, removed });
                             }
-                            showToast(`已在浏览器 IDE 修改 ${applied.length} 个文件`);
+                            showToast(`已在浏览器 IDE 修改 ${previews.length} 个文件`);
                         } catch (editError: any) {
-                            currentText += `\n\n**IDE 局部修改未全部应用：** 已修改 ${applied.join(", ") || "无"}；${editError.message}`;
+                            currentText += `\n\n**IDE 局部修改未执行：** ${editError.message}`;
                             dialog.notify(`IDE 局部编辑失败：${editError.message}`);
                         }
                     } else if (previews.length) {
@@ -831,13 +830,11 @@ export const useChatEngine = ({
                     })) {
                         currentText += "\n\n" + deepText(locale, "cloud.ide.writeCancelled");
                     } else {
-                        if (creatingProject) {
-                            const created = await browserIde("createProject", { name: targetProject });
-                            targetProject = created.project;
-                        }
-                        // Reject stale changes; write all approved files in one
-                        // browser transaction rather than partially saving a set.
-                        await browserIde("writeBatch", { project: targetProject, files: contents, expected });
+                        // Create a new project and commit all approved files atomically.
+                        // A competing tab creating the same project name is rejected.
+                        await browserIde("writeBatch", {
+                            project: targetProject, files: contents, expected, create: creatingProject,
+                        });
                         outputProject = targetProject;
                         diskWriteSucceeded = true;
                         showToast(`已保存到浏览器 IDE/${outputProject} · ${generated.length} 个文件`);
