@@ -30,6 +30,7 @@ import { CHAR_DATA } from "../../../data/char_config";
 import { BGM_LIBRARY } from "../../../data/bgm_library";
 import { readLocalMusic } from "../../../lib/localMusicServer";
 import { validProjectName, validRelativePath, isWorkspaceTextFile } from "../../../lib/idePathPolicy";
+import { CloudRequestError, readCloudJson } from "../../../lib/cloudBody";
 
 export const runtime = "nodejs";
 
@@ -95,7 +96,7 @@ ${directives.join("\n")}
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = await readCloudJson(req, 2 * 1024 * 1024);
     const {
       messages,
       model,
@@ -1187,7 +1188,7 @@ Never put session_title, turn_memory or game_state inside <thinking>, and never 
   } catch (error: any) {
     console.error("Chat API Error:", error);
     return new Response(JSON.stringify({ error: error.message || "Internal Server Error" }), {
-      status: error instanceof ContextWindowError ? 413 : 500,
+      status: error instanceof CloudRequestError ? error.status : error instanceof ContextWindowError ? 413 : 500,
       headers: { "Content-Type": "application/json" },
     });
   }

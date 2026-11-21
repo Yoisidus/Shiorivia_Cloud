@@ -1,11 +1,13 @@
-# Cloud browser-only data boundary
+# Shiorivia Cloud browser boundary — public beta
 
-Cloud chat, Charta, 12 archive slots, and virtual IDE workspaces are stored in the current browser origin's IndexedDB. Storage capacity varies by browser, origin and disk quota; never promise a fixed 10 MB. Browser data is not encrypted and can be cleared. Users should export their work.
+Cloud sessions, Charta, 12 save slots and Officina virtual IDE projects are persisted in origin-scoped IndexedDB; these are **not server accounts**. Storage is not encrypted, may be evicted, and can be cleared. Export important work regularly.
 
-Server file and media endpoints from Local (`/api/local/*`) have been removed. `/api/ide`, `/api/upload` and `/api/auth` return HTTP 410. These are NOT safe shared filesystem APIs. The Cloud rebuild branch's `src/proxy.ts` also denies all dynamic requests with 503 until security review and tests are finished.
+The global staging 503 has been replaced by a request-protecting `src/proxy.ts`: cross-origin mutating API requests are rejected and only same-origin browser requests are accepted. CORS preflights receive 405. API caching is disabled and basic security headers are sent. Best-effort rate counters are **per server instance**; they do not provide distributed abuse protection or guarantee against automated use.
 
-Chat attachment picker accepts text/source files only, with a 1 MiB limit. Charta character import discards standee and uploaded avatar image fields while preserving text settings and emoji avatar defaults.
+Chat, summarize and image-generation request bodies are streamed through bounded JSON readers, to prevent large chunked bodies bypassing `Content-Length` limits (2 MiB, 256 KiB, 128 KiB respectively). Built-in provider destinations are fixed; custom arbitrary endpoints remain disabled. Model provider keys are supplied by each browser; there are no shared server API keys. Provider-controlled spending limits remain essential.
 
-BYOK API keys live in browser IndexedDB, **not encrypted**; password inputs hide their rendering only. Keys are sent with each request to the site's proxy and chosen provider. Custom URL proxying is disabled by default pending DNS/SSRF mitigation. Never put secret values in logs or document examples.
+Server file and media endpoints from Local have been removed; `/api/ide`, `/api/upload`, `/api/auth` respond HTTP 410. Filesystem editing remains browser-only. Officina source excerpts are sent to the model only with confirmation; secrets inside ordinary source files are still possible.
 
-After the app builds, test all five locales, sessions, storage isolation, quota exhaustion, Cloud BYOK error handling and abuse-limiting measures before unblocking preview. No production deployment is authorized yet.
+Text/source attachments have a 1 MiB cap; Charta JSON imports discard standees and picture avatars. **BYOK keys are not encrypted in IndexedDB**, regardless of masked password fields.
+
+The automated CI suite verifies API request size boundaries, origin policy, TypeScript, browser IDE transactional writes and ZIP structure; five-locale interactive browser testing, quotas, full BYOK provider requests, real-device behavior, and production-grade distributed rate limiting are still outstanding. Beta is owner-led manual testing, not a security certification.

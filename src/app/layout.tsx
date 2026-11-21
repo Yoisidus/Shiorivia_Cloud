@@ -18,10 +18,10 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  // Local Edition: relative Open Graph assets resolve against the local server.
-  metadataBase: new URL("http://localhost:3000"),
+  // Public Cloud metadata resolves against the hosted origin.
+  metadataBase: new URL("https://app.shiorivia.com"),
   title: "Shiorivia",
-  description: "Shiorivia — a local-first, customizable AI story and chat experience.",
+  description: "Shiorivia Cloud — a browser-first AI storytelling and chat experience.",
   manifest: "/manifest.json",
   openGraph: {
     title: "Shiorivia",
@@ -57,28 +57,16 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className={`${inter.variable} ${serif.variable} ${mono.variable} font-sans`}>
-        <Script 
-          src="/lib/live2d.min.js" 
-          strategy="beforeInteractive" 
-        />
+        {process.env.NEXT_PUBLIC_ENABLE_LOCAL_LIVE2D === "true" && <Script
+          src="/lib/live2d.min.js"
+          strategy="beforeInteractive"
+        />}
         
         {process.env.NEXT_PUBLIC_ENABLE_LOCAL_LIVE2D === "true" && <Script
           src="/lib/live2dcubismcore.min.js"
           strategy="beforeInteractive"
         />}
         
-        <Script 
-          src="/lib/vconsole.min.js"
-          strategy="beforeInteractive"
-        />
-        <Script id="init-vconsole" strategy="afterInteractive">
-          {`
-            // 简单的移动端检测正则
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                var vConsole = new VConsole();
-            }
-          `}
-        </Script>
         <MusicProvider>
           <LanguageProvider><DialogProvider>{children}</DialogProvider></LanguageProvider>
         </MusicProvider>

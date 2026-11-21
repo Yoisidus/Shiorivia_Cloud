@@ -1,4 +1,4 @@
-# Cloud virtual IDE (staging)
+# Cloud virtual IDE (browser-first beta)
 
 The Cloud Officina IDE stores user-created project **names, relative directories, and text source files** in the current browser origin's IndexedDB. There are no real OS directories and no shared server storage.
 
@@ -13,4 +13,4 @@ The Cloud Officina IDE stores user-created project **names, relative directories
 - AI context is intentionally limited: large projects can need the user to supply relevant snippets separately. Source contents can contain secrets even if filenames look harmless, so review carefully before approving any code sharing.
 - Project/file changes use one IndexedDB readwrite transaction for the version check and write, preventing stale multi-tab commits. AI patches apply as one reviewed set; new projects and generated files are committed together. Same-tab and cross-tab notifications offer a manual IDE reload without auto-discarding unsaved drafts. ZIP exports use one consistent saved snapshot of files and folders.
 - Browser data is origin-specific and may be cleared by the user or browser. Export useful code regularly.
-- The staging HTTP 503 guard remains enabled.
+- The global 503 staging guard has been removed for owner-led beta testing; API requests remain origin-checked and body-limited.

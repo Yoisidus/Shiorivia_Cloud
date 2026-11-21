@@ -26,5 +26,7 @@ jobs:
         run: npx tsc --noEmit
       - name: Exercise Cloud IDE persistence and ZIP compatibility
         run: npm run test:cloud-ide
+      - name: Verify public Cloud API request guards and size limits
+        run: npm run test:cloud-api
       - name: Validate production build
         run: npm run build

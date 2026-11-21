@@ -1,6 +1,7 @@
 import { OpenAI } from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getServerLocalProvider } from "../../../lib/localProviderServer";
+import { CloudRequestError, readCloudJson } from "../../../lib/cloudBody";
 
 import { outputLanguageInstruction } from "../../../lib/locale";
 
@@ -8,7 +9,7 @@ export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
-    const { text, previousLtm, mode, provider = "openrouter", model, uiLanguage, currentTitle, byok } = await req.json();
+    const { text, previousLtm, mode, provider = "openrouter", model, uiLanguage, currentTitle, byok } = await readCloudJson(req, 256 * 1024);
 
     if (!text) return new Response(JSON.stringify({ error: "No text provided" }), { status: 400 });
     const selectedProvider = getServerLocalProvider(provider, byok);
@@ -92,6 +93,6 @@ Rules:
     return new Response(JSON.stringify({ summary }), { status: 200 });
 
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error instanceof CloudRequestError ? error.message : "Summarization failed" }), { status: error instanceof CloudRequestError ? error.status : 502 });
   }
 }
