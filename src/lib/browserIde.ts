@@ -80,6 +80,33 @@ export async function browserIde(action: string, args: Record<string, unknown> =
     await browserWrite(projectKey(project), {...doc,folders:[...folders]});
     return {success:true};
   }
+  if (action === "writeBatch") {
+    // One user-approved changeset is validated before one IndexedDB write.
+    // Abort the entire set if any target changed since the user reviewed it.
+    const raw = args.files, expected = args.expected;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)
+      || !expected || typeof expected !== "object" || Array.isArray(expected))
+      throw new Error("Invalid batch write.");
+    const entries = Object.entries(raw as Record<string, unknown>);
+    if (!entries.length || entries.length > MAX_FILES) throw new Error("Invalid IDE file count.");
+    const nextFiles = { ...doc.files };
+    for (const [rawPath, content] of entries) {
+      const path = pathOf(rawPath);
+      if (typeof content !== "string" || new Blob([content]).size > MAX_FILE_BYTES)
+        throw new Error("Text file is too large.");
+      const previous = Object.prototype.hasOwnProperty.call(doc.files, path)
+        ? doc.files[path].content : null;
+      if (!Object.prototype.hasOwnProperty.call(expected, path)
+        || (expected as Record<string, unknown>)[path] !== previous)
+        throw new Error("Project files changed after review. Review before writing again.");
+      const name = path.split("/").pop() || path;
+      nextFiles[path] = { name, language: name.split(".").pop() || "text", content };
+    }
+    const next = { ...doc, files: nextFiles };
+    checkSize(next);
+    await browserWrite(projectKey(project), next);
+    return { success: true, count: entries.length };
+  }
   if (action === "write") {
     const path=pathOf(args.path),content=args.content;
     if (typeof content!=="string"||new Blob([content]).size>MAX_FILE_BYTES)throw new Error("Text file is too large.");

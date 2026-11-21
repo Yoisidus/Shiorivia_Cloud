@@ -2,8 +2,8 @@
 
 This is an **engineering checkpoint**, not the Cloud release.
 
-- Source: `seemoon1/Shiorivia` `c9ba70d7e4e3660af747c44fa0bc148c9c023d15`.
-- Destination: `seemoon1/Shiorivia_Cloud`, branch `rebuild/local-foundation`.
+- Source: `Yoisidus/Shiorivia` `c9ba70d7e4e3660af747c44fa0bc148c9c023d15`.
+- Destination: `Yoisidus/Shiorivia_Cloud`, branch `rebuild/local-foundation`.
 - Rollback: `archive/cloud-before-local-rebuild-2026-11-21` points to original Cloud `main` `29a4d421408d4a837f7b927815d5ec876fe09fd3`.
 - Production: Vercel `shiorivia_cloud`, `app.shiorivia.com`, connected to old `main`; unchanged in this checkpoint.
 - Imported: Local source files, docs, project configuration, and shared text assets; README is replaced with this staging note.
@@ -14,8 +14,9 @@ This is an **engineering checkpoint**, not the Cloud release.
 ## Implemented in the guarded branch
 
 - IndexedDB storage for sessions, worlds, characters, selves, and twelve text-only save slots.
-- Browser-only virtual Officina project directories and text files; **Export project** downloads a browser-created ZIP containing the root directory (and empty subdirectories), ready to extract into Local's `IDE/`. User-approved, bounded code excerpts can reach a model for AI programming assistance, while reviewed file changes apply via browser IndexedDB, never `/api/ide`.
+- Browser-only virtual Officina project directories and text files; **Export project** downloads a browser-created ZIP containing the root directory (and empty subdirectories), ready to extract into Local's `IDE/`. User-approved, bounded code excerpts can reach a model for AI programming assistance, while reviewed file changes apply via browser IndexedDB, never `/api/ide`. Entire AI-generated file sets now require explicit review/approval and save together after stale-file checks.
 - Text/code-only file picker; Charta Local portrait/avatar imports sanitized; old Local image uploads disabled.
+- The `/api/summarize` route now accepts the same per-request BYOK credentials as chat (no shared server key fallback).
 - A masked per-provider BYOK configuration UI; keys stored only on the browser origin and passed to the model proxy with requests. The browser storage is **not encrypted**.
 - Hosted image backends and image model-ID prerequisite; local ComfyUI/SD code path removed.
 - Auto DJ, music scanning and server-local routes removed; bundled original WAV demo music supplied.

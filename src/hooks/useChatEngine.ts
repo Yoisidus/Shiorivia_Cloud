@@ -25,6 +25,7 @@ import { aiConversationMessages, isEngineeringCharacterLocked } from "../lib/eng
 import { engineeringOutputIncomplete, OFFICINA_COMPLETION_REQUEST } from "../lib/engineeringCompletion";
 import { extractIdeEditBlocks } from "../lib/ideEdits";
 import { browserIde } from "../lib/browserIde";
+import { validProjectName, validRelativePath, isWorkspaceTextFile } from "../lib/idePathPolicy";
 import { deepText } from "../lib/i18nDeep";
 import { useAppDialog } from "../context/DialogContext";
 
@@ -785,35 +786,62 @@ export const useChatEngine = ({
             if (currentSession.memoryMode === "infinite" && Object.keys(newFiles).length) {
                 const rootTag = currentText.match(/<project\s+name=["']([^"']+)["']\s*\/\s*>/i);
                 currentText = currentText.replace(/<project\s+name=["'][^"']+["']\s*\/\s*>/gi, "").trim();
-                const idePost = browserIde;
                 try {
-                    if (!outputProject) {
+                    // Validate all generated paths before approval; never create an
+                    // unbound project or write even one file without consent.
+                    const generated = Object.entries(newFiles) as [string, { content: string }][];
+                    for (const [path] of generated) {
+                        if (!isWorkspaceTextFile(validRelativePath(path))) {
+                            throw new Error("Unsupported browser IDE path: " + path);
+                        }
+                    }
+                    const creatingProject = !outputProject;
+                    let targetProject = outputProject;
+                    if (creatingProject) {
                         const suffix = String(currentSessionId).replace(/[^a-zA-Z0-9_-]/g, "").slice(-10) || "new";
                         const fallback = `officina-${suffix}`;
                         let preferred = rootTag?.[1]?.trim() || fallback;
-                        // Never accidentally bind an unassigned conversation to an
-                        // unrelated existing folder chosen by an AI model.
                         const listed = await browserIde("projects");
                         if (Array.isArray(listed.projects) && listed.projects.includes(preferred)) {
                             preferred = `${preferred.slice(0, 75)}-${suffix}`;
                         }
-                        const created = await idePost("createProject", { name: preferred });
-                        outputProject = created.project;
+                        targetProject = validProjectName(preferred);
                     }
-                    const existingData = await browserIde("tree",{project:outputProject});
-                    const previousPaths = new Set((existingData.entries || [])
-                        .filter((item: any) => item.type === "file").map((item: any) => item.path));
-                    const collisions = Object.keys(newFiles).filter(name => previousPaths.has(name));
-                    if (collisions.length && !await dialog.confirm(
-                        `当前 IDE 项目已有以下同名文件，是否覆盖？\n${collisions.slice(0, 10).join("\n")}`
-                    )) {
-                        throw new Error("用户取消覆盖，生成代码已保留在本轮会话的备用文件库。");
+                    const existingFiles: Record<string, { content: string }> = creatingProject
+                        ? {} : (await browserIde("snapshot", { project: targetProject })).files || {};
+                    const expected: Record<string, string | null> = {};
+                    const contents: Record<string, string> = {};
+                    let replacements = 0;
+                    const preview: string[] = [];
+                    for (const [path, file] of generated) {
+                        const previous = Object.prototype.hasOwnProperty.call(existingFiles, path)
+                            ? existingFiles[path]?.content ?? null : null;
+                        expected[path] = previous;
+                        contents[path] = file.content;
+                        if (previous !== null) replacements++;
+                        preview.push(`${previous === null ? "+" : "~"} ${path}\n${file.content.slice(0, 1800)}${file.content.length > 1800 ? "\n…" : ""}`);
                     }
-                    for (const [relative, file] of Object.entries(newFiles) as [string, any][]) {
-                        await idePost("write", { project: outputProject,
-                            path: relative, content: file.content });
+                    const confirmation = deepText(locale, "cloud.ide.writeConfirm")
+                        .replace("{project}", targetProject)
+                        .replace("{count}", String(generated.length))
+                        .replace("{create}", String(generated.length - replacements))
+                        .replace("{replace}", String(replacements));
+                    if (!await dialog.confirm(confirmation, {
+                        tone: "officina", preview: preview.join("\n\n").slice(0, 14000),
+                    })) {
+                        currentText += "\n\n" + deepText(locale, "cloud.ide.writeCancelled");
+                    } else {
+                        if (creatingProject) {
+                            const created = await browserIde("createProject", { name: targetProject });
+                            targetProject = created.project;
+                        }
+                        // Reject stale changes; write all approved files in one
+                        // browser transaction rather than partially saving a set.
+                        await browserIde("writeBatch", { project: targetProject, files: contents, expected });
+                        outputProject = targetProject;
+                        diskWriteSucceeded = true;
+                        showToast(`已保存到浏览器 IDE/${outputProject} · ${generated.length} 个文件`);
                     }
-                    diskWriteSucceeded = true;
                     showToast(`已保存到浏览器 IDE/${outputProject} · ${Object.keys(newFiles).length} 个文件`);
                 } catch (error: any) {
                     console.warn("Officina project write failed:", error);

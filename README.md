@@ -1,6 +1,6 @@
 # Shiorivia Cloud — rebuilding from the Local foundation ☁️
 
-> **Status: source migration, NOT a deployable public Cloud release.** This repository's `rebuild/local-foundation` branch imports the current [Shiorivia Local](https://github.com/seemoon1/Shiorivia) source as the starting point for a new lightweight, browser-first Cloud Edition. It is **not** equivalent to a hosted version of Local.
+> **Status: source migration, NOT a deployable public Cloud release.** This repository's `rebuild/local-foundation` branch imports the current [Shiorivia Local](https://github.com/Yoisidus/Shiorivia) source as the starting point for a new lightweight, browser-first Cloud Edition. It is **not** equivalent to a hosted version of Local.
 
 The previous Cloud implementation and its deployment history are preserved on the `main` branch and the immutable-point-in-time branch `archive/cloud-before-local-rebuild-2026-11-21`. The existing Vercel production domain remains on `main`; do **not** promote the rebuild branch as-is.
 
@@ -36,9 +36,9 @@ The Local component, UI localization, five-mode functionality, Charta lore, cast
 5. Replace the **three remaining image placeholders** (app icon, favicon and Open Graph image). The earlier music placeholder was replaced with a newly generated original Cloud demo WAV.
 6. Run explicit `npx tsc --noEmit`, `npm run build`, and five-language browser tests under protected previews. Only then remove the staging guard and separately approve deployment to `main`.
 
-The Local README and detailed feature documents are available in the [Local repository](https://github.com/seemoon1/Shiorivia) and the copied `docs/` tree. Local documentation in this temporary branch describes the upstream **Local implementation**, not completed Cloud capabilities.
+The Local README and detailed feature documents are available in the [Local repository](https://github.com/Yoisidus/Shiorivia) and the copied `docs/` tree. Local documentation in this temporary branch describes the upstream **Local implementation**, not completed Cloud capabilities.
 
-**Source reference:** `seemoon1/Shiorivia@c9ba70d7e4e3660af747c44fa0bc148c9c023d15` (2026-11-21).
+**Source reference:** `Yoisidus/Shiorivia@c9ba70d7e4e3660af747c44fa0bc148c9c023d15` (2026-11-21).
 
 ---
 

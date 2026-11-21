@@ -8,10 +8,10 @@ export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
-    const { text, previousLtm, mode, provider = "openrouter", model, uiLanguage, currentTitle } = await req.json();
+    const { text, previousLtm, mode, provider = "openrouter", model, uiLanguage, currentTitle, byok } = await req.json();
 
     if (!text) return new Response(JSON.stringify({ error: "No text provided" }), { status: 400 });
-    const selectedProvider = getServerLocalProvider(provider);
+    const selectedProvider = getServerLocalProvider(provider, byok);
     if (!selectedProvider) return new Response(JSON.stringify({ error: "Provider not configured" }), { status: 400 });
     const routedModel = typeof model === "string" ? model.trim() : "";
     if (!routedModel) return new Response(JSON.stringify({ error: "Select a model for summarization" }), { status: 400 });
