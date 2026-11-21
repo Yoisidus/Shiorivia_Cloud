@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppDialog } from "../context/DialogContext";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
+import { browserIde } from "../lib/browserIde";
 
 const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScreen, projectRoot, onBindProject }: any) => {
     const { locale } = useLanguage();
@@ -28,13 +29,7 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
     const [busy, setBusy] = useState(false);
     const [showProjectPicker, setShowProjectPicker] = useState(false);
     const [status, setStatus] = useState("");
-    const ideRequest = async (action: string, args: Record<string, unknown> = {}) => {
-        const response = await fetch("/api/ide", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action, ...args }) });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || text("operationFailed"));
-        return result;
-    };
+    const ideRequest = browserIde;
     const syncDisk = async (target = projectRoot, confirmDiscard = true) => {
         if (!target) return;
         const hasDraft = isEditing && Object.entries(files).some(([name, file]) =>
@@ -42,12 +37,9 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         if (confirmDiscard && hasDraft && !await dialog.confirm(text("unsavedSync"))) return;
         setBusy(true);
         try {
-            const [filesResponse, treeResponse] = await Promise.all([
-                fetch(`/api/ide?action=snapshot&project=${encodeURIComponent(target)}`, { cache: "no-store" }),
-                fetch(`/api/ide?action=tree&project=${encodeURIComponent(target)}`, { cache: "no-store" }),
+            const [snapshots, folders] = await Promise.all([
+                browserIde("snapshot", {project:target}), browserIde("tree", {project:target})
             ]);
-            const snapshots = await filesResponse.json(), folders = await treeResponse.json();
-            if (!filesResponse.ok || !treeResponse.ok) throw new Error(snapshots.error || folders.error || text("readFailed"));
             const nextFiles = snapshots.files || {};
             setFiles(nextFiles);
             setDiskBaseline(nextFiles);
@@ -135,9 +127,7 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
     };
     const loadProjects = async () => {
         try {
-            const response = await fetch("/api/ide?action=projects", { cache: "no-store" });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || text("loadProjectsFailed"));
+            const result = await browserIde("projects");
             setProjects(result.projects || []);
         } catch (e: any) { dialog.notify(e.message); }
     };

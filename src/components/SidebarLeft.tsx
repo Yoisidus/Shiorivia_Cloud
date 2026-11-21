@@ -17,6 +17,7 @@ import { useAppDialog } from "../context/DialogContext";
 import { localText } from "../lib/i18nLocal";
 import { SessionItem } from "./Common";
 import { deepText } from "../lib/i18nDeep";
+import { browserIde } from "../lib/browserIde";
 import { BatchDeleteModal } from "./BatchDeleteModal";
 import { StoryWorldlineFateModal } from "./StoryWorldlineFateModal";
 import { describeStoryWorldline, type StoryWorldline } from "../lib/storyWorldline";
@@ -93,9 +94,7 @@ export const SidebarLeft = ({
         setBindingSessionId(sessionId);
         setProjectLoading(true);
         try {
-            const response = await fetch("/api/ide?action=projects", { cache: "no-store" });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || deepText(locale, "sidebar.left.readFailed"));
+            const data = await browserIde("projects");
             setIdeProjects(Array.isArray(data.projects) ? data.projects : []);
         } catch (e: any) { dialog.notify(e.message); }
         finally { setProjectLoading(false); }
@@ -104,11 +103,7 @@ export const SidebarLeft = ({
         const name = await dialog.prompt(deepText(locale, "sidebar.left.newRoot"));
         if (!name) return;
         try {
-            const response = await fetch("/api/ide", { method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "createProject", name }) });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error);
+            const data = await browserIde("createProject", {name});
             setIdeProjects(prev => [...new Set([...prev, data.project])].sort());
             if (bindingSessionId) onBindEngineeringProject(bindingSessionId, data.project);
             setBindingSessionId(null);
