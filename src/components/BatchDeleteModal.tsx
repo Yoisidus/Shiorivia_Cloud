@@ -1,45 +1,34 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, Trash2, X, Lock } from "lucide-react";
+import { AlertTriangle, Trash2, X } from "lucide-react";
+import { useAppDialog } from "../context/DialogContext";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
 
 export const BatchDeleteModal = ({ isOpen, onClose, count, onConfirm }: any) => {
     const { locale } = useLanguage();
+    const dialog = useAppDialog();
     const expectedPhrase = deepText(locale, "bulk.phrase");
-    const [code, setCode] = useState("");
     const [phrase, setPhrase] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     const handleSubmit = async () => {
         setError("");
-        setLoading(true);
-
+        if (loading) return;
         if (phrase !== expectedPhrase) {
-            setError(`${deepText(locale, "bulk.wrongPhrase")}${expectedPhrase}`);
-            setLoading(false);
+            setError(`${deepText(locale,"bulk.wrongPhrase")}${expectedPhrase}`);
             return;
         }
-
+        setLoading(true);
         try {
-            const res = await fetch("/api/auth", {
-                method: "POST",
-                body: JSON.stringify({ code: code })
-            });
-
-            if (res.ok) {
-                onConfirm();
-                onClose();
-            } else {
-                setError(deepText(locale, "bulk.wrongCode"));
-            }
-        } catch (e) {
-            setError(deepText(locale, "bulk.verifyFailed"));
-        } finally {
-            setLoading(false);
-        }
+            // Only origin-scoped browser sessions are removed. This is not server authentication.
+            if (!await dialog.confirm(deepText(locale, "bulk.irreversible"), { destructive: true })) return;
+            onConfirm();
+            setPhrase("");
+            onClose();
+        } finally { setLoading(false); }
     };
 
     return (
@@ -60,18 +49,6 @@ export const BatchDeleteModal = ({ isOpen, onClose, count, onConfirm }: any) => 
                         </div>
 
                         <div className="p-6 space-y-4">
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-1">
-                                    <Lock size={12} /> {deepText(locale, "bulk.accessCode")}
-                                </label>
-                                <input
-                                    type="password"
-                                    className="w-full bg-gray-50 border border-gray-200 rounded p-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                                    placeholder={deepText(locale, "bulk.passwordHint")}
-                                    value={code}
-                                    onChange={e => setCode(e.target.value)}
-                                />
-                            </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
                                     {deepText(locale, "bulk.confirmLabel")}

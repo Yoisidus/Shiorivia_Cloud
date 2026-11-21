@@ -990,28 +990,16 @@ export default function Home() {
                     isMobile={false} 
 
                     useImageGen={config.imageGen}
-                    toggleImageGen={() => {
-                        setConfig(prev => {
-                            const next = !prev.imageGen;
-                            ui.showToast(next ? "🎨 Art: ON" : "🚫 Art: OFF");
-                            return { ...prev, imageGen: next, tts: next ? false : prev.tts };
-                        });
-                    }}
+                    toggleImageGen={() => void toggleSetting("imageGen")}
 
                     useTTS={config.tts}
-                    toggleTTS={() => {
-                        setConfig(prev => {
-                            const next = !prev.tts;
-                            ui.showToast(next ? "🗣️ TTS: ON" : "🔇 TTS: OFF");
-                            return { ...prev, tts: next, imageGen: next ? false : prev.imageGen };
-                        });
-                    }}
+                    toggleTTS={() => void toggleSetting("tts")}
 
                     onManualSync={() => cloud.triggerSync('manual')}
                     syncStatus={cloud.status}
 
                     useMusicControl={config.musicControl}
-                    toggleMusicControl={() => setConfig(prev => ({ ...prev, musicControl: !prev.musicControl }))}
+                    toggleMusicControl={() => ui.showToast(deepText(locale,"cloud.music.unavailable"))}
 
                     triggerEffect={ui.setEffect}
                     batchDelete={(ids: string[]) => cloud.setSessions(prev => prev.filter(s => !ids.includes(s.id)))}

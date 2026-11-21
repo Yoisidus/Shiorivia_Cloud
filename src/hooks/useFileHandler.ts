@@ -52,7 +52,7 @@ export const useFileHandler = ({
                     if (d.sessions) setSessions(d.sessions);
                     if (d.folders) setFolders(d.folders);
                     if (d.globalWorldInfo || d.global_world_info) setGlobalWorldInfo(d.globalWorldInfo || d.global_world_info);
-                    if (d.bgImage || d.bg_image) setBgImage(d.bgImage || d.bg_image);
+                    // Cloud ignores imported Local background image blobs.
                     
                     if (showToast) showToast("✅ Data Restored");
                 } catch (err) {
