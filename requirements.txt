@@ -1,2 +1,0 @@
-# Mutsu Studio Cloud Runtime
-requests

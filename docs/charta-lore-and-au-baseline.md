@@ -1,0 +1,64 @@
+# Charta structured lore + AU baseline (Local Edition)
+
+This feature belongs to **Shiorivia local**. It does not update Shiorivia_Cloud.
+
+## Authoring workflow
+
+1. Create a world in **Charta → World**, then add its ordered ERA/PERIOD timeline. Each PERIOD name is unique within the world.
+2. Create a character, bind that character to the correct world, and fill their required **简介**. Original v1 `description` notes are migrated into the new `profile.intro` and are not silently discarded.
+3. Optional identity fields include repeatable aliases, hair/eye colors, height, birthday, zodiac sign and repeatable 萌点. Aliases and moe tags are not translated or language-specific.
+4. Optional lore fields: personality/behavior, relationships, experiences, and AI portrayal guidelines.
+5. Relationships can reference another saved Charta character by ID/name or specify an arbitrary name. Each independent relationship entry can be time-scoped.
+6. Experiences offer a large default unscoped text area and additional time-scoped entry cards.
+7. For either entry type, an optional start/end picker selects a **consecutive** range in the character's own world's canonical timeline. The editor and local API validate continuity and world membership.
+
+## Runtime semantics
+
+- Stable identity, the introductory biography, personality, AI portrayal guidelines, unscoped relationship notes and unscoped experiences are always sent for selected cast members.
+- Scoped relationships and experiences first become available in their **start** period, and remain available as memories in **every later** period. The selected end period describes the authored range, **not** a forgetting date.
+- No worldline selected in standalone chat / VIAE means all Charta entries are available; in story mode, unrecognized foreign-origin periods fail closed and omit time-scoped Charta entries.
+- Only the current turn's model-selected cast (up to six) receives full character biographies in Story/Tela. Optional user pins are honored on the first turn only.
+- BanG Dream built-in characters continue using the existing four-part `lore_library.ts` and `loreTimeline.ts` approach. Their writing is untouched by this feature.
+
+## Localized timeline-stage annotations and forward progression
+
+- Charta World now stores an **optional** per-stage `descriptions` object, keyed by exact UI languages `zh-CN`, `zh-TW`, `en`, `ja`, `ko`. Each description is up to 500 characters; none is required. A missing translation is hidden, not replaced with another language.
+- The existing ordered canonical `canonTimeline[]` is the source of truth for whether an **original-canon** move is forward. Canon saves can advance to the same or a later stage after unlock, never backward. AU creative ERA/PERIOD are independent freeform user-controlled text and may be freely edited after unlocking, but AI must repeat the saved strings unchanged. Established main-world identity and original-canon AU baseline still cannot be replaced.
+- Built-in BanG Dream periods reuse existing `timeline.*` localized descriptions; custom Charta-world annotations are stored alongside `era` and `period`, preserving previously saved world JSON.
+
+## AU in story worldline
+
+The story worldline distinguishes **AU current ERA / PERIOD** from mandatory **baseline ERA / PERIOD**.
+
+- The AU current labels and optional event are creative authoring context.
+- The baseline must exactly match one entry in the selected world's ordered canonical timeline.
+- The baseline, not the creative AU period string, is used to scope built-in BanG Dream histories and Charta character relationships/experiences.
+- Original-canon events **after** the baseline are not facts of the AU unless established by ongoing story.
+- Worlds without a canonical timeline must create one before an AU baseline can be chosen.
+- Older AU snapshots without a baseline remain preserved as saved data. When they cannot be mapped unambiguously, the worldline selector requires the user to select a valid baseline before another story response. The code does not silently invent one.
+
+## Export and migration
+
+- Charta JSON exports are now `version: 2`.
+- Imports accept `version: 1` and `version: 2`.
+- Legacy profiles' single `description` field maps into `profile.intro`.
+- Existing empty legacy records remain readable; the editor requires an intro when a structured profile is edited/saved.
+- All character and world data still reside in `data_storage/charta`, separate from session saves.
+
+## Local verification
+
+```bash
+npm run build
+```
+
+Suggested manual cases: AU baseline at T-3-4 and AU current time labeled “十年后” must still omit T-8-9 original-canon revelations; selecting T-8-9 as the baseline should include the previously authored relationship history. Create a custom-world character with an unscoped intro and two relationship/experience entries, verify that early and late worldline selections change the supplied lore without dropping the default content. Finally, re-open a v1 character and export its structured v2 data.
+
+
+## Charta self profiles and scoped relation targets
+
+- The self editor has optional alias, hair color, eye color, height, birthday, zodiac, moe-tag and belonging-world fields, alongside the same structured five-part lore editor as custom characters.
+- Self records keep existing IDs, localized names, gender and colors. Legacy `description` becomes the new intro when edited; no automatic replacement of prior session snapshots.
+- A relationship's **selected** target must belong to its author's world. BanG Dream user profiles can select the built-in members from `CHAR_DATA` as well as user-created characters bound to BanG Dream; custom-world profiles can select characters or selves bound to that custom world. Manual text names remain possible for characters not in the project.
+- A relationship target's ID can be a built-in BanG Dream member, a `charta-...` ID or a `self-...` ID. The local save routes enforce world ownership; changing world affiliation will require editing incompatible relationship links.
+- Participant-mode self lore uses the world's selected canon period or AU baseline. It is injected as the participating protagonist's authored lore, **not** added to the cast list or relationship target state.
+- Existing story sessions may keep their saved `storySelfSnapshot`; reselect/recreate the session if you want it to use a newly edited self profile.

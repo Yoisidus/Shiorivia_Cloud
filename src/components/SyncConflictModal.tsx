@@ -1,32 +1,17 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, HardDrive, Monitor, Save, Clock, ArrowRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { AlertTriangle, HardDrive, Monitor, Save } from "lucide-react";
+import { useLanguage } from "../context/LanguageContext";
+import { deepText } from "../lib/i18nDeep";
 
 export const SyncConflictModal = ({ isOpen, cloudData, localData, onResolve, reason }: any) => {
-    const [timeLeft, setTimeLeft] = useState(60);
-
-    useEffect(() => {
-        if (isOpen) {
-            setTimeLeft(60);
-            const timer = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        onResolve('local'); 
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [isOpen, onResolve]);
+    const { locale } = useLanguage();
+    // A conflict must never overwrite the disk merely because a timer expired.
 
     if (!isOpen) return null;
 
-    const diskTime = cloudData?._ts ? new Date(cloudData._ts).toLocaleTimeString() : "Unknown";
-    const memoryTime = localData?._ts ? new Date(localData._ts).toLocaleTimeString() : "Now";
+    const diskTime = cloudData?._ts ? new Date(cloudData._ts).toLocaleTimeString(locale) : deepText(locale, "syncConflict.unknown");
+    const memoryTime = localData?._ts ? new Date(localData._ts).toLocaleTimeString(locale) : deepText(locale, "syncConflict.now");
     
     const diskCount = cloudData?.sessions?.length || 0;
     const memoryCount = localData?.sessions?.length || 0;
@@ -43,13 +28,13 @@ export const SyncConflictModal = ({ isOpen, cloudData, localData, onResolve, rea
                     </div>
                     
                     <h3 className="text-xl font-black text-red-900 uppercase tracking-widest">
-                        {reason === 'mass_loss' ? "MASS DATA LOSS DETECTED" : "DATA CONFLICT DETECTED"}
+                        {deepText(locale, reason === "mass_loss" ? "syncConflict.massTitle" : "syncConflict.title")}
                     </h3>
                     
                     <p className="text-sm text-red-600/80 mt-2 font-medium">
                         {reason === 'mass_loss' 
-                            ? "本地数据比硬盘数据少了很多。您确定要覆盖吗？"
-                            : "外部文件发生了变动。我们要听谁的？"}
+                            ? deepText(locale, "syncConflict.massWarning")
+                            : deepText(locale, "syncConflict.changedWarning")}
                     </p>
                 </div>
 
@@ -59,9 +44,9 @@ export const SyncConflictModal = ({ isOpen, cloudData, localData, onResolve, rea
                         <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-500 border-2 border-gray-200">
                             <HardDrive size={32} />
                         </div>
-                        <div className="text-xs font-bold text-gray-500 uppercase">Disk Save</div>
+                        <div className="text-xs font-bold text-gray-500 uppercase">{deepText(locale, "syncConflict.disk")}</div>
                         <div className="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-500 font-mono">{diskTime}</div>
-                        <div className="text-sm font-bold text-gray-700">{diskCount} Chats</div>
+                        <div className="text-sm font-bold text-gray-700">{diskCount} {deepText(locale, "syncConflict.chats")}</div>
                     </div>
 
                     <div className="flex flex-col items-center justify-center">
@@ -70,14 +55,14 @@ export const SyncConflictModal = ({ isOpen, cloudData, localData, onResolve, rea
 
                     <div className="flex flex-col items-center gap-2 relative">
                         <div className="absolute -top-3 right-0 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                            CURRENT
+                            {deepText(locale, "syncConflict.current")}
                         </div>
                         <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 border-2 border-emerald-200 ring-4 ring-emerald-50">
                             <Monitor size={32} />
                         </div>
-                        <div className="text-xs font-bold text-emerald-600 uppercase">Memory</div>
+                        <div className="text-xs font-bold text-emerald-600 uppercase">{deepText(locale, "syncConflict.memory")}</div>
                         <div className="text-[10px] bg-emerald-100 px-2 py-1 rounded text-emerald-600 font-mono">{memoryTime}</div>
-                        <div className="text-sm font-bold text-emerald-700">{memoryCount} Chats</div>
+                        <div className="text-sm font-bold text-emerald-700">{memoryCount} {deepText(locale, "syncConflict.chats")}</div>
                     </div>
                 </div>
 
@@ -87,20 +72,20 @@ export const SyncConflictModal = ({ isOpen, cloudData, localData, onResolve, rea
                         className="py-3 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm hover:bg-white hover:border-gray-400 transition-all flex items-center justify-center gap-2 group"
                     >
                         <HardDrive size={16} className="group-hover:-translate-y-0.5 transition-transform"/> 
-                        <span>Reload Disk</span>
+                        <span>{deepText(locale, "syncConflict.reload")}</span>
                     </button>
                     <button 
                         onClick={() => onResolve('local')}
                         className="py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2 group"
                     >
                         <Save size={16} className="group-hover:-translate-y-0.5 transition-transform"/> 
-                        <span>Overwrite Disk</span>
+                        <span>{deepText(locale, "syncConflict.overwrite")}</span>
                     </button>
                 </div>
                 
                 <div className="bg-gray-100 py-1 text-center">
                     <span className="text-[9px] text-gray-400 font-mono flex items-center justify-center gap-1">
-                        <Clock size={8} /> Auto-picking Memory in {timeLeft}s
+                        {deepText(locale, "syncConflict.paused")}
                     </span>
                 </div>
             </motion.div>

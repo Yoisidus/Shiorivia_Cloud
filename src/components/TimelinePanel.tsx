@@ -1,6 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Lock, Check, Clock, Calendar, Bookmark, Hash, X } from "lucide-react";
+import { useAppDialog } from "../context/DialogContext";
+import { useLanguage } from "../context/LanguageContext";
+import { deepText } from "../lib/i18nDeep";
 
 const TimeNode = ({ type, icon: Icon, value, field, label, isEditing, localData, setLocalData }: any) => (
   <div className="relative pl-6 pb-4 last:pb-0">
@@ -30,24 +33,26 @@ const TimeNode = ({ type, icon: Icon, value, field, label, isEditing, localData,
 );
 
 export const TimelinePanel = ({ timelineData, onUpdate }: any) => {
+  const dialog = useAppDialog();
+  const { locale } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
-  const [localData, setLocalData] = useState({ major: "", medium: "", minor: "" });
+  const [localData, setLocalData] = useState({ era: "", period: "", event: "" });
 
   useEffect(() => {
     if (timelineData && !isEditing) {
-      setLocalData(timelineData);
+      setLocalData({ era: timelineData.era ?? timelineData.major ?? "", period: timelineData.period ?? timelineData.medium ?? "", event: timelineData.event ?? timelineData.minor ?? "" });
     }
   }, [timelineData, isEditing]);
 
-  const handleSave = () => {
-    if (confirm("⚠️ 确定要更新时间锚点吗？")) {
+  const handleSave = async () => {
+    if (await dialog.confirm(deepText(locale, "timeline.confirm"))) {
       onUpdate(localData);
       setIsEditing(false);
     }
   };
 
   const handleCancel = () => {
-    if (timelineData) setLocalData(timelineData);
+    if (timelineData) setLocalData({ era: timelineData.era ?? timelineData.major ?? "", period: timelineData.period ?? timelineData.medium ?? "", event: timelineData.event ?? timelineData.minor ?? "" });
     setIsEditing(false);
   };
 
@@ -73,17 +78,17 @@ export const TimelinePanel = ({ timelineData, onUpdate }: any) => {
       <div className="p-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
         <TimeNode
           type="major" icon={Calendar} label="Era"
-          field="major" value={localData.major}
+          field="era" value={localData.era}
           isEditing={isEditing} localData={localData} setLocalData={setLocalData}
         />
         <TimeNode
           type="medium" icon={Bookmark} label="Period"
-          field="medium" value={localData.medium}
+          field="period" value={localData.period}
           isEditing={isEditing} localData={localData} setLocalData={setLocalData}
         />
         <TimeNode
           type="minor" icon={Hash} label="Event"
-          field="minor" value={localData.minor}
+          field="event" value={localData.event}
           isEditing={isEditing} localData={localData} setLocalData={setLocalData}
         />
       </div>

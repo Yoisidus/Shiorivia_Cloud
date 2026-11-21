@@ -1,11 +1,11 @@
 
-type StatType = 'affection' | 'Possessiveness' | 'Intimacy' | 'Obsession';
+type StatType = 'affection' | 'Possessiveness' | 'Lust' | 'Obsession';
 
 interface CharacterStats {
   affection: number;
   Possessiveness: number;
   Obsession: number;
-  Intimacy: number;
+  Lust: number;
   [key: string]: any;
 }
 
@@ -16,11 +16,16 @@ export const calculateNewStats = (
   
   const finalStats = { ...current };
   
-  const statKeys: StatType[] = ['affection', 'Possessiveness', 'Intimacy', 'Obsession'];
+  const statKeys: StatType[] = ['affection', 'Possessiveness', 'Lust', 'Obsession'];
 
   statKeys.forEach(key => {
-    const oldVal = current[key] || 0;
-    const aiVal = aiSuggested[key] || 0;
+    // Legacy saves called sexual desire "Intimacy". Read it without rewriting archives.
+    const oldVal = key === 'Lust'
+      ? (Number(current.Lust ?? current.Intimacy) || 0)
+      : (Number(current[key]) || 0);
+    const aiVal = key === 'Lust'
+      ? (Number(aiSuggested.Lust ?? aiSuggested.Intimacy) || 0)
+      : (Number(aiSuggested[key]) || 0);
     
     if (aiVal === oldVal) return;
 
@@ -28,7 +33,8 @@ export const calculateNewStats = (
     let finalDelta = rawDelta;
 
     if (key === 'Obsession') {
-      finalDelta = rawDelta * 0.1; 
+      // Pathological fixation changes slowly but can respond to major events.
+      finalDelta = rawDelta * 0.25; 
     } else {
       let resistance = 1.0; 
 

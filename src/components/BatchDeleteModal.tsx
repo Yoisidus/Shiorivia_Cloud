@@ -2,8 +2,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, Trash2, X, Lock } from "lucide-react";
+import { useLanguage } from "../context/LanguageContext";
+import { deepText } from "../lib/i18nDeep";
 
 export const BatchDeleteModal = ({ isOpen, onClose, count, onConfirm }: any) => {
+    const { locale } = useLanguage();
+    const expectedPhrase = deepText(locale, "bulk.phrase");
     const [code, setCode] = useState("");
     const [phrase, setPhrase] = useState("");
     const [loading, setLoading] = useState(false);
@@ -13,8 +17,8 @@ export const BatchDeleteModal = ({ isOpen, onClose, count, onConfirm }: any) => 
         setError("");
         setLoading(true);
 
-        if (phrase !== "我确定删除这些对话") {
-            setError("确认语输入错误！请严格输入：我确定删除这些对话");
+        if (phrase !== expectedPhrase) {
+            setError(`${deepText(locale, "bulk.wrongPhrase")}${expectedPhrase}`);
             setLoading(false);
             return;
         }
@@ -29,10 +33,10 @@ export const BatchDeleteModal = ({ isOpen, onClose, count, onConfirm }: any) => 
                 onConfirm();
                 onClose();
             } else {
-                setError("Access Code 错误！");
+                setError(deepText(locale, "bulk.wrongCode"));
             }
         } catch (e) {
-            setError("验证服务连接失败");
+            setError(deepText(locale, "bulk.verifyFailed"));
         } finally {
             setLoading(false);
         }
@@ -48,33 +52,33 @@ export const BatchDeleteModal = ({ isOpen, onClose, count, onConfirm }: any) => 
                             <div className="p-3 bg-red-100 rounded-full text-red-600 mb-3">
                                 <AlertTriangle size={32} />
                             </div>
-                            <h2 className="text-xl font-black text-red-700">NUCLEAR LAUNCH DETECTED</h2>
+                            <h2 className="text-xl font-black text-red-700">{deepText(locale, "bulk.heading")}</h2>
                             <p className="text-sm text-red-600/80 mt-1">
-                                即将永久销毁 <span className="font-bold underline">{count}</span> 个平行世界。
-                                <br />此操作 **绝对无法撤销**。
+                                {deepText(locale, "bulk.prefix")} <span className="font-bold underline">{count}</span> {deepText(locale, "bulk.suffix")}
+                                <br />{deepText(locale, "bulk.irreversible")}
                             </p>
                         </div>
 
                         <div className="p-6 space-y-4">
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-1">
-                                    <Lock size={12} /> Security Access Code
+                                    <Lock size={12} /> {deepText(locale, "bulk.accessCode")}
                                 </label>
                                 <input
                                     type="password"
                                     className="w-full bg-gray-50 border border-gray-200 rounded p-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                                    placeholder="请输入 .env.local 中的密码"
+                                    placeholder={deepText(locale, "bulk.passwordHint")}
                                     value={code}
                                     onChange={e => setCode(e.target.value)}
                                 />
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">
-                                    Confirmation Phrase
+                                    {deepText(locale, "bulk.confirmLabel")}
                                 </label>
                                 <input
                                     className="w-full bg-gray-50 border border-gray-200 rounded p-2 text-sm outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                                    placeholder="输入：我确定删除这些对话"
+                                    placeholder={`${deepText(locale, "bulk.enter")}${expectedPhrase}`}
                                     value={phrase}
                                     onChange={e => setPhrase(e.target.value)}
                                     onPaste={e => e.preventDefault()} 
@@ -85,14 +89,14 @@ export const BatchDeleteModal = ({ isOpen, onClose, count, onConfirm }: any) => 
 
                             <div className="flex gap-2 pt-2">
                                 <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-gray-300 text-gray-600 font-bold text-sm hover:bg-gray-50">
-                                    CANCEL
+                                    {deepText(locale, "common.cancel")}
                                 </button>
                                 <button
                                     onClick={handleSubmit}
                                     disabled={loading}
                                     className="flex-1 py-2.5 rounded-lg bg-red-600 text-white font-bold text-sm hover:bg-red-700 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
-                                    {loading ? "VERIFYING..." : <><Trash2 size={16} /> CONFIRM DELETE</>}
+                                    {loading ? deepText(locale, "bulk.verifying") : <><Trash2 size={16} /> {deepText(locale, "bulk.delete")}</>}
                                 </button>
                             </div>
                         </div>

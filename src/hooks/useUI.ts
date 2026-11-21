@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { EffectType } from "../components/TransitionEffects";
+import { useAppDialog } from "../context/DialogContext";
 
 export const useUI = () => {
+    const dialog = useAppDialog();
     const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
     const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
     
@@ -14,7 +16,6 @@ export const useUI = () => {
     const [showGlobalWorld, setShowGlobalWorld] = useState(false);
     const [showLocalWorld, setShowLocalWorld] = useState(false);
     
-    const [toast, setToast] = useState<string | null>(null);
     const [effect, setEffect] = useState<EffectType>("none");
     const [editModal, setEditModal] = useState<{ isOpen: boolean, text: string, index: number }>({ isOpen: false, text: "", index: -1 });
 
@@ -24,10 +25,8 @@ export const useUI = () => {
         }
     }, []);
 
-    const showToast = (msg: string) => { 
-        setToast(msg); 
-        setTimeout(() => setToast(null), 2000); 
-    };
+    // Legacy callers share the single global, mode-aware feedback host.
+    const showToast = dialog.notify;
 
     return {
         leftSidebarOpen, setLeftSidebarOpen,
@@ -38,7 +37,7 @@ export const useUI = () => {
         showSaveModal, setShowSaveModal,
         showGlobalWorld, setShowGlobalWorld,
         showLocalWorld, setShowLocalWorld,
-        toast, showToast,
+        showToast,
         effect, setEffect,
         editModal, setEditModal,
         debugMode, setDebugMode,

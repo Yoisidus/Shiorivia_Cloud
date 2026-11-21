@@ -1,8 +1,9 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+import { ParchmentScrollTransition } from "./ParchmentScrollTransition";
 
-export type EffectType = "none" | "curtain" | "rain" | "math" | "cyber" | "bloom" | "glitch";
+export type EffectType = "none" | "curtain" | "parchment" | "rain" | "math" | "cyber" | "bloom" | "glitch";
 
 const HARD_MATH_EQUATIONS = [
   "f(x,y) = \\sin(x^2 + y^2)", "\\nabla \\cdot \\mathbf{F} = 0", "e^{i\\pi} + 1 = 0",
@@ -49,7 +50,7 @@ const TransitionEffectsPC = ({ effect, onComplete }: { effect: EffectType, onCom
 
   useEffect(() => {
     if (effect !== "none") {
-      const timer = setTimeout(() => onComplete(), 5000);
+      const timer = setTimeout(() => onComplete(), effect === "parchment" ? 2850 : 5000);
       return () => clearTimeout(timer);
     }
   }, [effect, onComplete]);
@@ -59,8 +60,9 @@ const TransitionEffectsPC = ({ effect, onComplete }: { effect: EffectType, onCom
 
   return (
     <AnimatePresence>
+      {effect === "parchment" && <ParchmentScrollTransition />}
       {effect === "curtain" && (
-        <motion.div className="fixed inset-0 z-[9999] pointer-events-none flex flex-col justify-center items-center">
+        <motion.div className="fixed inset-0 z-[9999] pointer-events-none flex flex-col justify-center items-center" exit={{ opacity: 1, transition: { duration: 0.85 } }}>
           <motion.div initial={{ x: "-100%" }} animate={{ x: "0%" }} exit={{ x: "-100%" }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="absolute left-0 top-0 w-1/2 h-full bg-[#1a0505] z-10 border-r-4 border-[#4a0e0e] shadow-2xl" />
           <motion.div initial={{ x: "100%" }} animate={{ x: "0%" }} exit={{ x: "100%" }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="absolute right-0 top-0 w-1/2 h-full bg-[#1a0505] z-10 border-l-4 border-[#4a0e0e] shadow-2xl" />
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ delay: 0.6, duration: 0.5 }} className="z-20 text-white font-serif text-3xl tracking-[0.5em] uppercase drop-shadow-lg">Acta Est Fabula</motion.div>

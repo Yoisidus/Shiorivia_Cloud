@@ -9,32 +9,27 @@ export const useFileHandler = ({
     const importInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const f = e.target.files?.[0];
+        const f = e.target.files?.[0]; 
         if (!f) return;
-
-        const isText = f.type.startsWith('text') || f.name.endsWith('.md') || f.name.endsWith('.json') || f.name.endsWith('.js') || f.name.endsWith('.ts');
-        
-        if (!isText) {
-            if (showToast) showToast("🚫 Cloud Mode Limit: Text Files Only!");
-            e.target.value = '';
-            return;
-        }
 
         const r = new FileReader();
         r.onload = (ev) => {
             const result = ev.target?.result;
             if (typeof result === 'string') {
-                const safeContent = result.slice(0, 50000); 
-                if (result.length > 50000 && showToast) showToast("⚠️ File truncated to 50KB");
-
                 setSelectedFile({
-                    url: safeContent,
-                    type: 'text',
+                    url: result,
+                    type: f.type.startsWith('image') ? 'image' : 'text',
                     name: f.name
                 });
             }
         };
-        r.readAsText(f);
+
+        if (f.type.startsWith('image')) {
+            r.readAsDataURL(f);
+        } else {
+            r.readAsText(f);
+        }
+        
         e.target.value = '';
     };
 

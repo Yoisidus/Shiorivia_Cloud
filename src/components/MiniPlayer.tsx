@@ -11,7 +11,7 @@ export const MiniPlayer = ({
 }: {
     onExpand: () => void,
     rightSidebarOpen?: boolean,
-    themeMode?: 'light' | 'dark' | 'paper'
+    themeMode?: 'light' | 'paper'
 }) => {
     const { isPlaying, togglePlay, currentTrack, playNext, playPrev, progress, duration } = useMusic();
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -25,17 +25,15 @@ export const MiniPlayer = ({
 
     const percent = duration > 0 ? (progress / duration) * 100 : 0;
 
-    let containerStyle = "bg-white/80 border-gray-200 text-gray-800";
-    if (themeMode === 'dark') containerStyle = "bg-[#1a1a20]/90 border-white/10 text-slate-300";
-    if (themeMode === 'paper') containerStyle = "bg-[#f5eecf]/90 border-[#d0c8a0] text-[#5c5546]";
+    // All main modes share a quiet white surface; only Tela adopts its page palette.
+    const containerStyle = themeMode === 'paper' ? "bg-[#f8efd9]/95 border-[#dfd0b0] text-[#725e43]"
+      : "bg-white/95 border-slate-200 text-slate-700";
+    const playBtnStyle = themeMode === 'paper' ? "bg-[#eaddc1] text-[#806747] hover:bg-[#ded0b1]"
+      : "bg-[#edf2ef] text-[#557a66] hover:bg-[#e1ebe5]";
+    const progressColor = themeMode === "paper" ? "bg-[#c0a06d]" : "bg-[#91ad9c]";
 
-    let playBtnStyle = "bg-gray-100 text-rose-500 hover:bg-rose-50";
-    if (themeMode === 'dark') playBtnStyle = "bg-white/10 text-white hover:bg-white/20";
-    if (themeMode === 'paper') playBtnStyle = "bg-[#d0c8a0] text-[#2c2518] hover:bg-[#c0b890]";
-
-    let progressColor = "bg-rose-500";
-    if (themeMode === 'dark') progressColor = "bg-purple-500";
-    if (themeMode === 'paper') progressColor = "bg-[#d97706]";
+    const discStyle = themeMode === "paper" ? "border-[#b3996d] bg-[#463c2e] ring-[#d6bc8a]"
+      : "border-[#182b3a] bg-[#111e2b] ring-[#c9ae7b]";
 
     return (
         <AnimatePresence mode="wait">
@@ -51,13 +49,13 @@ export const MiniPlayer = ({
 
                     <div className="flex items-center justify-between p-2 px-4 gap-3">
                         <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={onExpand}>
-                            <div className={`w-8 h-8 rounded-full bg-black flex items-center justify-center shrink-0 border border-current/10 ${isPlaying ? 'animate-spin-slow' : ''}`} style={{ animationDuration: '5s' }}>
-                                {currentTrack.cover ? <img src={currentTrack.cover} className="w-full h-full rounded-full object-cover opacity-80" /> : <Disc size={16} className="text-white/50" />}
+                            <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border-[3px] ring-1 shadow-sm ${discStyle} ${isPlaying ? 'animate-spin-slow' : ''}`} style={{ animationDuration: '6s' }}>
+                                {currentTrack.cover ? <><img src={currentTrack.cover} alt="" className="h-full w-full rounded-full object-cover"/><span aria-hidden="true" className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e6d1a5] shadow"/></> : <Disc size={16} className="text-[#d3be93]" />}
                             </div>
                             <div className="flex flex-col overflow-hidden">
                                 <div className="text-xs font-bold truncate flex items-center gap-1 opacity-90">
                                     {currentTrack.name}
-                                    <span className={`text-[9px] font-normal px-1 rounded border opacity-70 ${themeMode === 'paper' ? 'border-[#5c5546] text-[#5c5546]' : 'border-current text-current'}`}>{currentTrack.category === 'band' ? 'LIVE' : 'SOLO'}</span>
+                                    <span className="rounded border border-current/20 px-1 text-[9px] font-normal opacity-60">MUSIC</span>
                                 </div>
                                 <div className="text-[10px] truncate opacity-60">{currentTrack.artist}</div>
                             </div>
@@ -98,11 +96,11 @@ export const MiniPlayer = ({
                     onClick={() => setIsCollapsed(false)}
                 >
                     {isMobile ? (
-                        <div className="flex items-center gap-3 bg-black text-white px-4 py-2.5 rounded-full shadow-2xl border border-white/10 min-w-[140px] justify-center">
+                        <div className={`flex items-center gap-3 px-4 py-2.5 rounded-full shadow-xl min-w-[140px] justify-center ${containerStyle}`}>
                             <div className="flex gap-0.5 items-end h-3">
-                                <motion.div animate={{ height: isPlaying ? [4, 10, 4] : 4 }} transition={{ repeat: Infinity, duration: 0.5 }} className="w-1 bg-rose-500 rounded-full" />
-                                <motion.div animate={{ height: isPlaying ? [4, 14, 4] : 4 }} transition={{ repeat: Infinity, duration: 0.7 }} className="w-1 bg-rose-500 rounded-full" />
-                                <motion.div animate={{ height: isPlaying ? [4, 8, 4] : 4 }} transition={{ repeat: Infinity, duration: 0.6 }} className="w-1 bg-rose-500 rounded-full" />
+                                <motion.div animate={{ height: isPlaying ? [4, 10, 4] : 4 }} transition={{ repeat: Infinity, duration: 0.5 }} className={`w-1 ${progressColor} rounded-full`} />
+                                <motion.div animate={{ height: isPlaying ? [4, 14, 4] : 4 }} transition={{ repeat: Infinity, duration: 0.7 }} className={`w-1 ${progressColor} rounded-full`} />
+                                <motion.div animate={{ height: isPlaying ? [4, 8, 4] : 4 }} transition={{ repeat: Infinity, duration: 0.6 }} className={`w-1 ${progressColor} rounded-full`} />
                             </div>
                             <span className="text-xs font-bold truncate max-w-[120px]">{currentTrack.name}</span>
                         </div>

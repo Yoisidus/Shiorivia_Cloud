@@ -1,249 +1,131 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, X, Edit2, Save, Key, Download, Lock } from "lucide-react";
-import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
+import { useAppDialog } from "../context/DialogContext";
+import { useLanguage } from "../context/LanguageContext";
+import { deepText } from "../lib/i18nDeep";
+import { BookOpen, X, Edit2, Save } from "lucide-react";
 
-export const WorldInfoModal = ({ isOpen, onClose, title, content, setContent, onSave }: any) => (
-    <AnimatePresence>
-        {isOpen && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
-                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-xl shadow-2xl w-[500px] border p-5 flex flex-col gap-4">
-                    <div className="flex justify-between items-center"><div className="font-bold flex items-center gap-2 text-gray-700"><BookOpen size={16} />{title}</div><button onClick={onClose}><X /></button></div>
-                    <textarea className="w-full h-48 border rounded-lg p-3 text-xs outline-none focus:ring-2 focus:ring-emerald-400" placeholder="在此输入设定..." value={content} onChange={e => setContent(e.target.value)}></textarea>
-                    <div className="flex justify-end"><button onClick={onSave} className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-xs hover:bg-emerald-600 shadow-md flex items-center gap-2"><Save size={12} /> SAVE</button></div>
-                </motion.div>
-            </motion.div>
-        )}
-    </AnimatePresence>
-);
-
-export const EditModal = ({ isOpen, onClose, content, setContent, onConfirm }: any) => (
-    <AnimatePresence>
-        {isOpen && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-white rounded-2xl shadow-2xl w-[600px] max-w-full overflow-hidden flex flex-col max-h-[80vh]">
-                    <div className="p-4 border-b flex justify-between items-center bg-gray-50"><div className="font-bold text-gray-700 flex items-center gap-2"><Edit2 size={16} /> 编辑消息</div><button onClick={onClose}><X size={20} /></button></div>
-                    <div className="p-4 flex-1 overflow-auto"><textarea value={content} onChange={(e) => setContent(e.target.value)} className="w-full h-64 p-4 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none resize-none text-sm" /></div>
-                    <div className="p-4 border-t bg-gray-50 flex justify-end gap-2"><button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg text-sm">取消</button><button onClick={onConfirm} className="px-6 py-2 bg-emerald-500 text-white rounded-lg text-sm hover:bg-emerald-600 shadow-md">确认重试</button></div>
-                </motion.div>
-            </motion.div>
-        )}
-    </AnimatePresence>
-);
-
-export const SuggestionModal = ({ isOpen, onClose, content, onConfirm }: any) => (
-    <AnimatePresence>
-        {isOpen && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-                <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white rounded-xl shadow-2xl w-[500px] border overflow-hidden">
-                    <div className="bg-emerald-50 p-4 border-b border-emerald-100 flex items-center gap-2">
-                        <span className="text-xl">💡</span>
-                        <span className="font-bold text-emerald-800 text-sm">采纳剧情建议 / Adopt Suggestion</span>
-                    </div>
-
-                    <div className="p-6">
-                        <div className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Preview content:</div>
-                        <div className="bg-gray-50 p-4 rounded-lg border text-sm text-gray-700 leading-relaxed font-medium">
-                            {content}
-                        </div>
-                        <div className="mt-4 text-xs text-gray-400">
-                            * 点击确认将直接以你的身份发送此内容。
-                        </div>
-                    </div>
-
-                    <div className="p-4 bg-gray-50 border-t flex justify-end gap-2">
-                        <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg text-xs font-bold">取消 / Cancel</button>
-                        <button onClick={onConfirm} className="px-6 py-2 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 shadow-md flex items-center gap-2">
-                            确认发送 / Send
-                        </button>
-                    </div>
-                </motion.div>
-            </motion.div>
-        )}
-    </AnimatePresence>
-);
-
-export const ApiKeysModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
-    const [keys, setKeys] = useState({ deepseek: "", openrouter: "", google: "", siliconflow: "", tavily: "", volcengine: "", volc_ep_image: "", volc_ep_video: "", volc_ep_chat: "", fal: "", accessCode: "" });
-
-    useEffect(() => {
-        if (isOpen) {
-            setKeys({
-                deepseek: localStorage.getItem("shiorivia_key_deepseek") || "",
-                openrouter: localStorage.getItem("shiorivia_key_openrouter") || "",
-                google: localStorage.getItem("shiorivia_key_google") || "",
-                siliconflow: localStorage.getItem("shiorivia_key_siliconflow") || "",
-                tavily: localStorage.getItem("shiorivia_key_tavily") || "",
-                volcengine: localStorage.getItem("shiorivia_key_volcengine") || "",
-                volc_ep_image: localStorage.getItem("shiorivia_key_volc_ep_image") || "",
-                volc_ep_video: localStorage.getItem("shiorivia_key_volc_ep_video") || "",
-                volc_ep_chat: localStorage.getItem("shiorivia_key_volc_ep_chat") || "",
-                fal: localStorage.getItem("shiorivia_key_fal") || "",
-                accessCode: localStorage.getItem("shiorivia_access_code") || ""
-            });
-        }
-    }, [isOpen]);
-
-    const handleSave = () => {
-        localStorage.setItem("shiorivia_key_deepseek", keys.deepseek);
-        localStorage.setItem("shiorivia_key_openrouter", keys.openrouter);
-        localStorage.setItem("shiorivia_key_google", keys.google);
-        localStorage.setItem("shiorivia_key_siliconflow", keys.siliconflow);
-        localStorage.setItem("shiorivia_key_tavily", keys.tavily);
-        localStorage.setItem("shiorivia_key_volcengine", keys.volcengine);
-        localStorage.setItem("shiorivia_key_volc_ep_image", keys.volc_ep_image);
-        localStorage.setItem("shiorivia_key_volc_ep_video", keys.volc_ep_video);
-        localStorage.setItem("shiorivia_key_volc_ep_chat", keys.volc_ep_chat);
-        localStorage.setItem("shiorivia_key_fal", keys.fal);
-        localStorage.setItem("shiorivia_access_code", keys.accessCode);
-        alert("🔑 密钥已保存在此浏览器中（非加密存储），请妥善保护浏览器环境。");
-        onClose();
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-            >
-                <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden font-mono text-gray-300 flex flex-col max-h-[80vh]">
-                    <div className="px-4 py-3 border-b border-gray-700 bg-[#252526] flex justify-between items-center shrink-0">
-                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-500">
-                            <Key size={14} /> LOCAL KEY VAULT
-                        </div>
-                        <button onClick={onClose} className="text-gray-500 hover:text-red-400"><X size={16} /></button>
-                    </div>
-
-                    <div className="p-5 space-y-4 text-xs overflow-y-auto scrollbar-thin">
-                        <p className="text-gray-500 mb-4 leading-relaxed">
-                            ⚠️ 您的密钥仅保存在本地浏览器中，绝不上传第三方服务器。
-                        </p>
-
-                        <div>
-                            <label className="block text-emerald-400 font-bold mb-1">DeepSeek Key (聊天核心)</label>
-                            <input type="password" value={keys.deepseek} onChange={e => setKeys({ ...keys, deepseek: e.target.value })} className="w-full bg-[#111] border border-gray-600 rounded p-2 outline-none focus:border-emerald-500" placeholder="sk-..." />
-                        </div>
-                        <div>
-                            <label className="block text-indigo-400 font-bold mb-1">OpenRouter Key (备用/大香蕉)</label>
-                            <input type="password" value={keys.openrouter} onChange={e => setKeys({ ...keys, openrouter: e.target.value })} className="w-full bg-[#111] border border-gray-600 rounded p-2 outline-none focus:border-indigo-500" placeholder="sk-or-v1-..." />
-                        </div>
-                        <div>
-                            <label className="block text-blue-400 font-bold mb-1">Google Gemini Key</label>
-                            <input type="password" value={keys.google} onChange={e => setKeys({ ...keys, google: e.target.value })} className="w-full bg-[#111] border border-gray-600 rounded p-2 outline-none focus:border-blue-500" placeholder="AIza..." />
-                        </div>
-                        <div>
-                            <label className="block text-cyan-400 font-bold mb-1">SiliconFlow Key (硅基流动)</label>
-                            <input
-                                type="password"
-                                value={keys.siliconflow}
-                                onChange={e => setKeys({ ...keys, siliconflow: e.target.value })}
-                                className="w-full bg-[#111] border border-gray-600 rounded p-2 outline-none focus:border-cyan-500"
-                                placeholder="sk-..."
-                            />
-                        </div>
-                        <div className="pt-2 border-t border-gray-700 mt-2">
-                            <label className="block text-orange-400 font-bold mb-1">Volcengine Key (火山引擎 API Key)</label>
-                            <input type="password" value={keys.volcengine} onChange={e => setKeys({ ...keys, volcengine: e.target.value })} className="w-full bg-[#111] border border-gray-600 rounded p-2 outline-none focus:border-orange-500" placeholder="填写火山引擎 API Key" />
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 mt-2">
-                            <div>
-                                <label className="block text-purple-300 text-[9px] font-bold mb-1">EP: Image (画图)</label>
-                                <input type="text" value={keys.volc_ep_image} onChange={e => setKeys({ ...keys, volc_ep_image: e.target.value })} className="w-full bg-[#111] border border-gray-600 rounded p-1.5 outline-none focus:border-purple-400 text-[10px]" placeholder="ep-xxx" />
-                            </div>
-                            <div>
-                                <label className="block text-indigo-300 text-[9px] font-bold mb-1">EP: Video (视频)</label>
-                                <input type="text" value={keys.volc_ep_video} onChange={e => setKeys({ ...keys, volc_ep_video: e.target.value })} className="w-full bg-[#111] border border-gray-600 rounded p-1.5 outline-none focus:border-indigo-400 text-[10px]" placeholder="ep-xxx" />
-                            </div>
-                            <div>
-                                <label className="block text-blue-300 text-[9px] font-bold mb-1">EP: Chat (聊天)</label>
-                                <input type="text" value={keys.volc_ep_chat} onChange={e => setKeys({ ...keys, volc_ep_chat: e.target.value })} className="w-full bg-[#111] border border-gray-600 rounded p-1.5 outline-none focus:border-blue-400 text-[10px]" placeholder="ep-xxx" />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-pink-400 font-bold mb-1">Fal.ai Key (海螺视频备用)</label>
-                            <input type="password" value={keys.fal} onChange={e => setKeys({ ...keys, fal: e.target.value })} className="w-full bg-[#111] border border-gray-600 rounded p-2 outline-none focus:border-pink-500" placeholder="key:secret" />
-                        </div>
-                        <div>
-                            <label className="block text-yellow-400 font-bold mb-1">Tavily Search Key (联网必备)</label>
-                            <input type="password" value={keys.tavily} onChange={e => setKeys({ ...keys, tavily: e.target.value })} className="w-full bg-[#111] border border-gray-600 rounded p-2 outline-none focus:border-yellow-500" placeholder="tvly-..." />
-                        </div>
-                        <div className="pt-2 border-t border-gray-700 mt-2">
-                            <label className="block text-red-400 font-bold mb-1 flex items-center gap-1">
-                                <Lock size={12} /> Site Access Code (若站长设置了密码)
-                            </label>
-                            <input
-                                type="password"
-                                value={keys.accessCode}
-                                onChange={e => setKeys({ ...keys, accessCode: e.target.value })}
-                                className="w-full bg-[#111] border border-red-900/30 rounded p-2 outline-none focus:border-red-500 text-red-100"
-                                placeholder="输入站点访问密码..."
-                            />
-                        </div>
-                    </div>
-
-
-
-                    <div className="p-4 bg-[#252526] border-t border-gray-700 flex justify-end gap-2 shrink-0">
-                        <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white text-xs">取消</button>
-                        <button onClick={handleSave} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold flex items-center gap-2 shadow-lg">
-                            <Save size={14} /> 固化至本地
-                        </button>
-                    </div>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
-    );
+type WorldInfoModalProps = {
+   isOpen: boolean;
+   onClose: () => void;
+   title: string;
+   subtitle?: string;
+   content: string;
+   onSave: (content: string) => void;
+   tone?: "story" | "chat" | "engineering";
 };
 
-export const ImageViewerModal = ({ url, onClose }: { url: string | null, onClose: () => void }) => {
-    if (!url) return null;
+/** Draft-first editor: closing without Save never mutates the session. */
+export const WorldInfoModal = ({ isOpen, onClose, title, subtitle, content, onSave, tone = "chat" }: WorldInfoModalProps) => {
+   const dialog = useAppDialog();
+   const { locale } = useLanguage();
+   const [draft, setDraft] = useState(content);
+   useEffect(() => { if (isOpen) setDraft(content); }, [isOpen, content]);
+   const accent = tone === "story"
+      ? { border: "border-fuchsia-200", background: "bg-fuchsia-50", text: "text-fuchsia-800", button: "bg-fuchsia-600 hover:bg-fuchsia-700", focus: "focus:ring-fuchsia-300" }
+      : tone === "engineering"
+      ? { border: "border-sky-200", background: "bg-sky-50", text: "text-sky-800", button: "bg-sky-700 hover:bg-sky-800", focus: "focus:ring-sky-300" }
+      : { border: "border-emerald-200", background: "bg-emerald-50", text: "text-emerald-800", button: "bg-emerald-600 hover:bg-emerald-700", focus: "focus:ring-emerald-300" };
+   const save = () => {
+      onSave(draft);
+      dialog.notify(deepText(locale, "modal.notesSaved"), { type: "success" });
+      onClose();
+   };
+   return (
+      <AnimatePresence>
+         {isOpen && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+               className="fixed inset-0 z-50 bg-black/35 backdrop-blur-sm flex items-center justify-center p-4">
+               <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }}
+                  role="dialog" aria-modal="true" aria-label={title}
+                  className={`bg-white rounded-2xl shadow-2xl w-full max-w-[540px] overflow-hidden border ${accent.border}`}>
+                  <div className={`px-5 py-4 border-b ${accent.border} ${accent.background} flex items-start justify-between gap-3`}>
+                     <div>
+                        <div className={`font-bold flex items-center gap-2 ${accent.text}`}><BookOpen size={18} />{title}</div>
+                        <p className="mt-1 text-xs text-slate-500">{subtitle || deepText(locale, "modal.notesScope")}</p>
+                     </div>
+                     <button type="button" aria-label={deepText(locale, "dialog.close")} onClick={onClose} className="rounded-lg p-1 text-slate-500 hover:bg-white/70"><X size={18} /></button>
+                  </div>
+                  <div className="p-5">
+                     <textarea className={`w-full h-60 resize-y border border-slate-200 rounded-xl p-3 text-sm text-slate-700 outline-none focus:ring-2 ${accent.focus}`}
+                        placeholder={deepText(locale, "modal.notesPlaceholder")}
+                        value={draft} onChange={e => setDraft(e.target.value)} />
+                     <div className="mt-4 flex justify-end gap-2">
+                        <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-xs text-slate-600 hover:bg-slate-100">{deepText(locale, "common.cancel")}</button>
+                        <button type="button" onClick={save} className={`rounded-lg px-4 py-2 text-xs text-white shadow-sm flex items-center gap-2 ${accent.button}`}><Save size={14} /> {deepText(locale, "modal.saveNotes")}</button>
+                     </div>
+                  </div>
+               </motion.div>
+            </motion.div>
+         )}
+      </AnimatePresence>
+   );
+};
 
-    const handleDownload = async () => {
-        try {
-            const res = await fetch(url);
-            const blob = await res.blob();
-            const blobUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = `shiorivia_visual_${Date.now()}.png`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(blobUrl);
-        } catch (e) {
-            window.open(url, '_blank');
-        }
-    };
+const modalTheme = (tone: string) => tone === "officina"
+   ? { header: "bg-[#e5f1fe] border-[#c3d8ee]", title: "text-[#37688f]", frame: "bg-[#f4f9ff] border-[#b6cfe8]", body: "bg-white text-[#243e5d] border-[#c3d8ee]", button: "bg-[#3475bc] hover:bg-[#265f9e]" }
+   : tone === "story" ? { header: "bg-fuchsia-50 border-fuchsia-200", title: "text-fuchsia-800", frame: "bg-white border-fuchsia-200", body: "bg-fuchsia-50/30 text-slate-700 border-fuchsia-200", button: "bg-fuchsia-600 hover:bg-fuchsia-700" }
+   : tone === "tela" ? { header: "bg-[#f2e5cf] border-[#e0cba9]", title: "text-[#8c683c]", frame: "bg-[#fffcf6] border-[#dcc9a9]", body: "bg-white text-[#594b39] border-[#d1b997]", button: "bg-[#765034] hover:bg-[#5c3c28]" }
+   : tone === "viae" ? { header: "bg-[#eff2fa] border-[#d4dcef]", title: "text-[#536891]", frame: "bg-white border-[#bfc8df]", body: "bg-[#f7f9fe] text-slate-700 border-[#d4dcef]", button: "bg-[#6479a6] hover:bg-[#526996]" }
+   : tone === "charta" ? { header: "bg-[#eff5eb] border-[#dae7d4]", title: "text-[#58764b]", frame: "bg-white border-[#cfddca]", body: "bg-[#f6faf4] text-slate-700 border-[#dae7d4]", button: "bg-[#6b8b5d] hover:bg-[#58764b]" }
+   : { header: "bg-emerald-50 border-emerald-200", title: "text-emerald-800", frame: "bg-white border-emerald-200", body: "bg-emerald-50/30 text-slate-700 border-emerald-200", button: "bg-emerald-600 hover:bg-emerald-700" };
 
-    return (
-        <div
-            className="fixed inset-0 z-[99999] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md transition-opacity"
-            onClick={onClose}
-        >
-            <img
-                src={url}
-                className="max-w-full max-h-full object-contain shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-sm"
-                onClick={e => e.stopPropagation()}
-                alt="Fullscreen Preview"
-            />
+export const EditModal = ({ isOpen, onClose, content, setContent, onConfirm }: any) => {
+   const { locale } = useLanguage();
+   const { tone } = useAppDialog();
+   const style = modalTheme(tone);
+   return (
+      <AnimatePresence>
+         {isOpen && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+               <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} role="dialog" aria-modal="true" aria-label={deepText(locale, "modal.editMessage")}
+                  className={`w-full max-w-[600px] overflow-hidden rounded-2xl border shadow-2xl ${style.frame}`}>
+                  <header className={`flex items-center justify-between gap-3 border-b p-4 ${style.header}`}>
+                     <h2 className={`flex items-center gap-2 text-sm font-bold ${style.title}`}><Edit2 size={17}/>{deepText(locale, "modal.editMessage")}</h2>
+                     <button type="button" onClick={onClose} aria-label={deepText(locale, "modal.closeEdit")} className={style.title}><X size={19}/></button>
+                  </header>
+                  <div className="p-5">
+                     <textarea value={content} onChange={e => setContent(e.target.value)}
+                        className={`h-64 w-full resize-y rounded-xl border p-4 text-sm outline-none focus:ring-2 focus:ring-current/20 ${style.body}`} />
+                  </div>
+                  <footer className={`flex justify-end gap-2 border-t p-4 ${style.header}`}>
+                     <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100">{deepText(locale, "common.cancel")}</button>
+                     <button type="button" onClick={onConfirm} className={`rounded-lg px-5 py-2 text-sm text-white shadow-sm ${style.button}`}>{deepText(locale, "modal.confirmRetry")}</button>
+                  </footer>
+               </motion.div>
+            </motion.div>
+         )}
+      </AnimatePresence>
+   );
+};
 
-            <button
-                onClick={e => { e.stopPropagation(); handleDownload(); }}
-                className="absolute bottom-8 right-8 bg-white/10 hover:bg-emerald-500 text-white rounded-full p-4 transition-all shadow-xl backdrop-blur-sm group"
-                title="Download Image"
-            >
-                <Download size={24} className="group-hover:scale-110 transition-transform" />
-            </button>
-
-            <button
-                onClick={onClose}
-                className="absolute top-8 right-8 bg-white/10 hover:bg-red-500 text-white rounded-full p-3 transition-all shadow-xl backdrop-blur-sm"
-                title="Close"
-            >
-                <X size={24} />
-            </button>
-        </div>
-    )
-}
+export const SuggestionModal = ({ isOpen, onClose, content, onConfirm, mode = "send" }: any) => {
+   const { locale } = useLanguage();
+   const { tone } = useAppDialog();
+   const style = modalTheme(tone);
+   return (
+      <AnimatePresence>
+         {isOpen && createPortal(
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 10000 }}>
+               <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} role="dialog" aria-modal="true" aria-label={deepText(locale, "modal.adopt")}
+                  className={`w-full max-w-[540px] overflow-hidden rounded-2xl border shadow-2xl ${style.frame}`}>
+                  <header className={`flex items-center gap-2 border-b p-4 ${style.header}`}>
+                     <span>💡</span><h2 className={`text-sm font-bold ${style.title}`}>{deepText(locale, "modal.adopt")}</h2>
+                  </header>
+                  <div className="p-5">
+                     <p className={`mb-2 text-xs uppercase tracking-wider ${style.title}`}>{deepText(locale, "modal.preview")}</p>
+                     <div className={`max-h-[50dvh] overflow-y-auto whitespace-pre-wrap break-words rounded-xl border p-4 text-sm leading-7 ${style.body}`}>{content}</div>
+                     <p className={`mt-4 text-xs ${style.title}`}>{deepText(locale, mode === "insert" ? "modal.insertHelp" : "modal.sendHelp")}</p>
+                  </div>
+                  <footer className={`flex justify-end gap-2 border-t p-4 ${style.header}`}>
+                     <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100">{deepText(locale, "common.cancel")}</button>
+                     <button type="button" onClick={onConfirm} className={`rounded-lg px-5 py-2 text-xs font-semibold text-white shadow-sm ${style.button}`}>{deepText(locale, mode === "insert" ? "story.suggestion.insertConfirm" : "story.suggestion.sendConfirm")}</button>
+                  </footer>
+               </motion.div>
+            </motion.div>, document.body
+         )}
+      </AnimatePresence>
+   );
+};

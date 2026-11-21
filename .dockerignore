@@ -1,8 +1,0 @@
-node_modules
-.next
-.git
-# Never copy local secrets into a Docker build context
-.env
-.env.*
-start_mutsu.bat
-export_clean.py

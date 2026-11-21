@@ -1,102 +1,97 @@
-// src/app/api/summarize/route.ts
 import { OpenAI } from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getServerLocalProvider } from "../../../lib/localProviderServer";
 
-export const runtime = "edge";
+import { outputLanguageInstruction } from "../../../lib/locale";
+
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
-    const { text, previousLtm, mode, localKeys } = await req.json();
-    
+    const { text, previousLtm, mode, provider = "openrouter", model, uiLanguage, currentTitle } = await req.json();
+
     if (!text) return new Response(JSON.stringify({ error: "No text provided" }), { status: 400 });
+    const selectedProvider = getServerLocalProvider(provider);
+    if (!selectedProvider) return new Response(JSON.stringify({ error: "Provider not configured" }), { status: 400 });
+    const routedModel = typeof model === "string" ? model.trim() : "";
+    if (!routedModel) return new Response(JSON.stringify({ error: "Select a model for summarization" }), { status: 400 });
 
-    const DS_KEY = localKeys?.deepseek?.trim();
-    const OR_KEY = localKeys?.openrouter?.trim();
-    const GOOGLE_KEY = localKeys?.google?.trim();
-    const VOLC_KEY = localKeys?.volcengine?.trim();
-    const VOLC_EP = localKeys?.volc_ep_chat?.trim();
+    let systemPrompt = "";
+    let userPrompt = "";
 
-    let summary = "";
+    if (mode === "title") {
+        systemPrompt = `You review titles for Shiorivia conversations. Compare the CURRENT title with the recent conversation and choose whether to keep it. If it accurately describes the conversation, return exactly KEEP. If it is vague, outdated, generic, or no longer matches the topic, generate ONE natural, specific, concise replacement (2–12 words or 4–18 CJK characters) in the selected UI language. For engineering, name the actual task; for stories/novels, reflect the established scene; for chat, reflect the topic. Use only the provided context. No quotes, markdown, explanations, fabricated details or punctuation-only answer. A former title may be stale after previous turns are deleted. An unchanged title is preferable whenever it remains accurate. KEEP is a fixed machine protocol token and MUST NOT be translated into the UI language.`;
+        userPrompt = `[Current title]: ${typeof currentTitle === "string" ? currentTitle.slice(0, 160) : ""}
+[Recent conversation excerpt]:
+${String(text).slice(0, 3500)}
 
-    if (DS_KEY) {
-        console.log("📜 Summarizer: Using DeepSeek Official");
-        const client = new OpenAI({ apiKey: DS_KEY, baseURL: "https://api.deepseek.com" });
-        const response = await client.chat.completions.create({
-            model: "deepseek-chat",
-            messages: buildPrompt(mode, text, previousLtm) as any, 
-            temperature: 0.3, max_tokens: 500
-        });
-        summary = response.choices[0]?.message?.content || "";
-    }
-    
-    else if (OR_KEY) {
-        console.log("📜 Summarizer: Using OpenRouter");
-        const client = new OpenAI({ 
-            apiKey: OR_KEY, 
-            baseURL: "https://openrouter.ai/api/v1",
-            defaultHeaders: { "HTTP-Referer": "https://shiorivia.com", "X-Title": "Shiorivia Cloud Summarizer" }
-        });
-        const response = await client.chat.completions.create({
-            model: "deepseek/deepseek-v3.2",
-            messages: buildPrompt(mode, text, previousLtm) as any, 
-            temperature: 0.3, max_tokens: 500
-        });
-        summary = response.choices[0]?.message?.content || "";
-    }
+Output KEEP or a single suitable replacement title:`;
+    } else if (mode === "chapter_title") {
+        systemPrompt = `You name chapters in a continuing novel. Compare the previous chapter's title and opening context with the NEW completed chapter. If the new chapter develops essentially the same central scene/theme, reuse its previous chapter title exactly. If the subject, setting, dramatic focus or event materially changes, create a distinct evocative chapter title that reflects the new chapter. Write in the user's UI language. Return ONLY the chapter title, no quotes, explanations, metadata tags or numbering prefixes. Do not make up events not in the text.`;
+        userPrompt = `[Previous chapter title]: ${typeof currentTitle === "string" ? currentTitle.slice(0, 100) : ""}
+[Compare previous and current chapter]:
+${String(text).slice(0, 5000)}
 
-    else if (GOOGLE_KEY) {
-        console.log("📜 Summarizer: Using Google Gemini");
-        const genAI = new GoogleGenerativeAI(GOOGLE_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); 
-        
-        const prompts = buildPrompt(mode, text, previousLtm);
-        const fullText = `${prompts[0].content}\n\n${prompts[1].content}`;
-        
-        const result = await model.generateContent(fullText);
-        summary = result.response.text();
-    }
-
-    else if (VOLC_KEY && VOLC_EP) {
-        console.log("📜 Summarizer: Using Volcengine (Doubao)");
-        const client = new OpenAI({ apiKey: VOLC_KEY, baseURL: "https://ark.cn-beijing.volces.com/api/v3" });
-        const response = await client.chat.completions.create({
-            model: VOLC_EP,
-            messages: buildPrompt(mode, text, previousLtm) as any, 
-            temperature: 0.3, max_tokens: 500
-        });
-        summary = response.choices[0]?.message?.content || "";
-    }
-
+Output the most fitting CHAPTER title:`;
+    } else if (mode === 'novel_chapter') {
+        systemPrompt = `
+You are a 'Novel Plot Recorder'.
+Your task is to summarize the EVENTS of the provided novel chapter into 1-3 concise sentences.
+[Rules]:
+1. Focus on WHAT happened and WHAT changed (e.g., "A and B entered the room and did X. B felt Y.").
+2. Ignore flowery descriptions, focus on actions and psychological shifts.
+3. Output language: Follow the selected Shiorivia locale, not necessarily the input language.
+`;
+        userPrompt = `[Chapter Content to Summarize]:\n${text}`;
+    } 
+    else if (mode === 'micro') {
+        systemPrompt = `
+You are a 'Micro-Memory Encoder'. 
+Your task is to compress a SINGLE turn of dialogue into a concise, 3rd-person summary sentence.
+Rules:
+1. Ignore pleasantries.
+2. Focus on the core intent.
+3. Output ONE or TWO sentences maximum.
+4. Output language: Follow the selected Shiorivia locale.
+`;
+        userPrompt = `[Dialogue to Compress]:\n${text}`;
+    } 
     else {
-        console.warn("📜 Summarizer: No keys found. Skipping summary.");
-        return new Response(JSON.stringify({ summary: null, error: "No API Keys available for summary" }), { status: 200 });
+        systemPrompt = `
+You are a 'Long-Term Memory Engine'.
+Your task is to merge "Recent Short-Term Memory" into "Previous Long-Term Memory".
+Rules:
+1. Keep the output organized (bullet points).
+2. Update facts.
+3. Output language: Follow the selected Shiorivia locale.
+`;
+        userPrompt = `[Previous LTM]:\n${previousLtm || "None"}\n\n[Recent STM]:\n${text}\n\nGenerate updated LTM:`;
     }
 
+    systemPrompt += "\n\n" + outputLanguageInstruction(uiLanguage);
+    let summary = "";
+    if (selectedProvider.id === "google") {
+      const genAI = new GoogleGenerativeAI(selectedProvider.apiKey);
+      const response = await genAI.getGenerativeModel({ model: routedModel.replace(/^google\//, "") })
+        .generateContent(`${systemPrompt}\n\n${userPrompt}`);
+      summary = response.response.text();
+    } else {
+      const client = new OpenAI({ apiKey: selectedProvider.apiKey, baseURL: selectedProvider.baseURL, fetch: globalThis.fetch });
+      const response = await client.chat.completions.create({
+        model: routedModel,
+        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+        temperature: 0.3,
+        max_tokens: (mode === "title" || mode === "chapter_title") ? 100 : 500,
+      });
+      summary = response.choices[0]?.message?.content || "";
+    }
+    if (mode === "title" || mode === "chapter_title") {
+        summary = String(summary).split(/\r?\n/)[0].replace(/<[^>]+>/g, "").replace(/^[\s\"'`*#]+|[\s\"'`*#]+$/g, "").trim().slice(0, 60);
+        if (/^KEEP[.!]?$/i.test(summary)) summary = "KEEP";
+    }
     return new Response(JSON.stringify({ summary }), { status: 200 });
 
   } catch (error: any) {
-    console.error("Summarize Error:", error);
-    return new Response(JSON.stringify({ error: error.message, summary: null }), { status: 200 });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
-}
-
-function buildPrompt(mode: string, text: string, previousLtm: string) {
-    let system = "";
-    let user = "";
-
-    if (mode === 'novel_chapter') {
-        system = `You are a 'Novel Plot Recorder'. Summarize the EVENTS of the chapter into 1-3 concise sentences. Focus on WHAT happened. Output language: Same as text (Chinese).`;
-        user = `[Chapter Content]:\n${text}`;
-    } else if (mode === 'micro') {
-        system = `You are a 'Micro-Memory Encoder'. Compress the dialogue into a SINGLE, concise, 3rd-person sentence. Ignore pleasantries. Output language: Same as text (Chinese).`;
-        user = `[Dialogue]:\n${text}`;
-    } else { 
-        system = `You are a 'Long-Term Memory Engine'. Merge "Recent Memory" into "Long-Term Memory". Keep it organized (bullet points). Output language: Chinese.`;
-        user = `[Previous LTM]:\n${previousLtm || "None"}\n\n[Recent STM]:\n${text}\n\nGenerate updated LTM:`;
-    }
-
-    return [
-        { role: "system", content: system },
-        { role: "user", content: user }
-    ];
 }

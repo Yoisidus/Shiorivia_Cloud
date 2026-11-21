@@ -36,7 +36,16 @@ next-env.d.ts
 
 # Shiorivia local data
 /data_storage
+# Proprietary Live2D Cubism Core must be installed separately by its licensee.
+/public/lib/live2dcubismcore.min.js
 /public/gallery/*
 !/public/gallery/.keep
-start_mutsu.bat
-export_clean.py
+# Local development patches
+/*.patch
+# User-owned audio is never distributed or tracked in Git.
+/music/*
+!/music/.gitkeep
+
+# Officina local projects are user-owned and must not be committed.
+/IDE/*
+!/IDE/.gitkeep

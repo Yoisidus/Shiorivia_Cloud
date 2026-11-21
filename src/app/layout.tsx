@@ -1,9 +1,25 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Noto_Serif_SC, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Script from "next/script"; 
 import { MusicProvider } from "../context/MusicContext";
+import { LanguageProvider } from "../context/LanguageContext";
+import { DialogProvider } from "../context/DialogContext";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const serif = Noto_Serif_SC({ 
+  subsets: ["latin"], 
+  weight: ["400", "700"],
+  variable: "--font-serif" 
+});
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono"
+});
 
 export const metadata: Metadata = {
+  // Local Edition: relative Open Graph assets resolve against the local server.
+  metadataBase: new URL("http://localhost:3000"),
   title: "Shiorivia",
   description: "Shiorivia — a local-first, customizable AI story and chat experience.",
   manifest: "/manifest.json",
@@ -40,16 +56,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="font-sans">
+      <body className={`${inter.variable} ${serif.variable} ${mono.variable} font-sans`}>
         <Script 
           src="/lib/live2d.min.js" 
           strategy="beforeInteractive" 
         />
         
-        <Script 
-          src="/lib/live2dcubismcore.min.js" 
-          strategy="beforeInteractive" 
-        />
+        {process.env.NEXT_PUBLIC_ENABLE_LOCAL_LIVE2D === "true" && <Script
+          src="/lib/live2dcubismcore.min.js"
+          strategy="beforeInteractive"
+        />}
         
         <Script 
           src="/lib/vconsole.min.js"
@@ -64,7 +80,7 @@ export default function RootLayout({
           `}
         </Script>
         <MusicProvider>
-        {children}
+          <LanguageProvider><DialogProvider>{children}</DialogProvider></LanguageProvider>
         </MusicProvider>
       </body>
     </html>

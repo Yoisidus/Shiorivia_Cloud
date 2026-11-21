@@ -3,126 +3,93 @@ import { useRef, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Send, Paperclip, Menu, BookOpen, Users, StickyNote,
+    Send, Paperclip, Menu, House, BookOpen, Users, StickyNote,
     RotateCcw, Check, Square, Pencil, Trash2, RefreshCw, Copy, Cpu, FileText,
-    Volume2, Loader2, Sparkles, Moon,
+    Volume2, Loader2, Sparkles, Moon, Brain,
     Save, Terminal, ClipboardList, Guitar, Image as ImageIcon, Shirt,
-    Disc, ChevronUp, MoreHorizontal, Settings,
-    ToggleLeft, ToggleRight, Skull, Binary, CloudRain, AlertTriangle,
-    Clapperboard, Film, MessageCircle
+    Disc, ChevronUp, MoreHorizontal, Settings, Route, Hammer, TreeDeciduous, FileCheck2,
+    ToggleLeft, ToggleRight, Skull, Binary, CloudRain, AlertTriangle
 } from "lucide-react";
 import { ThinkingBlock } from "./Common";
+import { buildDrawRequest } from "../lib/drawRequest";
 import { CHARACTERS } from "../types";
-import { WardrobeModal } from "./WardrobeModal";
+import { useLanguage } from "../context/LanguageContext";
+import { deepText } from "../lib/i18nDeep";
+import type { Locale } from "../lib/locale";
+import { useAppDialog } from "../context/DialogContext";
+import { characterDisplayName } from "../lib/characterNames";
+import { parseStoryWorldline } from "../lib/storyWorldline";
 import { MiniPlayer } from "./MiniPlayer";
-import { MusicPlayerModal } from "./MusicPlayerModal";
-import { useMusic } from "../context/MusicContext";
+import { MusicPlayerModal } from "./MusicPlayerModalV2";
+import { useMusic } from "../context/MusicContext"; 
 import ReactMarkdown from "react-markdown";
 import { smartColorize } from "../lib/textFormatter";
-import { parseMediaTag } from "../lib/parseDraw";
+import { formatOfficinaStreamingDisplay } from "../lib/engineeringDisplay";
+import { cleanDrawTag } from "../lib/parseDraw";
+import { IllustratedImage, ImageLightbox } from "./IllustrationImage";
 
-const DrawPlaceholder = ({ description, onClick, isGenerating, type = 'image' }: any) => {
-    const isVideo = type === 'video';
-
-    const imageStyle = {
-        bg: isGenerating ? "bg-purple-50/50 border-purple-200" : "bg-gray-50/40 border-gray-200 hover:bg-purple-50/30 hover:border-purple-300",
-        iconBg: isGenerating ? "bg-purple-100" : "bg-gray-200 group-hover:bg-purple-100",
-        iconColor: isGenerating ? "text-purple-500" : "text-gray-400 group-hover:text-purple-500",
-        textTitle: isGenerating ? "text-purple-700" : "text-gray-500 group-hover:text-purple-600",
-        label: isGenerating ? "Dream Weaver Working..." : "Click to Visualize"
-    };
-
-    const videoStyle = {
-        bg: isGenerating ? "bg-indigo-50/50 border-indigo-200" : "bg-gray-50/40 border-gray-200 hover:bg-indigo-50/30 hover:border-indigo-300",
-        iconBg: isGenerating ? "bg-indigo-100" : "bg-gray-200 group-hover:bg-indigo-100",
-        iconColor: isGenerating ? "text-indigo-500" : "text-gray-400 group-hover:text-indigo-500",
-        textTitle: isGenerating ? "text-indigo-700" : "text-gray-500 group-hover:text-indigo-600",
-        label: isGenerating ? "Director on Set..." : "Click to Animate"
-    };
-
-    const style = isVideo ? videoStyle : imageStyle;
-
+const DrawPlaceholder = ({ onGenerate, busy, disabled, mode, locale }: {
+    onGenerate: () => void; busy: boolean; disabled: boolean; mode: "infinite" | "sliding" | "chat"; locale: import("../lib/locale").Locale;
+}) => {
+    const styles = {
+        infinite: {
+            frame: "border-[#b9d5ed] bg-[#f0f7ff] hover:border-[#76acd5] hover:bg-[#e5f2ff]",
+            icon: "bg-[#dcecff] text-[#3971a3]",
+            title: "text-[#355f8a]", helper: "text-[#6f94b7]",
+            label: "OFFICINA · VISUAL WORKSPACE", text: deepText(locale, "chat.drawOfficina"),
+        },
+        sliding: {
+            frame: "border-[#e9c3d5] bg-[#fff4fa] hover:border-[#ce8eaf] hover:bg-[#ffedf5]",
+            icon: "bg-[#fce0ef] text-[#b15f89]",
+            title: "text-[#905375]", helper: "text-[#b87f9b]",
+            label: "VIA LATA · SCENE ILLUSTRATION", text: deepText(locale, "chat.drawStory"),
+        },
+        chat: {
+            frame: "border-[#c0e0cd] bg-[#f1fbf6] hover:border-[#8bbfa2] hover:bg-[#e7f7ee]",
+            icon: "bg-[#d9f0e2] text-[#4c936f]",
+            title: "text-[#446f59]", helper: "text-[#709f83]",
+            label: "UMBRA · MOMENT CAPTURE", text: deepText(locale, "chat.drawUmbra"),
+        },
+    }[mode];
     return (
-        <button
-            onClick={(e) => {
-                e.stopPropagation();
-                if (onClick) onClick();
-            }}
-            disabled={isGenerating}
-            className={`
-                group w-full text-left flex items-center gap-3 p-3 my-4 rounded-xl border transition-all active:scale-[0.98] shadow-sm
-                ${style.bg}
-                ${isGenerating ? "cursor-wait animate-pulse" : "cursor-pointer"}
-            `}
-        >
-            <div className={`p-2 rounded-full shrink-0 transition-colors ${style.iconBg}`}>
-                {isVideo ? (
-                    <Clapperboard size={16} className={`${style.iconColor} ${isGenerating ? "animate-spin-slow" : ""}`} />
-                ) : (
-                    <Sparkles size={16} className={`${style.iconColor} ${isGenerating ? "animate-spin-slow" : ""}`} />
-                )}
-            </div>
-            <div className="flex flex-col gap-1 min-w-0 overflow-hidden">
-                <div className="flex items-center gap-2">
-                    <span className={`text-xs font-bold tracking-widest uppercase ${style.textTitle}`}>
-                        {style.label}
-                    </span>
-                    {isVideo && !isGenerating && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-600 font-bold border border-indigo-200">
-                            VIDEO
-                        </span>
-                    )}
-                </div>
-                <span className="text-[10px] text-gray-400 font-mono truncate opacity-70 w-full block">
-                    {description || (isVideo ? "Cinematic sequence ready..." : "Visual memory waiting...")}
-                </span>
-            </div>
+        <button type="button" disabled={disabled} onClick={onGenerate}
+            className={`group/draw my-2 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left shadow-sm transition-colors disabled:cursor-wait disabled:opacity-60 ${styles.frame}`}>
+            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${styles.icon}`}><ImageIcon size={18}/></span>
+            <span className="min-w-0 flex-1">
+                <span className={`block text-[9px] font-bold tracking-[0.13em] ${styles.helper}`}>{styles.label}</span>
+                <span className={`mt-1 block text-xs font-semibold ${styles.title}`}>{styles.text}</span>
+            </span>
+            <span className={`shrink-0 text-[11px] font-medium ${styles.helper}`}>{busy ? deepText(locale, "chat.drawWorking") : deepText(locale, "chat.drawClick")}</span>
         </button>
     );
 };
 
-
-const renderContent = (text: string, onDraw?: (rawTag: string) => void, isGenerating: boolean = false, onMediaClick?: (media: any) => void) => {
+const renderContent = (text: string, onOpenImage: (src: string) => void, locale: Locale, selfColors: Record<string, string> = {}) => {
     if (!text) return null;
-
-    let workingText = text
-        .replace(/<draw_log>[\s\S]*?<\/draw_log>/g, "")
-        .replace(/<video_log>[\s\S]*?<\/video_log>/g, "")
-        .trim();
+    let workingText = cleanDrawTag(text);
 
     try {
-        const segments = workingText.split(/(<(?:draw|video)>[\s\S]*?<\/(?:draw|video)>)/g);
+        const galleryMatch = workingText.match(/\[GALLERY::([\s\S]*?)\]/);
+        let extraImages: string[] = [];
+        if (galleryMatch) {
+            extraImages = galleryMatch[1].split("::").filter(u => u.trim());
+            workingText = workingText.replace(galleryMatch[0], ""); 
+        }
+
+        const segments = workingText.split(/(<draw>[\s\S]*?<\/draw>)/g);
 
         return (
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col gap-2">
                 <span className="whitespace-pre-wrap leading-relaxed">
                     {segments.map((segment, i) => {
-                        const cmd = parseMediaTag(segment);
+                        // Draw tags have been stripped; their pending cards render below each assistant reply.
 
-                        if (cmd && cmd.trigger) {
-                            return (
-                                <DrawPlaceholder
-                                    key={i}
-                                    description={cmd.description}
-                                    type={cmd.type}
-                                    isGenerating={isGenerating}
-                                    onClick={() => {
-                                        if (onDraw) onDraw(segment);
-                                    }}
-                                />
-                            );
-                        }
-
-                        const textParts = smartColorize(segment);
+                        const textParts = smartColorize(segment, selfColors);
                         return (
                             <span key={i}>
                                 {textParts.map((part, j) => {
                                     if (part.type === 'colored') {
-                                        return (
-                                            <span key={j} style={{ color: part.color, fontWeight: part.bold ? 'bold' : 'normal' }}>
-                                                {part.text}
-                                            </span>
-                                        );
+                                        return <span key={j} style={{ color: part.color, fontWeight: part.bold ? 'bold' : 'normal' }}>{part.text}</span>;
                                     } else {
                                         const imgParts = part.text.split(/(!\[.*?\]\(.*?\))/g);
                                         return (
@@ -130,39 +97,8 @@ const renderContent = (text: string, onDraw?: (rawTag: string) => void, isGenera
                                                 {imgParts.map((subPart, k) => {
                                                     const imgMatch = subPart.match(/!\[(.*?)\]\((.*?)\)/);
                                                     if (imgMatch) {
-                                                        const alt = imgMatch[1];
                                                         const url = imgMatch[2];
-
-                                                        if (alt === 'Video' || url.endsWith('.mp4') || url.endsWith('.webm')) {
-                                                            return (
-                                                                <div key={k} className="my-6 border border-indigo-500/30 rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(99,102,241,0.15)] bg-black/60 backdrop-blur-md w-full max-w-[85%] mx-auto md:mx-0">
-                                                                    <div className="bg-indigo-950/80 px-4 py-2.5 flex items-center justify-between border-b border-indigo-500/30">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Film size={16} className="text-indigo-400" />
-                                                                            <span className="text-xs font-black text-indigo-300 tracking-[0.2em] uppercase">Cinematic Sequence</span>
-                                                                        </div>
-                                                                        <span className="text-[9px] text-indigo-500/60 font-mono tracking-widest">Video RENDER</span>
-                                                                    </div>
-                                                                    <video controls playsInline loop src={url} className="w-full object-cover" />
-                                                                </div>
-                                                            );
-                                                        }
-
-                                                        return (
-                                                            <div key={k} className="my-4 border border-purple-500/30 rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(168,85,247,0.15)] bg-black/50 p-2 w-full max-w-[85%] mx-auto md:mx-0 transition-transform hover:scale-[1.01] duration-500">
-                                                                <div className="px-3 pb-2 pt-1 flex items-center gap-2">
-                                                                    <ImageIcon size={14} className="text-purple-400" />
-                                                                    <span className="text-[10px] font-bold text-purple-300 tracking-widest uppercase">Visual Memory</span>
-                                                                </div>
-                                                                <img
-                                                                    src={url}
-                                                                    alt="Generated"
-                                                                    onClick={() => onMediaClick && onMediaClick({ url, type: 'image' })}
-                                                                    className="w-full rounded-xl object-cover border border-white/10 cursor-zoom-in"
-                                                                    loading="lazy"
-                                                                />
-                                                            </div>
-                                                        );
+                                                        return <IllustratedImage key={k} src={url} alt={imgMatch[1] || deepText(locale, "chat.illustration")} onOpen={onOpenImage} className="my-2" />;
                                                     }
                                                     return <span key={k}>{subPart}</span>;
                                                 })}
@@ -174,11 +110,17 @@ const renderContent = (text: string, onDraw?: (rawTag: string) => void, isGenera
                         );
                     })}
                 </span>
+
+                {extraImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        {extraImages.map((url, idx) => (
+                            <IllustratedImage key={idx} src={url} alt={deepText(locale, "chat.galleryImage")} onOpen={onOpenImage} compact />
+                        ))}
+                    </div>
+                )}
             </div>
         );
-
     } catch (error) {
-        console.error("Render Error:", error);
         return <span className="text-gray-800 whitespace-pre-wrap">{text}</span>;
     }
 };
@@ -190,10 +132,10 @@ CHARACTERS.forEach(c => {
 });
 
 type DialogueLine = {
-    charId: string;
-    charName: string;
-    text: string;
-    color: string;
+    charId: string;   
+    charName: string; 
+    text: string;     
+    color: string;    
 };
 
 const parseDialogue = (fullText: string, defaultCharId: string): DialogueLine[] => {
@@ -238,15 +180,17 @@ const parseDialogue = (fullText: string, defaultCharId: string): DialogueLine[] 
 };
 
 const DialoguePlayer = ({ content, defaultCharId, onPlay, msgIndex, currentLock }: any) => {
+    const { locale } = useLanguage();
+    const dialog = useAppDialog();
     const lines = parseDialogue(content, defaultCharId);
 
-    if (lines.length === 0) return <span className="text-[10px] text-gray-300 px-2">No Dialogue</span>;
+    if (lines.length === 0) return <span className="text-[10px] text-gray-300 px-2">{deepText(locale, "chat.toolbar.noDialogue")}</span>;
 
-    const handleClick = (text: string, charId: string, idx: number) => {
+    const handleClick = async (text: string, charId: string, idx: number) => {
         if (currentLock) return;
 
         const charName = CHARACTERS.find(c => c.id === charId)?.name || charId;
-        if (!window.confirm(`确定要生成 [${charName}] 的语音吗？`)) {
+        if (!await dialog.confirm(`${deepText(locale, "chat.generateVoicePrefix")} [${charName}]${deepText(locale, "chat.generateVoiceSuffix")}`)) {
             return;
         }
 
@@ -256,9 +200,9 @@ const DialoguePlayer = ({ content, defaultCharId, onPlay, msgIndex, currentLock 
     return (
         <div className="flex flex-col gap-1 p-2 bg-white/95 backdrop-blur-md rounded-xl border border-gray-100 shadow-xl min-w-[220px] max-w-[300px]">
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-1 mb-1 px-1 flex justify-between items-center">
-                <span>Voice Deck</span>
+                <span>{deepText(locale, "chat.toolbar.voiceDeck")}</span>
                 <span className={`text-[9px] px-1 rounded transition-colors ${currentLock ? 'bg-red-100 text-red-500' : 'bg-emerald-100 text-emerald-500'}`}>
-                    {currentLock ? 'GPU BUSY' : 'GPU READY'}
+                    {deepText(locale, currentLock ? "chat.toolbar.gpuBusy" : "chat.toolbar.gpuReady")}
                 </span>
             </div>
 
@@ -315,7 +259,7 @@ const Portal = ({ children }: { children: React.ReactNode }) => {
 export const ChatInterface = ({
     leftSidebarOpen, setLeftSidebarOpen,
     rightSidebarOpen, setRightSidebarOpen,
-    setShowLocalWorld, setShowGlobalWorld,
+    setShowLocalWorld, onOpenStoryWorldline, onOpenChatWorldline,
 
     currentCharacter, currentSession,
     input, setInput, isLoading,
@@ -333,7 +277,6 @@ export const ChatInterface = ({
     handlePlayAudio, playingIndex,
 
     toggleMemoryMode, setSessions,
-    useWebSearch, toggleWebSearch,
     toggleSaveModal,
     toggleCodeRepo,
     dbChars,
@@ -342,28 +285,53 @@ export const ChatInterface = ({
     isGlobalGenerating,
     toggleWardrobe,
     apiProvider, setApiProvider,
-    debugMode, setDebugMode,
+    debugMode, setDebugMode, showDrawDebugTags = false,
+    onGenerateDraw, imageSettings, useImageGen, onCompleteEngineeringOutput, onCompleteStoryState, onCompleteMissingMetadata, storyStateRepairing = false,
     triggerEffect,
 
     currentOutfitId,
     setManualOutfitId,
     createNewSession,
-    outfits,
-    handleVisualCommand,
-    setPreviewImage,
-    sessions, setCurrentSessionId,
+    onOpenHub, onOpenSettings, onOpenMemory,
+    effectiveConfig,
+    charName, outfits,
 }: any) => {
 
+    const { locale } = useLanguage();
+    const dialog = useAppDialog();
+    const requiresWorldline = currentSession?.memoryMode === "sliding" && !parseStoryWorldline(currentSession.storyWorldline);
+    const requiresEngineer = currentSession?.memoryMode === "infinite" && !currentSession.characterId;
+    const requiresChatWorldline = currentSession?.memoryMode === "chat" && !parseStoryWorldline(currentSession.storyWorldline);
+    const requiresChatCharacter = currentSession?.memoryMode === "chat" && !currentSession.characterId;
+    const inputLocked = requiresWorldline || requiresEngineer || requiresChatWorldline || requiresChatCharacter || storyStateRepairing;
+    const savedSelf = currentSession?.memoryMode === "sliding" && currentSession.storyRole === "participant"
+        ? currentSession.storySelfSnapshot : null;
+    const selfColors: Record<string, string> = savedSelf?.hex && savedSelf?.names
+        ? Object.fromEntries(Object.values(savedSelf.names).map(name => [String(name), savedSelf.hex])) : {};
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [showFullPlayer, setShowFullPlayer] = useState(false);
     const { isPlaying } = useMusic();
 
-    const [showWardrobe, setShowWardrobe] = useState(false);
+    const [drawingIndex, setDrawingIndex] = useState<number | null>(null);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const confirmDraw = async (index: number) => {
+        if (drawingIndex !== null) return;
+        if (!useImageGen) { showToast(deepText(locale, "chat.drawDisabled")); return; }
+        if (!await dialog.confirm(deepText(locale, "chat.drawConfirm"))) return;
+        setDrawingIndex(index);
+        try { await onGenerateDraw(index); }
+        catch (error) { showToast(`${deepText(locale, "chat.drawFailed")}${error instanceof Error ? error.message : deepText(locale, "chat.unknownError")}`); }
+        finally { setDrawingIndex(null); }
+    };
+
+    const confirmStopGeneration = async () => {
+        if (await dialog.confirm(deepText(locale, "chat.stopConfirm"), { destructive: true })) stopGeneration();
+    };
 
     const [showMobileTopMenu, setShowMobileTopMenu] = useState(false);
 
     const [showSettings, setShowSettings] = useState(false);
-    const [consoleVisible, setConsoleVisible] = useState(true);
+    const [consoleVisible, setConsoleVisible] = useState(true); 
 
     const toggleDebugConsole = () => {
         const vcSwitch = document.querySelector('.vc-switch') as HTMLElement;
@@ -372,7 +340,7 @@ export const ChatInterface = ({
             vcSwitch.style.display = nextState;
             setConsoleVisible(nextState === 'block');
         } else {
-            showToast("Console not found (Mobile Only)");
+            showToast(deepText(locale, "chat.toolbar.consoleMissing"));
         }
     };
 
@@ -422,7 +390,7 @@ export const ChatInterface = ({
         if (targetId === "sakiko") targetId = voiceVariant === "white" ? "sakiko" : "oblivionis";
         if (targetId === "mutsu") targetId = voiceVariant === "mortis" ? "mortis" : "mutsu";
 
-        if (showToast) showToast(`🎵 Requesting audio for ${targetId}...`);
+        if (showToast) showToast(`${deepText(locale, "chat.toolbar.audioRequest")} ${targetId}…`);
 
         try {
             await handlePlayAudio(text, -1, targetId);
@@ -437,61 +405,30 @@ export const ChatInterface = ({
         <>
             {currentSession?.memoryMode === 'sliding' && (
                 <>
-                    <button onClick={toggleSaveModal} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border bg-fuchsia-50 border-fuchsia-200 text-fuchsia-600 hover:bg-fuchsia-100 transition-all ${isMobile ? 'w-full justify-center shadow-sm' : ''}`}>
-                        <Save size={16} /> 
-                        <span className={isMobile ? "inline" : "hidden md:inline"}>Save</span>
-                    </button>
-                    
-                    <div className={`flex gap-2 ${isMobile ? 'w-full grid grid-cols-2' : ''}`}>
-                        <button onClick={() => setShowLocalWorld(true)} className={`p-2 hover:bg-gray-100 rounded-xl text-gray-600 flex items-center justify-center gap-1 text-xs border border-gray-200 bg-white shadow-sm transition-all ${isMobile ? 'w-full' : ''}`}>
-                            <StickyNote size={14} className="text-blue-500" /> 
-                            <span className={isMobile ? "inline font-bold" : "hidden lg:inline"}>Local</span>
-                        </button>
-                        <button onClick={() => setShowGlobalWorld(true)} className={`p-2 hover:bg-gray-100 rounded-xl text-gray-600 flex items-center justify-center gap-1 text-xs border border-gray-200 bg-white shadow-sm transition-all ${isMobile ? 'w-full' : ''}`}>
-                            <BookOpen size={14} className="text-purple-500" /> 
-                            <span className={isMobile ? "inline font-bold" : "hidden lg:inline"}>Global</span>
-                        </button>
+                    <button onClick={toggleSaveModal} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold border bg-fuchsia-50 border-fuchsia-200 text-fuchsia-600 hover:bg-fuchsia-100 ${isMobile ? 'w-full justify-center' : ''}`}><Save size={16} /> <span className={isMobile ? "inline" : "hidden md:inline"}>{deepText(locale, "common.save")}</span></button>
+                    <div className={`flex gap-1 ${isMobile ? 'w-full justify-center' : ''}`}>
+                        <button onClick={() => setShowLocalWorld(true)} title={`Via Lata · ${deepText(locale, "chat.toolbar.storyNotes")}`} className="flex items-center gap-1.5 rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-2.5 py-1.5 text-xs font-semibold text-fuchsia-700 hover:bg-fuchsia-100"><BookOpen size={15} /> <span>{deepText(locale, "chat.toolbar.storyNotes")}</span></button>
                     </div>
+                </>
+            )}
+
+            {currentSession?.memoryMode === 'chat' && (
+                <>
+                    <button onClick={() => setShowLocalWorld(true)} title={`Umbra · ${deepText(locale, "chat.toolbar.chatNotes")}`} className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"><StickyNote size={15} /> <span>{deepText(locale, "chat.toolbar.chatNotes")}</span></button>
                 </>
             )}
 
             {currentSession?.memoryMode === 'infinite' && (
                 <>
                     <button onClick={toggleCodeRepo} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold border bg-slate-800 text-blue-400 hover:bg-slate-700 shadow-sm ${isMobile ? 'w-full justify-center' : ''}`}><Terminal size={16} /> <span className={isMobile ? "inline" : "hidden md:inline"}>IDE</span></button>
-                    {!isMobile && (
-                        <div className="relative">
-
-                            <button
-                                onClick={() => setShowWardrobe(prev => !prev)}
-                                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-bold border shadow-sm transition-all
-                                        ${showWardrobe
-                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-600 ring-2 ring-emerald-100 ring-offset-1' // 激活状态：加个 ring 更明显
-                                        : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'} // 平时状态
-                                     `}
-                                title="Toggle Fitting Room"
-                            >
-                                <Shirt size={16} />
-                                <span className="hidden lg:inline">Outfit</span>
-                            </button>
-
-                            <WardrobeModal
-                                isOpen={showWardrobe}
-                                onClose={() => setShowWardrobe(false)}
-                                charName={currentCharacter.name}
-                                outfits={outfits}
-                                currentOutfit={currentOutfitId}
-                                onSelect={(id: string) => setManualOutfitId(id)}
-                            />
-                        </div>
-                    )}
-                    <button onClick={() => setShowGlobalWorld(true)} className={`p-1.5 hover:bg-gray-100 rounded text-gray-500 flex items-center gap-1 text-xs ${isMobile ? 'w-full justify-center' : ''}`}><ClipboardList size={16} /> <span className={isMobile ? "inline" : "hidden md:inline"}>Guide</span></button>
+                    <button onClick={() => setShowLocalWorld(true)} title={`Officina · ${deepText(locale, "chat.toolbar.sessionGuide")}`} className={`flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100 ${isMobile ? 'w-full justify-center' : ''}`}><ClipboardList size={16} /> <span>{deepText(locale, "chat.toolbar.sessionGuide")}</span></button>
                 </>
             )}
         </>
     );
 
     return (
-        <div className="flex-1 flex flex-col relative min-w-0" style={{ backgroundColor: currentCharacter.hex + "08" }}>
+        <div className="flex-1 flex flex-col relative min-w-0" style={{ backgroundColor: (requiresEngineer || requiresChatWorldline || requiresChatCharacter) ? "#f3f7f4" : currentCharacter.hex + "08" }}>
 
             <header className={`
           flex items-center justify-between px-3 md:px-4 bg-white/95 md:bg-white/80 md:backdrop-blur z-20 border-b border-gray-100/50 shrink-0 relative
@@ -505,30 +442,41 @@ export const ChatInterface = ({
                     <div className="flex flex-col min-w-0 justify-center">
                         <span className="text-sm font-bold flex items-center gap-2 truncate">
                             {currentSession?.memoryMode === 'sliding' ? (
-                                <span className="text-lg font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#e11e54] to-[#ff477e] flex items-center gap-2">
-                                    <span className="text-xl">🎸</span>
-                                    <span>BanG Dream!</span>
+                                <span className="flex items-center gap-2 text-lg font-semibold tracking-wide text-[#466957]">
+                                    <Route size={19} className="text-[#a38c65]" aria-hidden="true" />
+                                    <span>Via Lata</span>
+                                </span>
+                            ) : currentSession?.memoryMode === 'chat' ? (
+                                <span className="flex items-center gap-2 truncate text-[#527762]">
+                                    <TreeDeciduous size={19} className="shrink-0 text-[#729481]" aria-hidden="true" />
+                                    <span className="font-semibold tracking-wide">Umbra</span>
+                                    {!requiresChatCharacter && <span className="truncate text-[11px] text-slate-500">· {characterDisplayName(currentCharacter.id, currentCharacter.name, locale)}</span>}
                                 </span>
                             ) : (
-                                <span className="flex items-center gap-2 truncate" style={{ color: currentCharacter.hex }}>
-                                    <span className="text-lg">{currentCharacter.avatar}</span>
-                                    <span>{currentCharacter.name}</span>
+                                <span className="flex items-center gap-2 truncate text-[#365b75]">
+                                    <Hammer size={18} className="shrink-0 text-[#6487a1]" aria-hidden="true" />
+                                    <span className="font-semibold tracking-wide">Officina</span>
+                                    {!requiresEngineer && <span className="truncate text-[11px] text-slate-500">· {characterDisplayName(currentCharacter.id, currentCharacter.name, locale)}</span>}
                                 </span>
                             )}
                         </span>
 
                         <span className="text-[10px] text-gray-400 truncate max-w-[120px] md:max-w-xs block">
-                            {customModelId || selectedModel.split('/').pop()}
+                            {(customModelId || selectedModel) ? (customModelId || selectedModel.split('/').pop()) : deepText(locale, "chat.toolbar.noModel")}
                         </span>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-1 md:gap-2">
 
+                    <button type="button" onClick={onOpenHub} className="rounded-full p-2 text-slate-500 transition-colors hover:bg-gray-100" title={deepText(locale, "chat.toolbar.home")} aria-label={deepText(locale, "chat.toolbar.home")}><House size={19} /></button>
+                    {currentSession?.memoryMode !== "infinite" && <button type="button" onClick={onOpenMemory} className="rounded-full p-2 text-slate-500 transition-colors hover:bg-gray-100" title={deepText(locale, "chat.toolbar.memoryVault")} aria-label={deepText(locale, "chat.toolbar.memoryVault")}><Brain size={19} /></button>}
+
                     <div className="relative">
                         <button
-                            onClick={() => setShowSettings(!showSettings)}
-                            className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-gray-100 text-gray-800' : 'text-gray-400 hover:bg-gray-50'}`}
+                            onClick={onOpenSettings}
+                            className="p-2 rounded-full text-gray-500 transition-colors hover:bg-gray-100"
+                            title={deepText(locale, "common.settings")}
                         >
                             <Settings size={20} />
                         </button>
@@ -541,28 +489,16 @@ export const ChatInterface = ({
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                     className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden p-1"
                                 >
-                                    <div className="md:hidden">
-                                        <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Mobile Tools</div>
+                                    {debugMode && <div className="md:hidden">
+                                        <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{deepText(locale, "chat.toolbar.mobileTools")}</div>
                                         <button
                                             onClick={toggleDebugConsole}
                                             className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                                         >
-                                            <span>Debug Console</span>
+                                            <span>{deepText(locale, "chat.toolbar.debugConsole")}</span>
                                             {consoleVisible ? <ToggleRight size={20} className="text-emerald-500" /> : <ToggleLeft size={20} className="text-gray-300" />}
                                         </button>
-                                    </div>
-
-                                    <div className="hidden md:block">
-                                        <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">System</div>
-                                        <div className="px-3 py-2 text-xs text-gray-500 flex justify-between">
-                                            <span>Ver.</span>
-                                            <span className="font-mono">Shiorivia</span>
-                                        </div>
-                                        <div className="px-3 py-2 text-xs text-gray-500 flex justify-between">
-                                            <span>Engine</span>
-                                            <span className="font-mono">Next.js 15</span>
-                                        </div>
-                                    </div>
+                                    </div>}
 
                                     <div className="border-t border-gray-100 mt-1 pt-1 px-3 py-2">
                                         <button
@@ -573,29 +509,29 @@ export const ChatInterface = ({
                                                 }`}
                                         >
                                             <span className="flex items-center gap-2">
-                                                <Terminal size={14} />
-                                                <span>DEBUG_MODE</span>
+                                                <Terminal size={14} /> 
+                                                <span>{deepText(locale, "chat.toolbar.debugMode")}</span>
                                             </span>
                                             <div className={`w-2 h-2 rounded-full ${debugMode ? 'bg-red-500 animate-pulse' : 'bg-gray-300'}`} />
                                         </button>
                                         <p className="text-[9px] text-gray-300 mt-1 text-center">
-                                            Reveal hidden &lt;tags&gt; & logic
+                                            {deepText(locale, "chat.toolbar.debugHelp")}
                                         </p>
                                     </div>
 
                                     <div className="border-t border-gray-100 mt-1 pt-1 px-3 py-2">
-                                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Dev Tools</div>
+                                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{deepText(locale, "chat.toolbar.devTools")}</div>
                                         <div className="grid grid-cols-4 gap-2">
-                                            <button onClick={() => triggerEffect("rain")} className="aspect-square bg-blue-50 text-blue-500 rounded flex items-center justify-center hover:bg-blue-100" title="Rain">
+                                            <button onClick={() => triggerEffect("rain")} className="aspect-square bg-blue-50 text-blue-500 rounded flex items-center justify-center hover:bg-blue-100" title={deepText(locale, "chat.toolbar.rain")}>
                                                 <CloudRain size={14} />
                                             </button>
-                                            <button onClick={() => triggerEffect("curtain")} className="aspect-square bg-red-50 text-red-500 rounded flex items-center justify-center hover:bg-red-100" title="Curtain">
+                                            <button onClick={() => triggerEffect("curtain")} className="aspect-square bg-red-50 text-red-500 rounded flex items-center justify-center hover:bg-red-100" title={deepText(locale, "chat.toolbar.curtain")}>
                                                 <AlertTriangle size={14} />
                                             </button>
-                                            <button onClick={() => triggerEffect("math")} className="aspect-square bg-emerald-50 text-emerald-500 rounded flex items-center justify-center hover:bg-emerald-100" title="Math">
+                                            <button onClick={() => triggerEffect("math")} className="aspect-square bg-emerald-50 text-emerald-500 rounded flex items-center justify-center hover:bg-emerald-100" title={deepText(locale, "chat.toolbar.math")}>
                                                 <Binary size={14} />
                                             </button>
-                                            <button onClick={() => triggerEffect("glitch")} className="aspect-square bg-black text-red-500 rounded flex items-center justify-center hover:bg-zinc-800" title="Glitch">
+                                            <button onClick={() => triggerEffect("glitch")} className="aspect-square bg-black text-red-500 rounded flex items-center justify-center hover:bg-zinc-800" title={deepText(locale, "chat.toolbar.glitch")}>
                                                 <Skull size={14} />
                                             </button>
                                         </div>
@@ -605,11 +541,11 @@ export const ChatInterface = ({
                         </AnimatePresence>
                     </div>
 
-                    <div className="relative">
+                    <div className="relative"> 
                         <button
                             onClick={() => setShowFullPlayer(true)}
                             className={`relative p-2 hover:bg-gray-100 rounded-full transition-colors ${isPlaying ? 'text-rose-500' : 'text-gray-400'}`}
-                            title="Music Player"
+                            title={deepText(locale, "chat.toolbar.musicPlayer")}
                         >
                             <Disc size={20} className={isPlaying ? "animate-spin-slow" : ""} style={{ animationDuration: '3s' }} />
 
@@ -619,28 +555,6 @@ export const ChatInterface = ({
                         </button>
                     </div>
 
-                    <button
-                        onClick={() => {
-                            const existingLime = sessions?.find((s: any) => s.memoryMode === 'lime');
-                            if (existingLime) {
-                                setCurrentSessionId(existingLime.id);
-                            } else {
-                                createNewSession('system', 'lime');
-                            }
-                        }}
-                        className="hidden md:flex p-2 hover:bg-emerald-50 rounded text-emerald-500 hover:text-emerald-600 transition-colors"
-                        title="Enter LIME Network"
-                    >
-                        <MessageCircle size={18} />
-                    </button>
-
-                    <button
-                        onClick={() => createNewSession(currentCharacter.id, 'novel')}
-                        className="hidden md:flex p-2 hover:bg-rose-50 rounded text-rose-400 hover:text-rose-600 transition-colors"
-                        title="Enter Novel Mode"
-                    >
-                        <Moon size={18} />
-                    </button>
 
                     <div className="hidden md:flex items-center gap-1">
                         <ToolButtons isMobile={false} />
@@ -659,32 +573,14 @@ export const ChatInterface = ({
                 </div>
             </header>
 
-            <div className="md:hidden flex items-center gap-3 px-4 py-2 bg-gray-50/80 backdrop-blur-md border-b border-gray-200/50 shrink-0 z-10 shadow-sm">
-
-                <button
-                    onClick={() => {
-                        const existingLime = sessions?.find((s: any) => s.memoryMode === 'lime');
-                        if (existingLime) setCurrentSessionId(existingLime.id); else createNewSession('system', 'lime');
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white border border-emerald-100 text-emerald-600 shadow-[0_2px_10px_rgba(16,185,129,0.1)] hover:bg-emerald-50 active:scale-95 transition-all"
-                >
-                    <MessageCircle size={16} />
-                    <span className="text-xs font-black tracking-widest uppercase">LIME</span>
-                </button>
-
-                <button
-                    onClick={() => createNewSession(currentCharacter.id, 'novel')}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white border border-rose-100 text-rose-500 shadow-[0_2px_10px_rgba(244,63,94,0.1)] hover:bg-rose-50 active:scale-95 transition-all"
-                >
-                    <Moon size={16} />
-                    <span className="text-xs font-black tracking-widest uppercase">Novel</span>
-                </button>
-
-            </div>
-
             <AnimatePresence>
                 {showMobileTopMenu && (
-                    <motion.div className="md:hidden bg-white/90 backdrop-blur border-b border-gray-100 overflow-hidden z-10 shadow-sm">
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="md:hidden bg-white/90 backdrop-blur border-b border-gray-100 overflow-hidden z-10 shadow-sm"
+                    >
                         <div className="p-3 grid grid-cols-4 gap-2">
                             <ToolButtons isMobile={true} />
                         </div>
@@ -696,6 +592,7 @@ export const ChatInterface = ({
                 <MiniPlayer
                     onExpand={() => setShowFullPlayer(true)}
                     rightSidebarOpen={rightSidebarOpen}
+                    themeMode="light"
                 />
             </div>
 
@@ -718,6 +615,11 @@ export const ChatInterface = ({
                     const logDrawMatch = txt.match(/<draw_log>([\s\S]*?)<\/draw_log>/);
 
                     const rawDrawContent = (activeDrawMatch ? activeDrawMatch[1] : (logDrawMatch ? logDrawMatch[1] : null))?.trim();
+                    const drawDebugRequest = rawDrawContent && msg.role === 'assistant'
+                        ? buildDrawRequest(activeDrawMatch ? txt : txt.replaceAll("<draw_log>", "<draw>").replaceAll("</draw_log>", "</draw>"), { activeCharacterId: msg.characterId || currentSession.characterId,
+                            characters: dbChars, charStatus: currentSession.charStatus,
+                            settings: imageSettings })
+                        : null;
 
                     const msgCharId = msg.characterId || currentSession.characterId;
                     const msgChar = (dbChars?.length ? dbChars : CHARACTERS).find((c: any) => c.id === msgCharId) || currentCharacter;
@@ -726,48 +628,117 @@ export const ChatInterface = ({
                     const isSecondLast = i === currentSession.messages.length - 2;
                     const isLastUserMsg = msg.role === 'user' && (isLast || isSecondLast);
 
-                    if (msg.role === 'assistant' && !answer && !thought && !files.length) return null;
+                    if (msg.role === 'assistant' && !answer && !thought && !files.length && !msg.ideEditedFiles?.length) return null;
 
                     return (
                         <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} key={i} className={`group flex gap-4 max-w-3xl md:max-w-4xl mx-auto ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             {msg.role === 'assistant' && (
                                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs border-2 border-white flex-shrink-0 shadow-sm relative group/avatar"
-                                    style={{ backgroundColor: currentSession?.memoryMode === 'sliding' ? '#e11e54' : msgChar.hex }}>
-                                    {currentSession?.memoryMode === 'sliding' ? <Guitar size={14} /> : msgChar.avatar}
+                                    style={{ backgroundColor: msg.modelName === "System" ? "#8da2b4" : currentSession?.memoryMode === 'sliding' ? '#e11e54' : msgChar.hex }}>
+                                    {msg.modelName === "System" ? (currentSession.memoryMode === "chat" ? <TreeDeciduous size={14} /> : <Hammer size={14} />) : currentSession?.memoryMode === 'sliding' ? <Guitar size={14} /> : msgChar.avatar}
                                 </div>
                             )}
 
                             <div className="flex flex-col gap-1.5 max-w-[85%] items-start w-full">
+                                {currentSession.memoryMode === "chat" && msg.role === "assistant" && msg.modelName !== "System" &&
+                                  <span className="px-1 text-[10px] font-semibold text-[#638671]">
+                                    {characterDisplayName(msgChar.id, msgChar.name, locale)} · {msgChar.sub || "Umbra"}
+                                  </span>}
 
-                                {files.length > 0 && <div className="flex gap-2 justify-end w-full flex-wrap">{files.map((f: any, idx: number) => <img key={idx} src={f} className="h-32 rounded border shadow-sm object-cover" />)}</div>}
+                                {files.length > 0 && <div className="flex gap-2 justify-end w-full flex-wrap">{files.map((f: any, idx: number) => <IllustratedImage key={idx} src={f} alt={deepText(locale, "chat.attached")} compact onOpen={setPreviewImage} />)}</div>}
 
                                 {thought && currentSession.memoryMode === 'infinite' && <ThinkingBlock thought={thought} />}
 
-                                {answer && (
+                                {answer && (msg.role !== 'assistant' || Boolean(cleanDrawTag(answer).trim())) && (
                                     <div className={`px-4 py-2.5 rounded-2xl text-[14px] leading-relaxed shadow-sm w-fit ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-br-none ml-auto' : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'}`}>
-                                        {msg.role === 'assistant' ? (
-                                            renderContent(answer, handleVisualCommand, isGlobalGenerating, (media) => {
-                                                if (media.type === 'image') setPreviewImage(media.url);
-                                            })
-                                        ) : (
-                                            <div className="whitespace-pre-wrap">{answer}</div>
-                                        )}
-                                        {msg.role === 'assistant' && msg.modelName && <div className="mt-2 pt-2 border-t border-gray-50 flex items-center gap-1.5 text-[9px] font-bold tracking-wider opacity-40 uppercase"><Cpu size={10} /> {msg.modelName.split('/').pop()}</div>}
+                                        {msg.role === 'assistant'
+                                            ? currentSession.memoryMode === "infinite"
+                                                ? <div className="officina-response whitespace-pre-wrap break-words">
+                                                    <ReactMarkdown components={{
+                                                        strong: ({ children }) => <strong className="font-extrabold text-[#17212b]">{children}</strong>,
+                                                        p: ({ children }) => <p className="my-1.5 whitespace-pre-wrap">{children}</p>,
+                                                        pre: ({ children }) => <pre className="my-3 max-w-full overflow-x-auto rounded-xl border border-[#ceddf0] bg-[#f0f6fd] px-3 py-3 text-[12px] leading-5 text-[#254060] whitespace-pre">{children}</pre>,
+                                                        code: ({ className, children }) => <code className={className ? `font-mono ${className}` : "rounded bg-[#eaf2fb] px-1 py-0.5 font-mono text-[12px] text-[#28518a]"}>{children}</code>,
+                                                        img: ({ src, alt }) => src ? <IllustratedImage src={src} alt={alt || deepText(locale, "chat.picture")} onOpen={setPreviewImage} className="my-2" /> : null,
+                                                    }}>{formatOfficinaStreamingDisplay(cleanDrawTag(answer))}</ReactMarkdown>
+                                                </div>
+                                                : renderContent(answer, setPreviewImage, locale, selfColors)
+                                            : <div className="whitespace-pre-wrap">{answer}</div>}
+                                        {msg.role === 'assistant' && msg.modelName && msg.modelName !== "System" && <div className="mt-2 pt-2 border-t border-gray-50 flex items-center gap-1.5 text-[9px] font-bold tracking-wider opacity-40 uppercase"><Cpu size={10} /> {msg.modelName.split('/').pop()}</div>}
                                     </div>
                                 )}
+                                {currentSession.memoryMode === "infinite" && msg.role === "assistant" && Array.isArray(msg.ideEditedFiles) && msg.ideEditedFiles.length > 0 && (
+                                    <section aria-label={deepText(locale, "chat.ideResult")} className="mt-2 w-full min-w-0 overflow-hidden rounded-xl border border-[#bad5ef] bg-[#f5faff] shadow-[0_4px_16px_rgba(33,92,148,.07)]">
+                                        <header className="flex items-center gap-2 border-b border-[#d7e6f4] bg-[#e8f3ff] px-3 py-2.5 text-[#285d8d]">
+                                            <FileCheck2 size={16} className="shrink-0" />
+                                            <span className="flex-1 text-xs font-bold">{deepText(locale, "chat.ideResult")}</span>
+                                            <span className="rounded-full bg-[#d8eaff] px-2 py-0.5 text-[10px] font-semibold">{msg.ideEditedFiles.length} {deepText(locale, "chat.fileCount")}</span>
+                                        </header>
+                                        <div className="divide-y divide-[#e2edf8]">
+                                            {msg.ideEditedFiles.map((file: { path: string; operations: number; added: number; removed: number }, index: number) => (
+                                                <div key={`${file.path}-${index}`} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5">
+                                                    <div className="flex min-w-0 items-center gap-2">
+                                                        <FileText size={14} className="shrink-0 text-[#6090bc]" />
+                                                        <span className="break-all font-mono text-[11px] font-semibold text-[#294a70]">{file.path}</span>
+                                                    </div>
+                                                    <div className="flex shrink-0 items-center gap-2 text-[10px] font-mono">
+                                                        <span className="text-[#3d698d]">{file.operations} {deepText(locale, "chat.operationCount")}</span>
+                                                        <span className="font-bold text-[#258051]">+{file.added}</span>
+                                                        <span className="font-bold text-[#b64c5c]">-{file.removed}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
+                                {currentSession.memoryMode === "infinite" && msg.role === "assistant" && msg.engineeringOutputIncomplete && (
+                                    <div role="status" className="mt-2 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+                                        <AlertTriangle size={15} className="shrink-0"/>
+                                        <span className="flex-1">{deepText(locale, "chat.codeIncomplete")}</span>
+                                        <button type="button" disabled={isLoading} onClick={() => onCompleteEngineeringOutput?.(i)}
+                                            className="shrink-0 rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-semibold disabled:opacity-40">{deepText(locale, "chat.confirmComplete")}</button>
+                                    </div>
+                                )}
+                                {msg.role === 'assistant' && msg.storyProtocolMissing && (
+                                     <div role="status" className="mt-2 flex items-center gap-3 rounded-xl border border-[#ecc3d3] bg-[#fff3f7] p-3 text-[11px] leading-5 text-[#8a3453]">
+                                         <AlertTriangle size={15} className="shrink-0"/>
+                                         <span className="flex-1">{deepText(locale, "chat.storyProtocolIncomplete")}</span>
+                                         <button type="button" disabled={isLoading || i !== currentSession.messages.length - 1}
+                                             onClick={() => onCompleteStoryState?.(i)}
+                                             className="shrink-0 rounded-lg border border-[#dca3bb] bg-white px-3 py-1.5 font-semibold text-[#922c55] disabled:opacity-40">
+                                             {storyStateRepairing ? deepText(locale, "chat.repairing") : deepText(locale, "chat.confirmRepair")}
+                                         </button>
+                                     </div>
+                                 )}
+                                {msg.role === 'assistant' && msg.metadataRepairMissing && !msg.storyProtocolMissing && (
+                                    <div role="status" className={`mt-2 flex items-center gap-3 rounded-xl border p-3 text-[11px] leading-5 ${currentSession.memoryMode === "chat" ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-rose-200 bg-rose-50 text-rose-900"}`}>
+                                        <AlertTriangle size={15} className="shrink-0"/>
+                                        <span className="flex-1">{deepText(locale, "chat.metadataIncomplete")}</span>
+                                        <button type="button" disabled={isLoading || storyStateRepairing || i !== currentSession.messages.length - 1}
+                                            onClick={() => onCompleteMissingMetadata?.(i)}
+                                            className="shrink-0 rounded-lg border border-current/20 bg-white px-3 py-1.5 font-semibold disabled:opacity-40">
+                                            {storyStateRepairing ? deepText(locale, "chat.repairing") : deepText(locale, "chat.repairState")}
+                                        </button>
+                                    </div>
+                                )}
+                                {msg.role === 'assistant' && activeDrawMatch && (
+                                    <DrawPlaceholder locale={locale} busy={drawingIndex === i} disabled={drawingIndex !== null}
+                                        mode={currentSession.memoryMode === "sliding" ? "sliding" : currentSession.memoryMode === "chat" ? "chat" : "infinite"}
+                                        onGenerate={() => void confirmDraw(i)} />
+                                )}
 
-                                {debugMode && rawDrawContent && msg.role === 'assistant' && (
+                                {debugMode && showDrawDebugTags && rawDrawContent && msg.role === 'assistant' && (
                                     <div className="w-full mt-2 p-3 bg-[#1e1e1e] rounded-lg border border-yellow-500/30 text-left font-mono text-[10px] shadow-inner overflow-hidden select-text">
                                         <div className="flex items-center justify-between mb-2 pb-1 border-b border-white/10 text-yellow-500">
                                             <span className="flex items-center gap-2 font-bold tracking-wider">
                                                 <Terminal size={12} /> AI VISUAL INSTRUCTION
                                             </span>
-                                            <span className="text-[9px] opacity-50">RAW JSON</span>
+                                            <span className="text-[9px] opacity-50">DEBUG · FULL REQUEST</span>
                                         </div>
                                         <pre className="whitespace-pre-wrap break-all text-gray-300">
                                             {(() => {
-                                                try { return JSON.stringify(JSON.parse(rawDrawContent), null, 2); }
-                                                catch { return rawDrawContent; }
+                                                try { return JSON.stringify({ instruction: JSON.parse(rawDrawContent), request: drawDebugRequest }, null, 2); }
+                                                catch { return JSON.stringify({ instruction: rawDrawContent, request: drawDebugRequest }, null, 2); }
                                             })()}
                                         </pre>
                                     </div>
@@ -777,21 +748,21 @@ export const ChatInterface = ({
                                     {msg.role === 'user' ? (
                                         isLastUserMsg && (
                                             <>
-                                                <button onClick={() => openEditModal(i, msg.content)} className="p-1 hover:text-emerald-500 rounded"><Pencil size={12} /></button>
-                                                <button onClick={() => handleDeleteMessage(i, 'user')} className="p-1 hover:text-red-500 rounded"><Trash2 size={12} /></button>
+                                                <button title={deepText(locale, "chat.toolbar.edit")} aria-label={deepText(locale, "chat.toolbar.edit")} onClick={() => openEditModal(i, msg.content)} className="p-1 hover:text-emerald-500 rounded"><Pencil size={12} /></button>
+                                                <button title={deepText(locale, "chat.toolbar.delete")} aria-label={deepText(locale, "chat.toolbar.delete")} onClick={() => handleDeleteMessage(i, 'user')} className="p-1 hover:text-red-500 rounded"><Trash2 size={12} /></button>
                                             </>
                                         )
-                                    ) : (
+                                    ) : msg.modelName === "System" ? null : (
                                         <>
                                             {useTTS && (
                                                 <div className="relative">
                                                     <button
                                                         onClick={(e) => {
-                                                            e.stopPropagation();
+                                                            e.stopPropagation(); 
                                                             toggleTTSMenu(e, i);
                                                         }}
                                                         className={`p-1 rounded transition-colors ${ttsMenu?.id === i ? 'bg-emerald-100 text-emerald-600' : 'hover:text-emerald-500 text-gray-400'}`}
-                                                        title="Voice Selector"
+                                                        title={deepText(locale, "chat.toolbar.voiceSelect")}
                                                     >
                                                         <Volume2 size={12} />
                                                     </button>
@@ -811,10 +782,10 @@ export const ChatInterface = ({
                                                                     position: 'fixed',
                                                                     top: ttsMenu.top,
                                                                     left: ttsMenu.left,
-                                                                    transform: 'translateY(-100%)',
+                                                                    transform: 'translateY(-100%)', 
                                                                 }}
-                                                                className="z-[9999]"
-                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="z-[9999]" 
+                                                                onClick={(e) => e.stopPropagation()} 
                                                             >
                                                                 <DialoguePlayer
                                                                     content={Array.isArray(msg.content)
@@ -822,7 +793,7 @@ export const ChatInterface = ({
                                                                         : msg.content}
                                                                     defaultCharId={msgCharId}
                                                                     onPlay={executeTTS}
-                                                                    msgIndex={i}
+                                                                    msgIndex={i}             
                                                                     currentLock={generatingLock || (isGlobalGenerating ? { msgId: -1, lineIdx: -1 } : null)}
                                                                 />
                                                             </motion.div>
@@ -830,9 +801,9 @@ export const ChatInterface = ({
                                                     )}
                                                 </div>
                                             )}
-                                            <button onClick={() => handleRegenerate(i)} className="p-1 hover:text-emerald-500 rounded"><RefreshCw size={12} /></button>
-                                            <button onClick={() => handleCopy(answer, i)} className="p-1 hover:text-emerald-500 rounded">{copiedIndex === i ? <Check size={12} /> : <Copy size={12} />}</button>
-                                            {isLast && <button onClick={() => handleDeleteMessage(i, 'assistant')} className="p-1 hover:text-red-500 rounded"><Trash2 size={12} /></button>}
+                                            <button title={deepText(locale, "common.retry")} aria-label={deepText(locale, "common.retry")} onClick={() => handleRegenerate(i)} className="p-1 hover:text-emerald-500 rounded"><RefreshCw size={12} /></button>
+                                            <button title={deepText(locale, copiedIndex === i ? "chat.toolbar.copied" : "common.copy")} aria-label={deepText(locale, copiedIndex === i ? "chat.toolbar.copied" : "common.copy")} onClick={() => handleCopy(answer, i)} className="p-1 hover:text-emerald-500 rounded">{copiedIndex === i ? <Check size={12} /> : <Copy size={12} />}</button>
+                                            {isLast && <button title={deepText(locale, "chat.toolbar.delete")} aria-label={deepText(locale, "chat.toolbar.delete")} onClick={() => handleDeleteMessage(i, 'assistant')} className="p-1 hover:text-red-500 rounded"><Trash2 size={12} /></button>}
                                         </>
                                     )}
                                 </div>
@@ -845,6 +816,23 @@ export const ChatInterface = ({
             </div>
 
             <div className="p-4 bg-white/50 backdrop-blur-sm shrink-0">
+                {(requiresChatWorldline || requiresChatCharacter) && <div role="status"
+                    className="mx-auto mb-3 flex max-w-3xl items-center gap-2 rounded-xl border border-[#dce8df] bg-[#f7faf8] px-4 py-3 text-xs text-[#557968]">
+                    <TreeDeciduous size={16}/>
+                    {requiresChatWorldline ? deepText(locale, "chat.needUmbraWorldline") : deepText(locale, "chat.needCharacter")}
+                    <button type="button" onClick={() => requiresChatWorldline ? onOpenChatWorldline() : setRightSidebarOpen(true)}
+                        className="ml-auto shrink-0 rounded-lg border border-[#d9e5dd] bg-white px-3 py-2 text-xs font-semibold">
+                        {requiresChatWorldline ? deepText(locale, "chat.configureWorldline") : deepText(locale, "chat.chooseCharacter")}
+                    </button>
+                </div>}
+                {requiresEngineer && <div role="status" className="mx-auto mb-3 flex max-w-3xl items-center gap-2 rounded-xl border border-[#dce4ea] bg-[#f7fafb] px-4 py-3 text-xs text-[#5b7588]">
+                    <Hammer size={16} />{deepText(locale, "chat.needEngineer")}
+                    <button type="button" className="ml-auto rounded-lg border border-[#d6e3e9] bg-white px-3 py-2 text-xs font-semibold" onClick={() => setRightSidebarOpen(true)}>{deepText(locale, "chat.chooseCharacter")}</button>
+                </div>}
+                {requiresWorldline && <div role="status" className="mx-auto mb-3 flex max-w-3xl flex-wrap items-center justify-between gap-3 rounded-xl border border-[#dcccae] bg-[#fbf7ee] px-4 py-3 text-xs text-[#776342]">
+                    <span className="flex items-center gap-2"><AlertTriangle size={16}/>{deepText(locale, "chat.needStoryWorldline")}</span>
+                    <button type="button" onClick={onOpenStoryWorldline} className="rounded-lg bg-[#324d42] px-3 py-2 font-semibold text-[#f7ecd0] hover:bg-[#203d32]">{deepText(locale, "chat.storyWorldlineAction")} ↗</button>
+                </div>}
                 <div
                     className="max-w-3xl mx-auto relative bg-white rounded-2xl border flex items-end focus-within:ring-1 transition-all shadow-sm"
                     style={{
@@ -855,22 +843,17 @@ export const ChatInterface = ({
                         boxShadow: isLoading ? `0 0 10px ${currentCharacter.hex}20` : 'none'
                     }}
                 >
-                    <textarea value={input} style={{ caretColor: currentCharacter.hex }} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }} placeholder={currentSession?.memoryMode === 'sliding' ? "Start your dream..." : `Speak to ${currentCharacter.name}...`} className="w-full bg-transparent border-none outline-none py-3 pl-4 pr-20 resize-none min-h-[50px] max-h-32 text-sm" />
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        accept=".txt,.md,.json,.js,.ts,.csv"
-                    />
+                    <textarea value={input} disabled={inputLocked} style={{ caretColor: currentCharacter.hex }} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!inputLocked) handleSend() } }} placeholder={storyStateRepairing ? deepText(locale, "chat.waitRepair") : requiresChatWorldline ? deepText(locale, "chat.waitUmbraWorldline") : requiresChatCharacter ? deepText(locale, "chat.waitCharacter") : requiresEngineer ? deepText(locale, "chat.waitEngineer") : requiresWorldline ? deepText(locale, "chat.waitWorldline") : currentSession?.memoryMode === 'sliding' ? "Start your dream..." : currentSession?.memoryMode === 'chat' ? `${deepText(locale, "chat.talkPrefix")}${currentCharacter.name}${deepText(locale, "chat.talkSuffix")}` : `Speak to ${currentCharacter.name}...`} className="w-full bg-transparent border-none outline-none py-3 pl-4 pr-20 resize-none min-h-[50px] max-h-32 text-sm disabled:cursor-not-allowed disabled:bg-[#f8f6f1] disabled:text-[#9a988c]" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*,video/*,text/plain,.txt" />
                     <div className="absolute bottom-2 right-2 flex gap-1">
-                        {isMultimodal && <button onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-400 hover:text-emerald-500"><Paperclip size={18} /></button>}
-                        {isLoading ? <button onClick={stopGeneration} className="p-1.5 bg-red-500 text-white rounded animate-pulse"><Square size={18} fill="currentColor" /></button> : (!input.trim() && !selectedFile && currentSession && currentSession.messages.length > 1) ? <button onClick={() => handleRegenerate(currentSession.messages.length - 1)} className="p-1.5 text-white rounded hover:brightness-110 transition-all" style={{ backgroundColor: currentSession?.memoryMode === 'sliding' ? '#e11e54' : currentCharacter.hex }}><RotateCcw size={18} /></button> : <button onClick={() => handleSend()} disabled={!input.trim() && !selectedFile} className="p-1.5 text-white rounded disabled:opacity-30 hover:brightness-110 transition-all" style={{ backgroundColor: currentSession?.memoryMode === 'sliding' ? '#e11e54' : currentCharacter.hex }}><Send size={18} /></button>}
+                        {isMultimodal && <button disabled={inputLocked} onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-400 hover:text-emerald-500 disabled:opacity-30"><Paperclip size={18} /></button>}
+                        {isLoading ? <button type="button" aria-label={deepText(locale, "common.stop")} title={deepText(locale, "common.stop")} onClick={() => void confirmStopGeneration()} className="p-1.5 bg-red-500 text-white rounded animate-pulse"><Square size={18} fill="currentColor" /></button> : (!inputLocked && !input.trim() && !selectedFile && currentSession && currentSession.messages.length > 1) ? <button onClick={() => handleRegenerate(currentSession.messages.length - 1)} className="p-1.5 text-white rounded hover:brightness-110 transition-all" style={{ backgroundColor: currentSession?.memoryMode === 'sliding' ? '#e11e54' : currentCharacter.hex }}><RotateCcw size={18} /></button> : <button onClick={() => handleSend()} disabled={inputLocked || (!input.trim() && !selectedFile)} className="p-1.5 text-white rounded disabled:opacity-30 hover:brightness-110 transition-all" style={{ backgroundColor: currentSession?.memoryMode === 'sliding' ? '#e11e54' : currentCharacter.hex }}><Send size={18} /></button>}
                     </div>
                 </div>
                 {selectedFile && <div className="text-xs text-gray-400 mt-1 ml-2 flex items-center gap-2">{selectedFile.type === 'text' ? <FileText size={12} /> : <Paperclip size={12} />} <span>{selectedFile.name}</span><button onClick={() => setSelectedFile(null)} className="text-red-400">×</button></div>}
             </div>
 
+            <ImageLightbox src={previewImage} onClose={() => setPreviewImage(null)} />
             <MusicPlayerModal isOpen={showFullPlayer} onClose={() => setShowFullPlayer(false)}
             />
         </div>
