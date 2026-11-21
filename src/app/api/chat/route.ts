@@ -116,12 +116,12 @@ export async function POST(req: Request) {
       temperature = 0.7, 
     } = body;
 
-    const selectedProvider = getServerLocalProvider(provider);
+    const selectedProvider = getServerLocalProvider(provider, body.byok);
     if (!selectedProvider) return Response.json({ error: "Provider not configured" }, { status: 400 });
     const routedModel = typeof model === "string" ? model.trim() : "";
     if (!routedModel) return Response.json({ error: "Select a model for this provider" }, { status: 400 });
     const independentRepair = body.stateRepair === true || body.novelStateRepair === true || body.metadataRepair === true;
-    const webEnabled = memoryMode === "infinite" && useWebSearch === true && !independentRepair;
+    const webEnabled = false; // Cloud web search needs a separately audited BYOK integration.
     const imageEnabled = useImageGen === true && ["infinite", "novel", "sliding", "chat"].includes(memoryMode) && !independentRepair;
     const autoDjEnabled = false; // Cloud demo music never enters prompt/tool orchestration.
     const danmakuEnabled = body.danmakuEnabled === true && ["sliding", "novel"].includes(memoryMode) && !independentRepair;
@@ -974,7 +974,7 @@ Never put session_title, turn_memory or game_state inside <thinking>, and never 
       });
     }
 
-    if (memoryMode === "infinite" && typeof body.engineeringProjectRoot === "string"
+    if (false && memoryMode === "infinite" && typeof body.engineeringProjectRoot === "string"
       && body.engineeringProjectRoot.trim()) {
       try {
         const project = validProjectName(body.engineeringProjectRoot);
@@ -996,8 +996,8 @@ Never put session_title, turn_memory or game_state inside <thinking>, and never 
     }
 
     // Local-only, opt-in diagnostics. Never include API keys in the request log.
-    const debugRequestPayload = body.debugRequestPayload === true;
-    const debugFullOutput = body.debugFullOutput === true;
+    const debugRequestPayload = false; // Never log Cloud users' prompts, credentials or model output.
+    const debugFullOutput = false;
     // Diagnostic-only presentation: show actual prompt newlines rather than
     // JSON.stringify-escaped "\\n". The provider receives the SAME payload.
     const readableRequestLog = (payload: unknown): string => {
@@ -1131,8 +1131,8 @@ Never put session_title, turn_memory or game_state inside <thinking>, and never 
             // request shims that may call deprecated url.parse().
             fetch: globalThis.fetch,
             ...(selectedProvider.id === 'openrouter' ? { defaultHeaders: {
-                "HTTP-Referer": "http://localhost:3000",
-                "X-Title": "Shiorivia Local",
+                "HTTP-Referer": "https://app.shiorivia.com",
+                "X-Title": "Shiorivia Cloud",
             }} : {}),
         });
 

@@ -1,45 +1,44 @@
+import { isIP } from "node:net";
 import { DEFAULT_LOCAL_PROVIDERS, type LocalProviderId, type PublicLocalProvider } from "./localProviders";
+import type { CloudCredential } from "./cloudCredentials";
 
-type ServerLocalProvider = PublicLocalProvider & { apiKey: string; baseURL: string };
+export type ServerCloudProvider = PublicLocalProvider & { apiKey: string; baseURL: string };
 
-const CUSTOM_IDS = ["custom_1", "custom_2", "custom_3", "custom_4"] as const;
-
-function normalizeBaseURL(raw: string): string | null {
+/** Prevent obvious local/metadata network targeting in custom URLs.
+ * Custom server-side proxying is disabled until a DNS pinning / SSRF review.
+ */
+function validateCloudBaseURL(raw: string): string | null {
   try {
-    const url = new URL(raw);
-    if (!(["http:", "https:"].includes(url.protocol)) || url.username || url.password || url.search || url.hash) return null;
-    return url.toString().replace(/\/$/, "");
-  } catch {
-    return null;
+    const u = new URL(raw);
+    const host=u.hostname.toLowerCase();
+    if (u.protocol!=="https:" || u.username || u.password || u.hash || u.search ||
+        u.port || isIP(host)!==0 || !host.includes(".") || host==="localhost" ||
+        /(?:^|\.)(?:localhost|local|internal|test|invalid|example|home|lan)$/.test(host) ||
+        /^169\.254\./.test(host))return null;
+    return u.toString().replace(/\/$/,"");
+  } catch {return null;}
+}
+const customIds=["custom_1","custom_2","custom_3","custom_4"];
+export function getServerLocalProvider(id:unknown,raw?:unknown):ServerCloudProvider|null {
+  if (typeof id!=="string" || typeof raw!=="object" || raw===null || Array.isArray(raw))return null;
+  const item=raw as Record<string,unknown>;
+  const apiKey=typeof item.apiKey==="string"?item.apiKey.trim():"";
+  if (!apiKey || apiKey.length>400 || /[\r\n\0]/.test(apiKey))return null;
+  const builtin=DEFAULT_LOCAL_PROVIDERS.find(p=>p.id===id);
+  if (builtin) {
+    const baseURL=id==="deepseek"?"https://api.deepseek.com":id==="openrouter"?"https://openrouter.ai/api/v1":"";
+    return {...builtin,configured:true,apiKey,baseURL};
   }
+  if (!customIds.includes(id) || process.env.CLOUD_CUSTOM_ENDPOINTS_ENABLED!=="true")return null;
+  const baseURL=validateCloudBaseURL(typeof item.baseURL==="string"?item.baseURL:"");
+  if (!baseURL)return null;
+  return {id:id as LocalProviderId,label:id,custom:true,configured:true,apiKey,baseURL};
 }
 
-export function serverLocalProviders(): ServerLocalProvider[] {
-  const defaults = DEFAULT_LOCAL_PROVIDERS.map((p) => {
-    const apiKey = (p.id === "fal" ? process.env.FAL_KEY : p.id === "deepseek" ? process.env.DEEPSEEK_API_KEY
-      : p.id === "google" ? process.env.GOOGLE_API_KEY
-      : process.env.OPENROUTER_API_KEY) || "";
-    const baseURL = p.id === "deepseek" ? "https://api.deepseek.com"
-      : p.id === "openrouter" ? "https://openrouter.ai/api/v1" : "";
-    return { ...p, configured: Boolean(apiKey), apiKey, baseURL };
-  });
-  const custom = CUSTOM_IDS.map((id, index) => {
-    const number = index + 1;
-    // Explicit keys prevent dynamic environment variable access in edge builds.
-    const keys = [process.env.SHIORIVIA_CUSTOM_1_API_KEY, process.env.SHIORIVIA_CUSTOM_2_API_KEY, process.env.SHIORIVIA_CUSTOM_3_API_KEY, process.env.SHIORIVIA_CUSTOM_4_API_KEY];
-    const urls = [process.env.SHIORIVIA_CUSTOM_1_BASE_URL, process.env.SHIORIVIA_CUSTOM_2_BASE_URL, process.env.SHIORIVIA_CUSTOM_3_BASE_URL, process.env.SHIORIVIA_CUSTOM_4_BASE_URL];
-    const apiKey = (keys[index] || "").trim();
-    const baseURL = normalizeBaseURL((urls[index] || "").trim()) || "";
-    return { id: id as LocalProviderId, label: `Custom_${number}`, configured: Boolean(apiKey && baseURL), custom: true, apiKey, baseURL };
-  });
-  return [...custom, ...defaults];
-}
-
-export function getServerLocalProvider(id: unknown): ServerLocalProvider | null {
-  if (typeof id !== "string") return null;
-  return serverLocalProviders().find((p) => p.id === id && p.configured) || null;
-}
-
+/** No server-side secret or configured provider list is exposed in Cloud. */
 export function publicLocalProviders(): PublicLocalProvider[] {
-  return serverLocalProviders().map(({ id, label, custom, configured }) => ({ id, label, custom, configured }));
+  return [
+    ...customIds.map(id=>({id:id as LocalProviderId,label:id,custom:true,configured:false})),
+    ...DEFAULT_LOCAL_PROVIDERS,
+  ];
 }
