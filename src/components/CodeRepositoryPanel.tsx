@@ -11,6 +11,8 @@ import { useAppDialog } from "../context/DialogContext";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
 import { browserIde } from "../lib/browserIde";
+import { subscribeBrowserChanges } from "../lib/browserStore";
+import { validRelativePath, isWorkspaceTextFile } from "../lib/idePathPolicy";
 import { projectZip } from "../lib/ideProjectZip";
 
 const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScreen, projectRoot, onBindProject }: any) => {
@@ -30,6 +32,7 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
     const [busy, setBusy] = useState(false);
     const [showProjectPicker, setShowProjectPicker] = useState(false);
     const [status, setStatus] = useState("");
+    const [externalChange, setExternalChange] = useState(false);
     const ideRequest = browserIde;
     const reloadBrowserProject = async (target = projectRoot, confirmDiscard = true) => {
         if (!target) return;
@@ -38,13 +41,13 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         if (confirmDiscard && hasDraft && !await dialog.confirm(text("unsavedSync"))) return;
         setBusy(true);
         try {
-            const [snapshots, folders] = await Promise.all([
-                browserIde("snapshot", {project:target}), browserIde("tree", {project:target})
-            ]);
-            const nextFiles = snapshots.files || {};
+            // Read files and folders from one consistent IndexedDB snapshot.
+            const snapshot = await browserIde("snapshot", {project:target});
+            const nextFiles = snapshot.files || {};
             setFiles(nextFiles);
             setDiskBaseline(nextFiles);
-            setTree(Array.isArray(folders.entries) ? folders.entries : []);
+            setTree(Array.isArray(snapshot.entries) ? snapshot.entries : []);
+            setExternalChange(false);
             setActiveFile(current => current in nextFiles ? current : Object.keys(nextFiles)[0] || "");
             setIsEditing(false);
             setStatus(fill("synced", { project: target, count: Object.keys(nextFiles).length }));
@@ -68,6 +71,12 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         // The project binding, not the new identity of an empty {} prop, controls sync.
     }, [projectRoot]);
 
+    // Surface same-tab AI edits and cross-tab writes without discarding drafts.
+    useEffect(() => {
+        if (!projectRoot) return;
+        return subscribeBrowserChanges("ide:project:" + projectRoot, () => setExternalChange(true));
+    }, [projectRoot]);
+
     const handleSave = async () => {
         if (!await dialog.confirm(text("saveAsk"))) return;
         if (!projectRoot) {
@@ -77,10 +86,16 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         }
         setBusy(true);
         try {
+            const changes: Record<string, string> = {};
+            const expected: Record<string, string | null> = {};
             for (const [name, file] of Object.entries(files) as [string, CodeFile][]) {
                 if (savedBaseline[name]?.content !== file.content) {
-                    await ideRequest("write", { project: projectRoot, path: name, content: file.content });
+                    changes[name] = file.content;
+                    expected[name] = savedBaseline[name]?.content ?? null;
                 }
+            }
+            if (Object.keys(changes).length) {
+                await ideRequest("writeBatch", { project: projectRoot, files: changes, expected });
             }
             await reloadBrowserProject(projectRoot, false);
         } catch (error: any) { dialog.notify(error.message); }
@@ -95,11 +110,8 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         if (hasUnsavedDraft && !await dialog.confirm(text("exportUnsavedAsk"))) return;
         setBusy(true);
         try {
-            const [snapshot, projectTree] = await Promise.all([
-                browserIde("snapshot",{project:projectRoot}),
-                browserIde("tree",{project:projectRoot}),
-            ]);
-            const zip = await projectZip(projectRoot, snapshot.files || {}, projectTree.entries || []);
+            const snapshot = await browserIde("snapshot", {project:projectRoot});
+            const zip = await projectZip(projectRoot, snapshot.files || {}, snapshot.entries || []);
             const url = URL.createObjectURL(zip);
             try {
                 const link = document.createElement("a");
@@ -127,8 +139,11 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
     const handleNewFile = async () => {
         const name = await dialog.prompt(text("filePathAsk"));
         if (!name) return;
-        if (!/^[^\\/:*?"<>|]+(?:\/[^\\/:*?"<>|]+)*$/.test(name) || name.split("/").includes("..")) {
-            dialog.notify(text("invalidPath")); return;
+        try {
+            if (!isWorkspaceTextFile(validRelativePath(name))) throw new Error("Not a safe text/code path.");
+        } catch { dialog.notify(text("invalidPath")); return; }
+        if (Object.prototype.hasOwnProperty.call(files, name)) {
+            setActiveFile(name); setShowSidebar(true); return;
         }
         setFiles(prev => ({ ...prev, [name]: { name, language: name.split(".").pop() || "text", content: "" } }));
         setActiveFile(name);
@@ -142,9 +157,14 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         if (!await dialog.confirm(fill("importLegacyAsk", { count: legacy.length, project: projectRoot }))) return;
         setBusy(true);
         try {
+            const snapshot = await browserIde("snapshot", { project: projectRoot });
+            const changes: Record<string, string> = {};
+            const expected: Record<string, string | null> = {};
             for (const [name, file] of legacy) {
-                await ideRequest("write", { project: projectRoot, path: name, content: file.content });
+                changes[name] = file.content;
+                expected[name] = snapshot.files?.[name]?.content ?? null;
             }
+            await ideRequest("writeBatch", { project: projectRoot, files: changes, expected });
             await reloadBrowserProject(projectRoot, false);
         } catch (error: any) { dialog.notify(`${text("importAborted")}${error.message}`); }
         finally { setBusy(false); }
@@ -181,7 +201,7 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         const updated = { ...files };
         delete updated[name];
         if (projectRoot && name in savedBaseline) {
-            try { await ideRequest("delete", { project: projectRoot, path: name }); }
+            try { await ideRequest("delete", { project: projectRoot, path: name, expected: savedBaseline[name].content }); }
             catch (error: any) { dialog.notify(error.message); return; }
         } else if (!projectRoot) onUpdate(updated);
         setFiles(updated);
@@ -246,6 +266,9 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
                         {isEditing ? <Check size={14} /> : <Lock size={14} />}
                     </button>
 
+                    <button type="button" disabled={busy || !projectRoot} onClick={() => void reloadBrowserProject()}
+                        className="rounded-lg border border-white/15 p-1.5 text-[#b7c8f2] hover:bg-white/10 disabled:opacity-40"
+                        title={text("syncHint")} aria-label={text("sync")}><RefreshCw size={14}/></button>
                     <button type="button" disabled={busy || !projectRoot} onClick={() => void exportProject()}
                         className="flex items-center gap-1 rounded-lg border border-white/15 px-2 py-1.5 text-[#c1d1fa] hover:bg-white/10 disabled:opacity-40"
                         title={text("exportHint")} aria-label={text("exportProject")}>
@@ -281,6 +304,9 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
                         <Plus size={12} className="mr-1 inline"/> {text("newProject")}
                     </button>
                 </div>
+            </div>}
+            {externalChange && <div role="status" className="shrink-0 border-b border-amber-500/40 bg-amber-950/30 px-4 py-2 text-[11px] text-amber-200">
+                {text("externalChange")} <button type="button" onClick={() => void reloadBrowserProject()} className="ml-2 underline" disabled={busy}>{text("sync")}</button>
             </div>}
             {status && <div role="status" className="shrink-0 border-b border-[#526587]/30 bg-[#17223c] px-4 py-1.5 text-[10px] text-[#b9c7e6]">{status}</div>}
             <div className="flex flex-1 min-h-0 relative">

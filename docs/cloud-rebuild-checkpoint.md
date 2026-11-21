@@ -17,6 +17,7 @@ This is an **engineering checkpoint**, not the Cloud release.
 - Browser-only virtual Officina project directories and text files; **Export project** downloads a browser-created ZIP containing the root directory (and empty subdirectories), ready to extract into Local's `IDE/`. User-approved, bounded code excerpts can reach a model for AI programming assistance, while reviewed file changes apply via browser IndexedDB, never `/api/ide`. Entire AI-generated file sets now require explicit review/approval and save together after stale-file checks.
 - Text/code-only file picker; Charta Local portrait/avatar imports sanitized; old Local image uploads disabled.
 - The `/api/summarize` route now accepts the same per-request BYOK credentials as chat (no shared server key fallback).
+- IDE writes, imports and AI edits use atomic IndexedDB transactions with stale-content checks. Cross-tab notifications prompt explicit refresh rather than destroying drafts; ZIP export uses a consistent project snapshot.
 - A masked per-provider BYOK configuration UI; keys stored only on the browser origin and passed to the model proxy with requests. The browser storage is **not encrypted**.
 - Hosted image backends and image model-ID prerequisite; local ComfyUI/SD code path removed.
 - Auto DJ, music scanning and server-local routes removed; bundled original WAV demo music supplied.

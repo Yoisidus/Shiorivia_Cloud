@@ -245,6 +245,7 @@ const strings: Record<string, readonly [string, string, string, string, string]>
   "sidebar.persona.boundTitle": ["当前工程会话已绑定该角色", "目前工程對話已綁定此角色", "Character bound to this session", "このセッションに紐づいているキャラクター", "이 세션에 연결된 캐릭터"],
   "sidebar.persona.bound": ["已绑定", "已綁定", "Bound", "紐づけ済み", "연결됨"],
   // Officina IDE workspace: display-only labels and non-protocol notifications.
+  "ide.ui.externalChange": ["项目文件已在另一标签页或 AI 操作中更新。请重新读取；未保存草稿不会被自动覆盖。", "專案檔案已在其他分頁或 AI 操作中更新。請重新讀取；未儲存草稿不會自動被覆蓋。", "Project files changed in another tab or via AI. Reload to view changes; unsaved drafts will not be overwritten automatically.", "別のタブまたは AI によりプロジェクトが更新されました。再読み込みしてください。未保存の編集は自動で上書きされません。", "다른 탭 또는 AI 작업에서 프로젝트 파일이 변경되었습니다. 새로고침하여 확인하세요. 저장하지 않은 편집 내용은 자동으로 덮어쓰지 않습니다."],
   "ide.ui.operationFailed": ["IDE 操作失败。", "IDE 操作失敗。", "IDE operation failed.", "IDE の操作に失敗しました。", "IDE 작업에 실패했습니다."],
   "ide.ui.unsavedSync": ["当前 IDE 有未保存修改。重新读取浏览器项目将丢弃这些草稿，继续吗？", "目前 IDE 有未儲存修改。重新讀取瀏覽器專案會捨棄草稿，繼續嗎？", "Unsaved edits will be discarded when reloading this browser project. Continue?", "未保存の編集があります。ブラウザプロジェクトを再読み込みすると破棄されます。続けますか？", "저장하지 않은 수정 사항이 있습니다. 브라우저 프로젝트를 다시 불러오면 사라집니다. 계속할까요?"],
   "ide.ui.readFailed": ["读取失败。", "讀取失敗。", "Unable to read project files.", "ファイルを読み込めませんでした。", "프로젝트 파일을 읽지 못했습니다."],
