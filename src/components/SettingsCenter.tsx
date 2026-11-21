@@ -346,9 +346,9 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                     {([['width',deepText(locale, "settings.imageWidth")],['height',deepText(locale, "settings.imageHeight")],['steps',deepText(locale, "settings.imageSteps")],['cfg','CFG']] as const).map(([key,label]) => <label key={key} className="text-xs text-slate-600">{label}<input type="number" min={1} max={2048} value={imageSettings[key]} onChange={e => onImageSettingsChange({[key]:Number(e.target.value)})} className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50/40 p-2 text-sm text-slate-700 outline-none focus:border-slate-400"/></label>)}
                   </div>
-                  </div>}
+                  </div>
                   <p className="text-[11px] leading-5 text-slate-500">{deepText(locale, "cloud.image.requiresModel")}</p>
-                </div>}
+                </div>
                 </>}
               </section>
             )}
