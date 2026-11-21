@@ -9,8 +9,14 @@ export const useFileHandler = ({
     const importInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const f = e.target.files?.[0]; 
+        const f = e.target.files?.[0];
         if (!f) return;
+        const permitted = /\.(?:txt|md|markdown|json|jsonl|csv|tsv|xml|yaml|yml|toml|ini|log|js|jsx|ts|tsx|py|css|scss|html|htm|sql|sh|bash|ps1|java|kt|go|rs|rb|php|c|cc|cpp|h|hpp|cs|swift|lua|vue|svelte|mjs|cjs|json5)$/i.test(f.name) || (f.type.startsWith("text/") && !/\.(?:svg|html?)$/i.test(f.name));
+        if (!permitted || f.size > 1024 * 1024) {
+            showToast?.("Cloud supports text/code attachments up to 1 MiB only.");
+            e.target.value = "";
+            return;
+        }
 
         const r = new FileReader();
         r.onload = (ev) => {
@@ -18,17 +24,13 @@ export const useFileHandler = ({
             if (typeof result === 'string') {
                 setSelectedFile({
                     url: result,
-                    type: f.type.startsWith('image') ? 'image' : 'text',
+                    type: 'text',
                     name: f.name
                 });
             }
         };
 
-        if (f.type.startsWith('image')) {
-            r.readAsDataURL(f);
-        } else {
-            r.readAsText(f);
-        }
+        r.readAsText(f);
         
         e.target.value = '';
     };
@@ -36,7 +38,11 @@ export const useFileHandler = ({
     const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0];
         if (!f) return;
-
+        if (!/\.json$/i.test(f.name) || f.size > 2 * 1024 * 1024) {
+            showToast?.("Cloud import accepts JSON up to 2 MiB.");
+            e.target.value = "";
+            return;
+        }
         const r = new FileReader();
         r.onload = (ev) => {
             const content = ev.target?.result;
@@ -61,18 +67,7 @@ export const useFileHandler = ({
 
     const handleBgDrop = (e: React.DragEvent) => {
         e.preventDefault();
-        const f = e.dataTransfer.files?.[0];
-        if (f && f.type.startsWith('image/')) {
-            const r = new FileReader();
-            r.onload = (ev) => {
-                const res = ev.target?.result;
-                if (typeof res === 'string') {
-                    setBgImage(res);
-                    if (showToast) showToast("🖼️ Background Updated");
-                }
-            };
-            r.readAsDataURL(f);
-        }
+        showToast?.("Cloud does not support uploading background images.");
     };
 
     return {

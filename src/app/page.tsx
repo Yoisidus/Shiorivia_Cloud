@@ -790,16 +790,8 @@ export default function Home() {
                 onGenerateDraw={engine.generateDraw} imageSettings={config.imageSettings} debugMode={ui.debugMode && config.debugDrawTags} useImageGen={config.imageGen} showToast={ui.showToast}
                 danmakuEnabled={config.danmakuEnabled} danmakuCount={config.danmakuCount}
                 setIsGlobalGenerating={setIsGlobalGenerating}
-                onImageGenerated={async (base64: string, meta: any) => {
-                    const res = await fetch("/api/upload", {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ base64 })
-                    });
-                    const data = await res.json();
-                    if (data.url) {
-                        ui.showToast("💾 Image Saved Locally");
-                        return data.url;
-                    }
+                onImageGenerated={async () => {
+                    ui.showToast(deepText(locale, "cloud.image.noGallery"));
                     return "";
                 }}
                 onManualSync={() => cloud.triggerSync('manual')}

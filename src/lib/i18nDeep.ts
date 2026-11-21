@@ -2,6 +2,8 @@ import type { Locale } from "./locale";
 
 /** Localizable interface copy; never use these strings as persisted IDs. */
 const strings: Record<string, readonly [string, string, string, string, string]> = {
+  "cloud.charta.imageLocalOnly": ["云端版只保存文字设定和预设 Emoji 头像。立绘和自定义图片头像请使用本地版。", "雲端版只儲存文字設定和預設 Emoji 頭像。立繪與自訂圖片頭像請使用本地版。", "Cloud keeps text profiles and preset emoji avatars only. Use Local for portraits and uploaded avatars.", "Cloud ではテキスト設定と絵文字アイコンのみ保存できます。立ち絵や画像アイコンは Local 版をご利用ください。", "Cloud는 텍스트 설정과 기본 이모지 아바타만 저장합니다. 스탠딩 일러스트와 이미지 아바타는 Local 버전을 이용하세요."],
+  "cloud.image.noGallery": ["云端版不将生成图片写入公共服务器图库。", "雲端版不會將生成圖片寫入公用伺服器圖庫。", "Cloud does not store generated images in a shared server gallery.", "Cloud は生成画像を共有サーバーのギャラリーに保存しません。", "Cloud는 생성 이미지를 공유 서버 갤러리에 저장하지 않습니다."],
   "viae.actionOpen": ["开启", "開啟", "Start", "始める", "시작"],
   "viae.actionCreate": ["创建", "建立", "Create", "作成", "만들기"],
   "music.ui.expand": ["展开", "展開", "Expand", "展開", "펼치기"],

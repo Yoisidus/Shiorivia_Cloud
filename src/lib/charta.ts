@@ -39,7 +39,10 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isHex = (value: unknown): value is string => typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
 const allowedImage = /^data:image\/(?:png|jpeg|webp);base64,[a-zA-Z0-9+/=]+$/;
 const isAvatar = (value: unknown): value is string => typeof value === "string" &&
-  ((CHARTA_PRESET_AVATARS as readonly string[]).includes(value) || (value.length <= 350_000 && allowedImage.test(value)));
+  (CHARTA_PRESET_AVATARS as readonly string[]).includes(value);
+// In Cloud, image data must never be persisted as Charta avatar or portrait.
+// Parse old Local character exports without discarding their text profiles.
+const normalizeAvatar = (value: unknown): string => isAvatar(value) ? value : "✦";
 const isLang = (value: unknown): value is string => typeof value === "string" && /^(?:[a-z]{2,3})(?:-[a-zA-Z0-9]{2,8}){0,3}$/.test(value);
 
 /** Validate untrusted imported data; never merge with lore_library or session JSON. */
@@ -51,7 +54,7 @@ export function parseChartaCharacter(input: unknown): ChartaCharacter {
     if (name.trim()) names[lang] = name.trim();
   }
   if (!names[input.primaryLanguage] || Object.keys(names).length > 12) throw new Error("A primary name is required.");
-  if (!isHex(input.hex) || !isAvatar(input.avatar)) throw new Error("A theme color and avatar are required.");
+  if (!isHex(input.hex)) throw new Error("A theme color is required.");
   if (input.description !== undefined && (typeof input.description !== "string" || input.description.length > 20000)) throw new Error("Character notes exceed the limit.");
   const description = typeof input.description === "string" ? input.description : "";
   const profile = parseChartaLoreProfile(input.profile) || (description.trim() ? { intro: description, personality: "", relationshipNotes: "", relationships: [], experienceNotes: "", experiences: [], guidance: "" } : undefined);
@@ -67,9 +70,8 @@ export function parseChartaCharacter(input: unknown): ChartaCharacter {
   const id = typeof input.id === "string" && /^charta-[a-zA-Z0-9-]{8,90}$/.test(input.id) ? input.id : makeChartaId();
   const characterCode = input.characterCode === undefined ? id : input.characterCode;
   if (typeof characterCode !== "string" || !/^[a-zA-Z][a-zA-Z0-9_-]{1,63}$/.test(characterCode)) throw new Error("角色 ID 必填，必须以字母开头，使用 2–64 位字母、数字、下划线或短横线。");
-  const portrait = typeof input.portrait === "string" && new RegExp(`^/api/local/charta\\?portrait=${id}&v=[0-9]{1,14}$`).test(input.portrait)
-    ? input.portrait : undefined;
-  return { id, characterCode, ...(worldId ? { worldId } : {}), primaryLanguage: input.primaryLanguage, names, hex: input.hex, avatar: input.avatar, portrait, description, profile, ...identity, gender, ...(gender === "custom" ? { genderCustom } : {}),
+  // Never carry Local disk-backed standee endpoints into a Cloud profile.
+  return { id, characterCode, ...(worldId ? { worldId } : {}), primaryLanguage: input.primaryLanguage, names, hex: input.hex, avatar: normalizeAvatar(input.avatar), description, profile, ...identity, gender, ...(gender === "custom" ? { genderCustom } : {}),
     createdAt: Number.isFinite(input.createdAt) ? Number(input.createdAt) : Date.now(), updatedAt: Date.now() };
 }
 
@@ -84,8 +86,7 @@ export function nameForCharta(char: ChartaCharacter, locale: Locale | string): s
 export function toChartaCharConfig(char: ChartaCharacter, locale: Locale): CharConfig {
   const name = nameForCharta(char, locale);
   return { id: char.id, name, sub: "Charta", hex: char.hex,
-    // Legacy controls expect an emoji here; uploaded images render in Charta and the custom portrait stage.
-    avatar: char.avatar.startsWith("data:") ? "✦" : char.avatar,
+    avatar: normalizeAvatar(char.avatar),
     keys: [...new Set([...Object.values(char.names), ...(char.aliases || [])])], lore: formatChartaLore({ ...char, name }, null, [], true), baseStats: { Obsession: 0 } };
 }
 
