@@ -842,7 +842,6 @@ export const useChatEngine = ({
                         diskWriteSucceeded = true;
                         showToast(`已保存到浏览器 IDE/${outputProject} · ${generated.length} 个文件`);
                     }
-                    showToast(`已保存到浏览器 IDE/${outputProject} · ${Object.keys(newFiles).length} 个文件`);
                 } catch (error: any) {
                     console.warn("Officina project write failed:", error);
                     showToast(`IDE 文件写入失败；代码已附在回复下方：${error.message}`);
