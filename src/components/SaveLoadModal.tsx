@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Save, Download, Trash2, X, Camera, HardDrive, Loader2, Sparkles, Orbit } from "lucide-react";
-import { toJpeg } from 'html-to-image';
+import { browserRead, browserWrite } from "../lib/browserStore";
 import { useAppDialog } from '../context/DialogContext';
 import { useLanguage } from '../context/LanguageContext';
 import { deepText } from '../lib/i18nDeep';
@@ -13,130 +13,58 @@ export const SaveLoadModal = ({ isOpen, onClose, currentSession, onLoadSession }
     const slotText = (key: string, index: number) => deepText(locale, `archive.ui.${key}`).replace("{index}", String(index));
     const [slots, setSlots] = useState<Record<number, any>>({});
     const [isLoading, setIsLoading] = useState(false);
-    const [isCapturing, setIsCapturing] = useState(false);
+    const [isCapturing] = useState(false);
 
     const fetchSlots = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/local/slots");
-            const data = await res.json();
-            
-            const map: Record<number, any> = {};
-            if (data.slots) {
-                data.slots.forEach((meta: any) => {
-                    map[meta.slotIndex] = meta;
-                });
-            }
+            const entries = await browserRead<Record<number, {session:any;timestamp:number;previewText:string;slotIndex:number}>>("archive:slots", {});
+            const map: Record<number,any> = {};
+            for (const [index,entry] of Object.entries(entries)) map[Number(index)]={...entry,thumbnail:null};
             setSlots(map);
-        } catch (e) {
-            console.error("Fetch slots failed", e);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (isOpen) fetchSlots();
-    }, [isOpen]);
-
-    const captureScreen = async () => {
-        setIsCapturing(true); 
-        
-        await new Promise(r => setTimeout(r, 800)); 
-
-        try {
-            const dataUrl = await toJpeg(document.body, {
-                quality: 0.6,
-                pixelRatio: 0.5,
-                filter: (node) => {
-                    if (node instanceof HTMLElement) {
-                        const style = window.getComputedStyle(node);
-                        if (style.position === 'fixed' && style.zIndex && parseInt(style.zIndex) > 100) {
-                            return false; 
-                        }
-                    }
-                    return true;
-                }
-            });
-            return dataUrl;
-        } catch (e) {
-            console.error("Capture failed", e);
-            return null; 
-        } finally {
-            setIsCapturing(false); 
-        }
-    };
-
-    const handleSave = async (index: number) => {
-        if (!currentSession) return;
-        if (slots[index] && !await dialog.confirm(slotText("overwrite", index + 1))) return;
-
-        const base64 = await captureScreen();
-        setIsLoading(true);
-
-        const lastMsg = currentSession.messages[currentSession.messages.length - 1];
-        let preview = "New Memory";
-        if (lastMsg) preview = typeof lastMsg.content === 'string' ? lastMsg.content.slice(0, 30) + "..." : "[Image]";
-
-        try {
-            const res = await fetch("/api/local/slots", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    slotIndex: index,
-                    session: currentSession,
-                    meta: {
-                        slotIndex: index,
-                        name: `Save ${index + 1}`,
-                        previewText: preview,
-                    },
-                    thumbnailBase64: base64
-                })
-            });
-
-            if (!res.ok) throw new Error("Save failed");
-            await fetchSlots();
-        } catch (e) {
-            dialog.notify(deepText(locale, "archive.ui.saveFailed"));
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleLoad = async (index: number) => {
-        if (!await dialog.confirm(slotText("loadAsk", index + 1))) return;
-        
-        setIsLoading(true);
-        try {
-            const res = await fetch("/api/local/slots/read", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ slotIndex: index })
-            });
-            const data = await res.json();
-            
-            if (data.session) {
-                onLoadSession(data.session);
-                onClose();
-            }
-        } catch (e) {
+        } catch (error) {
             dialog.notify(deepText(locale, "archive.ui.loadFailed"));
-        } finally {
-            setIsLoading(false);
-        }
+        } finally { setIsLoading(false); }
     };
+    useEffect(() => { if (isOpen) void fetchSlots(); }, [isOpen]);
 
-    const handleDelete = async (e: any, index: number) => {
-        e.stopPropagation();
-        if (!await dialog.confirm(deepText(locale, "archive.ui.deleteAsk"))) return;
+    const handleSave = async (index:number) => {
+        if (!currentSession) return;
+        if (slots[index] && !await dialog.confirm(slotText("overwrite",index+1))) return;
         setIsLoading(true);
-        await fetch("/api/local/slots", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ slotIndex: index })
-        });
-        await fetchSlots();
-        setIsLoading(false);
+        try {
+            const previous=await browserRead<Record<number, any>>("archive:slots",{});
+            const last=currentSession.messages[currentSession.messages.length-1];
+            const previewText=typeof last?.content==="string"?last.content.slice(0,45):"";
+            const next={...previous,[index]:{slotIndex:index,session:currentSession,timestamp:Date.now(),previewText}};
+            await browserWrite("archive:slots",next);
+            await fetchSlots();
+        } catch { dialog.notify(deepText(locale,"archive.ui.saveFailed")); }
+        finally { setIsLoading(false); }
+    };
+    const handleLoad = async (index:number) => {
+        if (!await dialog.confirm(slotText("loadAsk",index+1))) return;
+        setIsLoading(true);
+        try {
+            const slots=await browserRead<Record<number, any>>("archive:slots",{});
+            if (!slots[index]?.session)throw Error("Slot unavailable");
+            onLoadSession(slots[index].session);
+            onClose();
+        } catch { dialog.notify(deepText(locale,"archive.ui.loadFailed")); }
+        finally {setIsLoading(false);}
+    };
+    const handleDelete = async (event:React.MouseEvent,index:number) => {
+        event.stopPropagation();
+        if (!await dialog.confirm(deepText(locale,"archive.ui.deleteAsk"))) return;
+        setIsLoading(true);
+        try {
+            const stored=await browserRead<Record<number,any>>("archive:slots",{});
+            const updated={...stored};
+            delete updated[index];
+            await browserWrite("archive:slots",updated);
+            await fetchSlots();
+        } catch { dialog.notify(deepText(locale,"archive.ui.saveFailed")); }
+        finally { setIsLoading(false); }
     };
 
     if (isCapturing) return null;
@@ -152,7 +80,7 @@ export const SaveLoadModal = ({ isOpen, onClose, currentSession, onLoadSession }
                             <div aria-hidden className="pointer-events-none absolute right-4 top-0 h-32 w-32 rounded-full border border-[#cfb985]/20" />
                             <div className="relative flex items-center gap-4">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#d9c397]/40 bg-[#e6ce9c]/10 text-[#e4c997]"><Orbit size={24} strokeWidth={1.3}/></div>
-                                <div><div className="flex items-center gap-2 text-[10px] font-semibold tracking-[.25em] text-[#dbc998]"><Sparkles size={12}/> SHIORIVIA · STAR ARCHIVE</div><h2 className="mt-1 text-xl font-semibold tracking-[.14em]" style={{ fontFamily: 'Bahnschrift, "Arial Narrow", sans-serif' }}>LOCAL STORAGE <span className="font-normal text-[#b9cab8]">/ {deepText(locale, "archive.ui.title")}</span></h2><p className="mt-1 text-[11px] text-[#b7c8bb]">{deepText(locale, "archive.ui.subtitle")}</p></div>
+                                <div><div className="flex items-center gap-2 text-[10px] font-semibold tracking-[.25em] text-[#dbc998]"><Sparkles size={12}/> SHIORIVIA · STAR ARCHIVE</div><h2 className="mt-1 text-xl font-semibold tracking-[.14em]" style={{ fontFamily: 'Bahnschrift, "Arial Narrow", sans-serif' }}>BROWSER STORAGE <span className="font-normal text-[#b9cab8]">/ {deepText(locale, "archive.ui.title")}</span></h2><p className="mt-1 text-[11px] text-[#b7c8bb]">{deepText(locale, "archive.ui.subtitle")}</p></div>
                             </div>
                             <button type="button" onClick={onClose} aria-label={deepText(locale, "archive.ui.close")} className="relative rounded-full border border-white/20 p-2 text-[#cfdbcf] hover:bg-white/10"><X size={20}/></button>
                         </div>
