@@ -14,7 +14,7 @@ This is an **engineering checkpoint**, not the Cloud release.
 ## Implemented in the guarded branch
 
 - IndexedDB storage for sessions, worlds, characters, selves, and twelve text-only save slots.
-- Browser-only virtual Officina project directories and text files; no `/api/ide` server disk read.
+- Browser-only virtual Officina project directories and text files; **Export project** downloads a browser-created ZIP containing the root directory (and empty subdirectories), ready to extract into Local's `IDE/`; no `/api/ide` server disk read.
 - Text/code-only file picker; Charta Local portrait/avatar imports sanitized; old Local image uploads disabled.
 - A masked per-provider BYOK configuration UI; keys stored only on the browser origin and passed to the model proxy with requests. The browser storage is **not encrypted**.
 - Hosted image backends and image model-ID prerequisite; local ComfyUI/SD code path removed.

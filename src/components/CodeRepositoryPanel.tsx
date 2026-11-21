@@ -24,17 +24,17 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
     const [isEditing, setIsEditing] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [fileMenu, setFileMenu] = useState<string | null>(null);
-    const [diskBaseline, setDiskBaseline] = useState<Record<string, CodeFile>>({});
+    const [savedBaseline, setDiskBaseline] = useState<Record<string, CodeFile>>({});
     const [tree, setTree] = useState<{ path: string; type: "file" | "directory" }[]>([]);
     const [projects, setProjects] = useState<string[]>([]);
     const [busy, setBusy] = useState(false);
     const [showProjectPicker, setShowProjectPicker] = useState(false);
     const [status, setStatus] = useState("");
     const ideRequest = browserIde;
-    const syncDisk = async (target = projectRoot, confirmDiscard = true) => {
+    const reloadBrowserProject = async (target = projectRoot, confirmDiscard = true) => {
         if (!target) return;
         const hasDraft = isEditing && Object.entries(files).some(([name, file]) =>
-            diskBaseline[name]?.content !== file.content);
+            savedBaseline[name]?.content !== file.content);
         if (confirmDiscard && hasDraft && !await dialog.confirm(text("unsavedSync"))) return;
         setBusy(true);
         try {
@@ -61,7 +61,7 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
             setTree([]);
             setActiveFile(Object.keys(repository || {})[0] || "");
         } else {
-            void syncDisk(projectRoot);
+            void reloadBrowserProject(projectRoot);
         }
         if (typeof window !== "undefined" && window.innerWidth < 768) setShowSidebar(false);
         // A parent rerender must not re-fetch and silently discard unsaved edits.
@@ -78,11 +78,11 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         setBusy(true);
         try {
             for (const [name, file] of Object.entries(files) as [string, CodeFile][]) {
-                if (diskBaseline[name]?.content !== file.content) {
+                if (savedBaseline[name]?.content !== file.content) {
                     await ideRequest("write", { project: projectRoot, path: name, content: file.content });
                 }
             }
-            await syncDisk(projectRoot, false);
+            await reloadBrowserProject(projectRoot, false);
         } catch (error: any) { dialog.notify(error.message); }
         finally { setBusy(false); }
     };
@@ -91,7 +91,7 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         if (!projectRoot || busy) return;
         // The archive is assembled from persisted IndexedDB state, not editor drafts.
         const hasUnsavedDraft = isEditing && Object.entries(files).some(([name,file]) =>
-            diskBaseline[name]?.content !== file.content);
+            savedBaseline[name]?.content !== file.content);
         if (hasUnsavedDraft && !await dialog.confirm(text("exportUnsavedAsk"))) return;
         setBusy(true);
         try {
@@ -120,7 +120,7 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
     };
 
     const handleCancel = () => {
-        setFiles(projectRoot ? diskBaseline : repository || {});
+        setFiles(projectRoot ? savedBaseline : repository || {});
         setIsEditing(false);
     };
 
@@ -145,7 +145,7 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
             for (const [name, file] of legacy) {
                 await ideRequest("write", { project: projectRoot, path: name, content: file.content });
             }
-            await syncDisk(projectRoot, false);
+            await reloadBrowserProject(projectRoot, false);
         } catch (error: any) { dialog.notify(`${text("importAborted")}${error.message}`); }
         finally { setBusy(false); }
     };
@@ -155,7 +155,7 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         if (!relative) return;
         try {
             await ideRequest("createFolder", { project: projectRoot, path: relative });
-            await syncDisk(projectRoot);
+            await reloadBrowserProject(projectRoot);
         } catch (e: any) { dialog.notify(e.message); }
     };
     const loadProjects = async () => {
@@ -180,7 +180,7 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
         if (!await dialog.confirm(fill("deleteAsk", { name }))) return;
         const updated = { ...files };
         delete updated[name];
-        if (projectRoot && name in diskBaseline) {
+        if (projectRoot && name in savedBaseline) {
             try { await ideRequest("delete", { project: projectRoot, path: name }); }
             catch (error: any) { dialog.notify(error.message); return; }
         } else if (!projectRoot) onUpdate(updated);
