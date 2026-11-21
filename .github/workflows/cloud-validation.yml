@@ -1,0 +1,30 @@
+name: Cloud guarded validation
+
+on:
+  push:
+    branches:
+      - rebuild/local-foundation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install isolated test-only IndexedDB simulator
+        run: npm install --no-save --no-package-lock fake-indexeddb@6
+      - name: Validate TypeScript types
+        run: npx tsc --noEmit
+      - name: Exercise Cloud IDE persistence and ZIP compatibility
+        run: npm run test:cloud-ide
+      - name: Validate production build
+        run: npm run build

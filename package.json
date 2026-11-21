@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:cloud-ide": "node --test tests/cloud-ide.test.cjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.3",
