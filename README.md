@@ -10,13 +10,30 @@ The Local component, UI localization, five-mode functionality, Charta lore, cast
 
 **Safety barrier:** `src/proxy.ts` currently returns HTTP 503 for all dynamic requests, including local and model APIs, on the rebuild branch. It intentionally makes this branch unusable as a hosted application until Cloud-specific APIs, permissions and browser data storage have been implemented. The legacy Python function entry point was omitted rather than copied into the new Cloud source tree.
 
+## Cloud browser-first implementation (staging)
+
+| Component | Current Cloud rebuild behavior |
+| --- | --- |
+| Sessions, folders, and manual save | Origin-scoped IndexedDB; UI text now says **Save to browser** in all five locales |
+| Charta characters, selves, worlds | IndexedDB; Local character JSON imports retain text but strip standees and uploaded picture avatars |
+| Archive slots | 12 browser-only, text-based slots in IndexedDB; no large screenshot thumbnails |
+| Chat attachments | Text and source-code extensions only, up to 1 MiB each; no image/video/background uploads |
+| Officina IDE | Virtual project folders and code files in IndexedDB (500 files, 256 KiB each, 5 MiB per project); no server filesystem access |
+| API settings | Masked BYOK key inputs and custom HTTPS URL fields; keys saved in browser IndexedDB and transmitted to proxy only with requests |
+| Image generation | Hosted model providers only, with explicit model ID and configured provider required; no ComfyUI or local Stable Diffusion |
+| Music | A single original 6-second Cloud demo track; Auto DJ and local library scanning disabled |
+
+**Important limits:** This is source-level work on a locked staging branch. The automatic Vercel preview build has reached READY for some commits, but explicit `npx tsc --noEmit`, five-language browser interaction tests, and security/load testing are still outstanding. The proxy intentionally responds with HTTP 503 and therefore prevents normal application use for now.
+
+**Custom provider URLs:** The setting accepts/saves user-chosen URLs, but server-side arbitrary URL proxying is **disabled by default**, pending SSRF/DNS rebinding protection. Users can still configure built-in DeepSeek/OpenRouter/Google/fal API keys. Storing a password-type input in IndexedDB does **not** encrypt it.
+
 ## Work required before preview or production
 
 1. Replace Local server-side `data_storage/`, filesystem and IDE access with a browser-first/private Cloud model (for example IndexedDB, explicit file import/export, and optional user-approved integrations).
 2. Remove or deny Local-only routes including `/api/local/*`, `/api/ide`, `/api/upload` and any unsafe arbitrary-run routes; audit the remaining model, image, music and helper APIs.
 3. Design BYOK handling, API proxy security, abuse limits, CORS/origin checks, retention and storage limits. Browser localStorage is not an encrypted vault.
 4. Replace development-only environment defaults, switch to Cloud metadata, and decide which media features to disable rather than attempting server-local music or ComfyUI features.
-5. Restore or explicitly replace the **four original binary assets** (music sample, app icon, favicon and Open Graph image): GitHub's connected text-oriented file tools cannot copy their raw bytes, so temporary old-Cloud placeholder versions are used in this branch.
+5. Replace the **three remaining image placeholders** (app icon, favicon and Open Graph image). The earlier music placeholder was replaced with a newly generated original Cloud demo WAV.
 6. Run explicit `npx tsc --noEmit`, `npm run build`, and five-language browser tests under protected previews. Only then remove the staging guard and separately approve deployment to `main`.
 
 The Local README and detailed feature documents are available in the [Local repository](https://github.com/seemoon1/Shiorivia) and the copied `docs/` tree. Local documentation in this temporary branch describes the upstream **Local implementation**, not completed Cloud capabilities.
