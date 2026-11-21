@@ -161,7 +161,7 @@ test("AI project creation plus all approved files is one commit", async () => {
 test("file/folder collision and protected paths are rejected", async () => {
   const project = await newProject();
   await save(project, "src.ts", "source");
-  await assert.rejects(browserIde("createFolder", { project, path: "src.ts/nested" }), /parent directory/i);
+  await assert.rejects(browserIde("createFolder", { project, path: "src.ts/nested" }), /file cannot also be a (directory|parent directory)/i);
   await assert.rejects(save(project, "src.ts/inner.ts", "inner"), /parent directory/i);
   await assert.rejects(save(project, ".env", "secret"), /path|hidden/i);
   await assert.rejects(save(project, "__proto__", "not a file"), /path|hidden/i);
