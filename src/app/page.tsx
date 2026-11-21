@@ -139,22 +139,32 @@ export default function Home() {
     const [providerAliases, setProviderAliases] = useState<Record<string, string>>({});
     const [falConfigured, setFalConfigured] = useState(false);
     const [cloudCredentials, setCloudCredentials] = useState<CloudCredentials>({});
+    const credentialsRef = useRef<CloudCredentials>({});
+    const credentialSaveQueue = useRef<Promise<void>>(Promise.resolve());
     const [allProviders, setAllProviders] = useState<PublicLocalProvider[]>(DEFAULT_LOCAL_PROVIDERS);
     useEffect(() => {
         let mounted = true;
         void browserRead<CloudCredentials>("cloud:byok",{}).then(saved => {
-            if (mounted) setCloudCredentials(safeCloudCredentials(saved));
+            if (!mounted) return;
+            // A slow disk read must never overwrite credentials already typed by the user.
+            if (!credentialDirty.current) {
+                credentialsRef.current = safeCloudCredentials(saved);
+                setCloudCredentials(credentialsRef.current);
+            }
         }).catch(() => ui.showToast(deepText(locale,"cloud.byok.storageError")));
         return () => {mounted=false};
     }, []);
+    const credentialDirty = useRef(false);
     const updateCloudCredential = async (id:string, next:CloudCredential) => {
-        const updated = safeCloudCredentials({...cloudCredentials,[id]:next});
-        try {
-            await browserWrite("cloud:byok",updated);
-            setCloudCredentials(updated);
-        } catch {
-            ui.showToast(deepText(locale,"cloud.byok.storageError"));
-        }
+        credentialDirty.current = true;
+        const updated = safeCloudCredentials({...credentialsRef.current,[id]:next});
+        credentialsRef.current = updated;
+        setCloudCredentials(updated);
+        // Keep writes ordered: a slow earlier keystroke may not overwrite a later one.
+        const job = credentialSaveQueue.current.catch(() => {}).then(() => browserWrite("cloud:byok",updated));
+        credentialSaveQueue.current = job;
+        try { await job; }
+        catch { ui.showToast(deepText(locale,"cloud.byok.storageError")); }
     };
     useEffect(() => {
         const builtins = DEFAULT_LOCAL_PROVIDERS.map(p => ({
