@@ -82,8 +82,8 @@ const TransitionEffectsPC = ({ effect, onComplete }: { effect: EffectType, onCom
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9999] pointer-events-none bg-black flex items-center justify-center overflow-hidden perspective-[1000px]">
           <motion.div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(#059669 1px, transparent 1px), linear-gradient(90deg, #059669 1px, transparent 1px)', backgroundSize: '50px 50px' }} animate={{ backgroundPosition: ["0px 0px", "50px 50px"] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} />
           <svg className="absolute w-full h-full opacity-80" preserveAspectRatio="none">
-            <motion.path d="M -100 200 Q 400 0, 900 200 T 1900 200 V 1000 H -100 Z" fill="none" stroke="#10b981" strokeWidth="2" initial={{ pathLength: 0 }} animate={{ pathLength: 1, d: ["M -100 500 Q 500 200, 1000 500 T 2100 500", "M -100 500 Q 500 800, 1000 500 T 2100 500", "M -100 500 Q 500 200, 1000 500 T 2100 500"] }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
-            <motion.path fill="none" stroke="#06b6d4" strokeWidth="3" initial={{ pathLength: 0 }} animate={{ pathLength: 1, opacity: [0.3, 0.8, 0.3], d: ["M -100 300 Q 600 600, 1200 300 T 2500 300", "M -100 300 Q 600 0, 1200 300 T 2500 300", "M -100 300 Q 600 600, 1200 300 T 2500 300"] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} />
+            <motion.path d="M -100 200 Q 400 0, 900 200 T 1900 200 V 1000 H -100 Z" fill="none" stroke="#10b981" strokeWidth="2" initial={{ opacity: 0 }} animate={{ opacity: 1, d: ["M -100 500 Q 500 200, 1000 500 T 2100 500", "M -100 500 Q 500 800, 1000 500 T 2100 500", "M -100 500 Q 500 200, 1000 500 T 2100 500"] }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
+            <motion.path fill="none" stroke="#06b6d4" strokeWidth="3" initial={{ opacity: 0 }} animate={{ opacity: [0.3, 0.8, 0.3], d: ["M -100 300 Q 600 600, 1200 300 T 2500 300", "M -100 300 Q 600 0, 1200 300 T 2500 300", "M -100 300 Q 600 600, 1200 300 T 2500 300"] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} />
             <motion.path fill="none" stroke="#8b5cf6" strokeWidth="1" strokeDasharray="10 10" animate={{ d: ["M -100 800 Q 400 700, 900 800 T 2000 800", "M -100 800 Q 400 900, 900 800 T 2000 800", "M -100 800 Q 400 700, 900 800 T 2000 800"] }} transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }} />
           </svg>
           {equations.map((eq) => (<motion.div key={eq.id} className="absolute font-mono font-bold text-emerald-400/60 pointer-events-none whitespace-nowrap" style={{ left: `${eq.x}%`, fontSize: `${eq.scale}rem` }} initial={{ y: "110vh", opacity: 0 }} animate={{ y: "-10vh", opacity: [0, 1, 0] }} transition={{ duration: 5 + Math.random() * 3, repeat: Infinity, delay: eq.delay, ease: "linear" }}>{eq.text}</motion.div>))}
@@ -133,9 +133,8 @@ const TransitionEffectsPC = ({ effect, onComplete }: { effect: EffectType, onCom
                 stroke="#db2777" 
                 strokeWidth="1.5" 
                 vectorEffect="non-scaling-stroke"
-                initial={{ pathLength: 0, opacity: 0 }}
+                initial={{ opacity: 0 }}
                 animate={{
-                  pathLength: [0, 1, 1, 1],
                   opacity: [0, 1, 1, 0],
                   x: ["-100%", "0%", "0%", "100%"]
                 }}

@@ -82,11 +82,13 @@ export function buildEngineeringCharacterContext(
         ...custom,
         profile: {
           ...custom.profile,
-          intro: custom.profile.intro || custom.description || "",
-          relationshipNotes: included.relationships ? custom.profile.relationshipNotes : "",
-          relationships: included.relationships ? custom.profile.relationships : [],
-          experienceNotes: included.experiences ? custom.profile.experienceNotes : "",
-          experiences: included.experiences ? custom.profile.experiences : [],
+          intro: custom.profile?.intro || custom.description || "",
+          personality: custom.profile?.personality || "",
+          guidance: custom.profile?.guidance || "",
+          relationshipNotes: included.relationships ? (custom.profile?.relationshipNotes || "") : "",
+          relationships: included.relationships ? (custom.profile?.relationships || []) : [],
+          experienceNotes: included.experiences ? (custom.profile?.experienceNotes || "") : "",
+          experiences: included.experiences ? (custom.profile?.experiences || []) : [],
         },
       }, null, [], true)
     : fullBuiltInEngineeringLore(LORE_LIBRARY[character.id] || "", included);

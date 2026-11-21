@@ -27,7 +27,7 @@ async function compress(data: Uint8Array): Promise<{bytes: Uint8Array; method: n
   if (data.length < 60 || typeof CompressionStream === "undefined")
     return {bytes:data,method:0};
   try {
-    const stream = new Blob([data]).stream().pipeThrough(new CompressionStream("deflate-raw" as any));
+    const stream = new Blob([Uint8Array.from(data).buffer]).stream().pipeThrough(new CompressionStream("deflate-raw" as any));
     const output = new Uint8Array(await new Response(stream).arrayBuffer());
     if (output.length < data.length) return {bytes:output,method:8};
   } catch { /* Older browsers support only uncompressed ZIP entries. */ }
@@ -92,7 +92,7 @@ export async function projectZip(
     lh.setUint32(22,entry.data.length,true);
     lh.setUint16(26,name.length,true);
     local.set(name,30);
-    localParts.push(local,result.bytes);
+    localParts.push(Uint8Array.from(local).buffer, Uint8Array.from(result.bytes).buffer);
     localSize += local.length + result.bytes.length;
     const central = new Uint8Array(46 + name.length);
     const ch = new DataView(central.buffer);
@@ -109,7 +109,7 @@ export async function projectZip(
     ch.setUint32(38,entry.directory ? (0x10 << 16) : 0,true);
     ch.setUint32(42,offset,true);
     central.set(name,46);
-    centralParts.push(central);
+    centralParts.push(Uint8Array.from(central).buffer);
     centralSize += central.length;
   }
   const footer = new Uint8Array(22);
@@ -119,5 +119,5 @@ export async function projectZip(
   end.setUint16(10,fullEntries.length,true);
   end.setUint32(12,centralSize,true);
   end.setUint32(16,localSize,true);
-  return new Blob([...localParts,...centralParts,footer],{type:"application/zip"});
+  return new Blob([...localParts,...centralParts,Uint8Array.from(footer).buffer],{type:"application/zip"});
 }

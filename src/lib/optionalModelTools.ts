@@ -15,8 +15,8 @@ const excerpt = (messages: ModelMessage[]) =>
 async function ask(provider: Provider, model: string, system: string, user: string): Promise<string> {
   if (provider.id === "google") {
     const google = new GoogleGenerativeAI(provider.apiKey);
-    const engine = google.getGenerativeModel({ model: model.replace(/^google\//, ""), systemInstruction: system });
-    return (await engine.generateContent(user)).response.text();
+    const engine = google.getGenerativeModel({ model: model.replace(/^google\//, "") });
+    return (await engine.generateContent(system + "\n\n" + user)).response.text();
   }
   const client = new OpenAI({ apiKey: provider.apiKey, baseURL: provider.baseURL, fetch: globalThis.fetch });
   const response = await client.chat.completions.create({
@@ -95,7 +95,7 @@ export async function searchWithProvider(query: string, providerId: string, mode
       const google = new GoogleGenerativeAI(provider.apiKey);
       const engine = google.getGenerativeModel({
         model: model.replace(/^google\//, ""), tools: [{ googleSearch: {} } as any],
-      });
+      } as any);
       const response = (await engine.generateContent(
         "Search the live web to answer this factual query. Give a concise factual result and cite original source URLs when possible:\n" + query
       )).response;

@@ -186,7 +186,7 @@ export function useViaeEngine({ session, updateSession, provider, model, notify,
             item && typeof item === "object" && typeof item.text === "string"
             && item.text.trim() && typeof item.charId === "string"
             && permittedReplies.includes(item.charId));
-          if (completeChat && activeGroup.pov === "outsider") {
+          if (completeChat && Array.isArray(parsed) && activeGroup.pov === "outsider") {
             completeChat = new Set(parsed.map((item: { charId: string }) => item.charId)).size >= 2;
           }
         } catch { completeChat = false; }

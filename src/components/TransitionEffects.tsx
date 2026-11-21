@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-export type EffectType = "none" | "curtain" | "parchment" | "rain" | "math" | "cyber";
+export type EffectType = "none" | "curtain" | "parchment" | "rain" | "math" | "cyber" | "bloom" | "glitch";
 
 const PC = dynamic(() => import("./TransitionEffectsPC"), { ssr: false });
 const Mobile = dynamic(() => import("./TransitionEffectsMobile"), { ssr: false });

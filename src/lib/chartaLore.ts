@@ -156,7 +156,7 @@ export function validateChartaRelationshipTargets(
 export type ChartaPromptCharacter = {
   id: string;
   name: string;
-  names: Record<string, string>;
+  names?: Record<string, string>;
   gender?: string;
   genderCustom?: string;
   worldId?: string | null;

@@ -458,83 +458,7 @@ export const useChatEngine = ({
             let capturedState: any = null;
             let newFiles: Record<string, any> = {};
 
-            const drawCmd = parseDrawTag(currentText);
-            
-            if (false && drawCmd && drawCmd.trigger && config.imageGen) { // Legacy auto-render path disabled; requests require user confirmation.
-                const targetDrawTag = `<draw>${currentText.match(/<draw>([\s\S]*?)<\/draw>/)?.[1] || ""}</draw>`;
-
-                (async () => {
-                    try {
-                        setIsGlobalGenerating(true);
-                        
-                        const subjectId = drawCmd.charId || activeCharacterId;
-                        const subjectName = customCharacters.find((c: any) => c.id === subjectId)?.names?.[locale]
-                            || CHARACTERS.find(c => c.id === subjectId)?.name || subjectId;
-                        const rawStatus = currentSession?.charStatus;
-                        const subjectStatus = Array.isArray(rawStatus)
-                            ? rawStatus.find((s: any) => s?.name === subjectName) || rawStatus[0]
-                            : rawStatus;
-                        const appearance = [subjectStatus?.clothing, subjectStatus?.bodyState, subjectStatus?.innerState]
-                            .filter((item: unknown) => typeof item === 'string').join('; ').slice(0, 600);
-                        const scenePrompt = [drawCmd.description, `character: ${subjectName}`,
-                            `outfit: ${drawCmd.outfitId || manualOutfitId || 'default'}`,
-                            appearance ? `current state: ${appearance}` : ''].filter(Boolean).join(', ');
-                        const drawPayload = {
-                            outfitId: drawCmd.outfitId || manualOutfitId || "casual", 
-                            charId: drawCmd.charId || activeCharacterId,
-                            description: scenePrompt,
-                            provider: config.imageSettings?.provider || 'comfyui',
-                            model: config.imageSettings?.model || '',
-                            positive: config.imageSettings?.positive || '',
-                            negative: config.imageSettings?.negative || '',
-                            width: config.imageSettings?.width,
-                            height: config.imageSettings?.height,
-                            steps: config.imageSettings?.steps,
-                            cfg: config.imageSettings?.cfg
-                        };
-
-                        const configRes = await fetch("/api/draw", {
-                            method: "POST", headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({...drawPayload, byok:cloudCredentials[drawPayload.provider || ""]})
-                        });
-                        
-                        const drawData = await configRes.json();
-                        
-                        if (drawData.success && drawData.image) {
-                            const url = await uploadImageToCloud(drawData.image, drawData.meta);
-                            
-                            if (url) {
-                                setSessions((prev: any) => prev.map((s: any) => {
-                                    if (s.id !== currentSessionId) return s;
-                                    
-                                    const newMessages = s.messages.map((m: any) => {
-                                        if (typeof m.content === 'string' && m.content.includes(targetDrawTag)) {
-                                            const logTag = targetDrawTag.replace('<draw>', '<draw_log>').replace('</draw>', '</draw_log>');
-                                            
-                                            const newContent = m.content.replace(
-                                                targetDrawTag, 
-                                                `${logTag}\n\n![Generated](${url})\n`
-                                            );
-                                            return { ...m, content: newContent };
-                                        }
-                                        return m;
-                                    });
-
-                                    return { ...s, messages: newMessages };
-                                }));
-                                showToast("🎨 Render Complete");
-                            }
-                        } else {
-                            showToast(`❌ Render Failed: ${drawData.error || 'Unknown image error'}`);
-                        }
-                    } catch (e) { 
-                        console.error("Auto-Draw Failed:", e); 
-                        showToast("❌ Render Failed");
-                    } finally { 
-                        setIsGlobalGenerating(false); 
-                    }
-                })();
-            }
+            // Legacy automatic image requests are disabled in Cloud. Drawing remains user-confirmed.
 
             const audioRegex = /<audio>(.*?)<\/audio>/;
             const audioMatch = currentText.match(audioRegex);
@@ -1345,7 +1269,7 @@ export const useChatEngine = ({
                 throw new Error("模型仍未输出完整的 novel_state");
             }
             const latest = latestSessionRef.current;
-            if (latest?.id !== currentSessionId
+            if (!latest || latest.id !== currentSessionId
                 || index !== latest.messages.length - 1
                 || latest.messages[index]?.content !== target.content
                 || !latest.messages[index]?.metadataRepairMissing) {

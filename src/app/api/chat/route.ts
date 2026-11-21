@@ -368,7 +368,7 @@ CANON may advance only forward through the ordered stages. For AU, the AI must c
       if (group.storyWorldline !== undefined && !modernWorldline) {
         return Response.json({ error: "VIAE 世界线无效，请重新配置。" }, { status: 400 });
       }
-      const requestedMembers = Array.isArray(group.members) ? group.members : [];
+      const requestedMembers: unknown[] = Array.isArray(group.members) ? group.members : [];
       const members: string[] = [...new Set(requestedMembers
         .filter((id: unknown): id is string => typeof id === "string" && allChars.some((char: any) =>
           char.id === id && (!modernWorldline || storyCastAllowed(char, modernWorldline)))))].slice(0, 10);
@@ -664,7 +664,7 @@ Do not emit a project tag in plain conversation. Do not use a path outside Shior
               .find(world => world && world.id === selfWorld)?.canonTimeline || [] : [];
           const basePeriod = selectedWorldline.kind === "au"
             ? selectedWorldline.basePeriod : selectedWorldline.period;
-          const effectivePeriod = selfStages.some((stage: any) => stage?.period === basePeriod)
+          const effectivePeriod = typeof basePeriod === "string" && selfStages.some((stage: any) => stage?.period === basePeriod)
             ? basePeriod : null;
           const safeProfile = parseChartaLoreProfile(self.profile);
           const extras = parseChartaIdentityExtras(self);
@@ -1097,7 +1097,8 @@ Never put session_title, turn_memory or game_state inside <thinking>, and never 
             });
         }
 
-        const lastMsg = routedMessages[routedMessages.length - 1].content;
+        const lastContent = routedMessages[routedMessages.length - 1]?.content;
+        const lastMsg = typeof lastContent === "string" ? lastContent : JSON.stringify(lastContent ?? "");
         logModelRequest({
             model: cleanModel,
             systemInstruction: finalSystemPrompt,

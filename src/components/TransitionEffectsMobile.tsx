@@ -78,9 +78,8 @@ const TransitionEffectsMobile = ({ effect, onComplete }: { effect: EffectType, o
                 fill="none"
                 stroke="#ec4899"
                 strokeWidth="1.5"
-                initial={{ pathLength: 0, opacity: 0 }}
+                initial={{ opacity: 0 }}
                 animate={{
-                  pathLength: [0, 1, 1],
                   opacity: [0, 1, 0],
                   x: ["-10%", "0%", "10%"] 
                 }}

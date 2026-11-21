@@ -15,8 +15,8 @@ function contentText(value: unknown): string {
 async function modelInstruction(provider: Provider, model: string, instructions: string, history: string): Promise<string> {
   if (provider.id === "google") {
     const google = new GoogleGenerativeAI(provider.apiKey);
-    const engine = google.getGenerativeModel({ model: model.replace(/^google\//, ""), systemInstruction: instructions });
-    const response = await engine.generateContent(history);
+    const engine = google.getGenerativeModel({ model: model.replace(/^google\//, "") });
+    const response = await engine.generateContent(instructions + "\n\n" + history);
     return response.response.text() || "";
   }
   const client = new OpenAI({ apiKey: provider.apiKey, baseURL: provider.baseURL, fetch: globalThis.fetch });
@@ -160,8 +160,8 @@ export async function inspectIdeProject(request: Request): Promise<string> {
       const removed = retained.shift()!;
       retainedLength -= removed.detail.length + 50;
     }
-    const read = decision.tool === "read_file" && result && typeof result === "object"
-      && typeof (result as { content?: unknown }).content === "string";
+    const read = Boolean(decision.tool === "read_file" && result && typeof result === "object"
+      && typeof (result as { content?: unknown }).content === "string");
     retained.push({ tool: decision.tool, detail: "[IDE INSPECTION " + toolCalls + "]\n" + detail, read });
     retainedLength += detail.length + 50;
     if (read) successfulReads++;

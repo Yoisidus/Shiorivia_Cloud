@@ -47,7 +47,7 @@ export function subscribeBrowserChanges(prefix: string, callback: (key: string) 
 function database(): Promise<IDBDatabase> {
   if (typeof indexedDB === "undefined") return Promise.reject(new Error("IndexedDB is not available in this browser."));
   if (!dbPromise) {
-    dbPromise = new Promise((resolve, reject) => {
+    dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, VERSION);
       request.onupgradeneeded = () => {
         if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE);
@@ -63,7 +63,7 @@ function database(): Promise<IDBDatabase> {
       request.onblocked = () => reject(new Error("Close other Shiorivia tabs to upgrade storage."));
     }).catch(error => { dbPromise = null; throw error; });
   }
-  return dbPromise;
+  return dbPromise!;
 }
 
 export async function browserRead<T>(key: string, fallback: T): Promise<T> {
