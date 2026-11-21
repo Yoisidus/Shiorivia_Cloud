@@ -120,7 +120,10 @@ export function ChartaInterface({ characters, save, remove, usedIds, onExit, loa
     setBusy(true);
     const kind = importKindRef.current;
     try {
-      if (file.size > 1024 * 1024) throw new Error(cabinetText("fileTooLarge"));
+      // Old Local character exports may embed base64 avatars. Accept a bounded
+      // larger JSON source, then drop image fields in parseChartaCharacter.
+      if (file.size > (kind === "characters" ? 8 : 1) * 1024 * 1024)
+        throw new Error(cabinetText("fileTooLarge"));
       const source: unknown = JSON.parse(await file.text());
       const now = Date.now();
       if (kind === "characters") {
