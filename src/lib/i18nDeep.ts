@@ -2,6 +2,10 @@ import type { Locale } from "./locale";
 
 /** Localizable interface copy; never use these strings as persisted IDs. */
 const strings: Record<string, readonly [string, string, string, string, string]> = {
+  "cloud.storage.saveConfirm": ["将当前更改保存到此浏览器？", "將目前變更儲存到此瀏覽器？", "Save changes in this browser?", "変更内容をこのブラウザに保存しますか？", "현재 변경 사항을 이 브라우저에 저장할까요?"],
+  "cloud.storage.alreadySaved": ["浏览器资料已是最新。", "瀏覽器資料已是最新。", "Browser data is already up to date.", "ブラウザデータはすでに最新です。", "브라우저 데이터가 이미 최신입니다."],
+  "cloud.storage.saved": ["已保存到当前浏览器。", "已儲存至目前瀏覽器。", "Saved to this browser.", "このブラウザに保存しました。", "현재 브라우저에 저장했습니다."],
+  "cloud.storage.failed": ["保存到浏览器失败，请检查可用空间。", "儲存到瀏覽器失敗，請檢查可用空間。", "Unable to save to browser. Check available storage.", "ブラウザへの保存に失敗しました。空き容量を確認してください。", "브라우저 저장에 실패했습니다. 사용 가능한 공간을 확인하세요."],
   "cloud.image.chooseProvider": ["选择图像供应商", "選擇圖像供應商", "Select image provider", "画像プロバイダーを選択", "이미지 공급자 선택"],
   "cloud.byok.heading": ["云端 API 配置 · BYOK", "雲端 API 設定 · BYOK", "Cloud API configuration · BYOK", "Cloud API 設定 · BYOK", "Cloud API 설정 · BYOK"],
   "cloud.byok.warning": ["密钥仅保存在此浏览器的 IndexedDB（不加密），模型请求时会发送给云端代理和所选供应商。请勿在共享设备保存密钥。", "金鑰僅儲存於此瀏覽器的 IndexedDB（未加密），呼叫模型時會傳給雲端代理及供應商。請勿在共用裝置儲存金鑰。", "Keys stay in this browser's IndexedDB (not encrypted). They are sent to the Cloud proxy and provider when making requests. Avoid saving keys on shared devices.", "キーはこのブラウザの IndexedDB に保存されます（暗号化なし）。リクエスト時には Cloud プロキシとプロバイダーへ送信されます。共有端末での保存は避けてください。", "키는 이 브라우저의 IndexedDB에 암호화 없이 저장됩니다. 모델 요청 시 Cloud 프록시와 공급자로 전송됩니다. 공용 기기에 저장하지 마세요."],
@@ -617,9 +621,9 @@ const strings: Record<string, readonly [string, string, string, string, string]>
   "viae.actions.repairing": ["补齐中…", "補齊中…", "Repairing…", "補完中…", "상태 보완 중…"],
   "viae.actions.incomplete": ["本轮消息或记忆状态不完整。", "本輪訊息或記憶狀態不完整。", "This turn has incomplete message or memory metadata.", "このターンのメッセージまたは記憶データが不完全です。", "이번 턴의 메시지 또는 기억 데이터가 불완전합니다."],
   "viae.actions.stale": ["上一条消息已编辑；此回复尚未重新生成。可使用下方刷新按钮。", "上一則訊息已編輯；此回覆尚未重新產生。可用下方重新整理按鈕。", "The preceding message was edited. This reply is outdated; regenerate it below.", "直前のメッセージが編集されました。この返信は古い内容です。下のボタンから再生成できます。", "이전 메시지가 수정되어 이 답변은 이전 내용입니다. 아래에서 다시 생성할 수 있습니다."],
-  "viae.actions.localSave": ["保存到本地", "儲存至本機", "Save locally", "ローカルに保存", "로컬에 저장"],
+  "viae.actions.localSave": ["保存到浏览器", "儲存到瀏覽器", "Save to browser", "ブラウザに保存", "브라우저에 저장"],
   "viae.actions.saving": ["正在保存…", "正在儲存…", "Saving…", "保存中…", "저장 중…"],
-  "viae.actions.localSaveHint": ["将当前全部 Local 会话、世界线和 VIAE 道路保存到本地磁盘", "將目前全部 Local 對話、世界線與 VIAE 道路儲存到本機磁碟", "Save all Local conversations, worldlines and VIAE paths to local disk", "すべての Local 会話・世界線・VIAE の道をローカルディスクに保存", "모든 Local 대화, 세계선 및 VIAE 길을 로컬 디스크에 저장"],
+  "viae.actions.localSaveHint": ["将当前会话、世界线和 VIAE 道路保存到本浏览器的 IndexedDB", "將目前對話、世界線與 VIAE 道路儲存到本瀏覽器的 IndexedDB", "Save chats, worldlines and VIAE paths to this browser’s IndexedDB", "会話・世界線・VIAE の道をこのブラウザの IndexedDB に保存", "대화, 세계선과 VIAE 길을 이 브라우저의 IndexedDB에 저장"],
   "viae.actions.stopTitle": ["暂停回复", "暫停回覆", "Stop reply", "返信を停止", "답변 중단"],
   "viae.actions.stopConfirm": ["确认暂停 VIAE 当前回复吗？正在生成的消息可能不完整。", "確定暫停 VIAE 目前的回覆嗎？正在產生的訊息可能不完整。", "Stop the current VIAE reply? The message being generated may be incomplete.", "現在の VIAE の返信を停止しますか？生成途中のメッセージが不完全になる場合があります。", "현재 VIAE 답변을 중단할까요? 생성 중인 메시지가 불완전할 수 있습니다."],
   "viae.actions.loading": ["角色正在回复…", "角色正在回覆…", "Character is replying…", "キャラクターが返信中…", "캐릭터가 답변 중…"],
