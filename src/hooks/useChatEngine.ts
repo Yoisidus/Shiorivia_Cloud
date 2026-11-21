@@ -25,6 +25,7 @@ import { aiConversationMessages, isEngineeringCharacterLocked } from "../lib/eng
 import { engineeringOutputIncomplete, OFFICINA_COMPLETION_REQUEST } from "../lib/engineeringCompletion";
 import { extractIdeEditBlocks } from "../lib/ideEdits";
 import { browserIde } from "../lib/browserIde";
+import { deepText } from "../lib/i18nDeep";
 import { useAppDialog } from "../context/DialogContext";
 
 export const useChatEngine = ({
@@ -94,6 +95,38 @@ export const useChatEngine = ({
             }
             if (!isRegen && !isEngineeringCharacterLocked(currentSession)) {
                 if (!await dialog.confirm("确认与当前角色开启 Officina 工程会话吗？\n发送第一条消息后，将永久绑定此角色，当前会话无法切换。")) return;
+            }
+        }
+        // Only share browser IDE source with the selected model after explicit user approval.
+        // This context is request-only: it is never persisted into chat history.
+        let engineeringIdeContext: { project: string; files: {path: string; content: string}[] } | undefined;
+        if (currentSession.memoryMode === "infinite" && currentSession.engineeringProjectRoot
+            && /(?:code|fix|refactor|debug|implement|file|bug|source|function|project|edit|review|build|代码|文件|修改|修复|编写|实现|编辑|重构|工程|プロジェクト|コード|修正|파일|코드|수정|프로젝트)/i.test(txt)) {
+            try {
+                const snapshot = await browserIde("snapshot",{project:currentSession.engineeringProjectRoot});
+                const entries = Object.entries(snapshot.files || {}) as [string,{content:string}][];
+                const tokens = txt.toLowerCase().split(/[^a-z0-9_.\\/-]+/).filter(x=>x.length>2);
+                entries.sort((a,b) => Number(tokens.some(t=>a[0].toLowerCase().includes(t))) * -1
+                    + Number(tokens.some(t=>b[0].toLowerCase().includes(t))));
+                const chosen: {path:string;content:string}[]=[];
+                let remaining=32000;
+                for (const [path,file] of entries) {
+                    if (chosen.length>=8 || remaining<=1000) break;
+                    if (typeof file?.content!=="string") continue;
+                    const content=file.content.slice(0,Math.min(7500,remaining));
+                    if (!content) continue;
+                    chosen.push({path,content});
+                    remaining-=content.length;
+                }
+                if (chosen.length && await dialog.confirm(
+                    deepText(locale,"cloud.ide.shareConfirm")
+                        .replace("{project}",currentSession.engineeringProjectRoot)
+                        .replace("{count}",String(chosen.length)),
+                    {tone:"officina"})) {
+                    engineeringIdeContext={project:currentSession.engineeringProjectRoot,files:chosen};
+                }
+            } catch(error) {
+                showToast(error instanceof Error ? error.message : deepText(locale,"cloud.ide.shareFailed"));
             }
         }
         const novelMode = currentSession.memoryMode === "novel";
@@ -213,6 +246,7 @@ export const useChatEngine = ({
                     charStatus: currentSession.charStatus,
                     codeRepository: currentSession.engineeringProjectRoot ? undefined : currentSession.codeRepository,
                     engineeringProjectRoot: currentSession.memoryMode === "infinite" ? currentSession.engineeringProjectRoot || "" : "",
+                    ...(engineeringIdeContext ? {engineeringIdeContext} : {}),
                     provider: apiProvider, byok: cloudCredentials[apiProvider], 
                     uiLanguage: locale,
                     debugRequestPayload: config.terminalRequestLog === true,
