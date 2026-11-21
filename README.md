@@ -18,7 +18,7 @@ The Local component, UI localization, five-mode functionality, Charta lore, cast
 | Charta characters, selves, worlds | IndexedDB; Local character JSON imports retain text but strip standees and uploaded picture avatars |
 | Archive slots | 12 browser-only, text-based slots in IndexedDB; no large screenshot thumbnails |
 | Chat attachments | Text and source-code extensions only, up to 1 MiB each; no image/video/background uploads |
-| Officina IDE | Virtual project folders and code files in IndexedDB (500 files, 256 KiB each, 5 MiB per project). **Export project** downloads a ZIP containing the full root folder and nested text files for Local's `IDE/`; no server filesystem access |
+| Officina IDE | Virtual project folders and code files in IndexedDB (500 files, 256 KiB each, 5 MiB per project). **Export project** downloads a ZIP containing the full root folder and nested text files for Local's `IDE/`. AI code review/editing uses explicit user approval to share bounded source excerpts and applies confirmed changes in-browser |
 | API settings | Masked BYOK key inputs and custom HTTPS URL fields; keys saved in browser IndexedDB and transmitted to proxy only with requests |
 | Image generation | Hosted model providers only, with explicit model ID and configured provider required; no ComfyUI or local Stable Diffusion |
 | Music | A single original 6-second Cloud demo track; Auto DJ and local library scanning disabled |

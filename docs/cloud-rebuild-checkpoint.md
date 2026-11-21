@@ -14,7 +14,7 @@ This is an **engineering checkpoint**, not the Cloud release.
 ## Implemented in the guarded branch
 
 - IndexedDB storage for sessions, worlds, characters, selves, and twelve text-only save slots.
-- Browser-only virtual Officina project directories and text files; **Export project** downloads a browser-created ZIP containing the root directory (and empty subdirectories), ready to extract into Local's `IDE/`; no `/api/ide` server disk read.
+- Browser-only virtual Officina project directories and text files; **Export project** downloads a browser-created ZIP containing the root directory (and empty subdirectories), ready to extract into Local's `IDE/`. User-approved, bounded code excerpts can reach a model for AI programming assistance, while reviewed file changes apply via browser IndexedDB, never `/api/ide`.
 - Text/code-only file picker; Charta Local portrait/avatar imports sanitized; old Local image uploads disabled.
 - A masked per-provider BYOK configuration UI; keys stored only on the browser origin and passed to the model proxy with requests. The browser storage is **not encrypted**.
 - Hosted image backends and image model-ID prerequisite; local ComfyUI/SD code path removed.
@@ -22,7 +22,7 @@ This is an **engineering checkpoint**, not the Cloud release.
 - Old Local file APIs under `/api/local/*` removed; server upload/auth/IDE routes return 410 behind the global 503 staging guard.
 - Vercel build parsing issue found and corrected; subsequent preview builds have reported READY, but this is **not** an end-to-end browser, security or TypeScript verification.
 
-**Still open before usable Cloud:** permit safe custom provider endpoints after SSRF mitigation, full provider and image request verification, origin/rate limiting, browser quota/recovery UX, a five-language browser regression, and integration of AI-assisted editing with browser IDE files (currently virtual IDE operations are local to the browser only). The last three Cloud image placeholders need replacement. Do **not** remove the 503 guard or promote to production yet.
+**Still open before usable Cloud:** permit safe custom provider endpoints after SSRF mitigation, full provider and image request verification, origin/rate limiting, browser quota/recovery UX, a five-language browser regression, and broader integration testing for client-side AI review and edits (bounded source excerpts are now shared only with user consent; file writes stay in IndexedDB). The last three Cloud image placeholders need replacement. Do **not** remove the 503 guard or promote to production yet.
 
 ## Required Cloud adaptation
 
