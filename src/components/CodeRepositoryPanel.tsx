@@ -11,6 +11,7 @@ import { useAppDialog } from "../context/DialogContext";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
 import { browserIde } from "../lib/browserIde";
+import { projectZip } from "../lib/ideProjectZip";
 
 const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScreen, projectRoot, onBindProject }: any) => {
     const { locale } = useLanguage();
@@ -84,6 +85,38 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
             await syncDisk(projectRoot, false);
         } catch (error: any) { dialog.notify(error.message); }
         finally { setBusy(false); }
+    };
+
+    const exportProject = async () => {
+        if (!projectRoot || busy) return;
+        // The archive is assembled from persisted IndexedDB state, not editor drafts.
+        const hasUnsavedDraft = isEditing && Object.entries(files).some(([name,file]) =>
+            diskBaseline[name]?.content !== file.content);
+        if (hasUnsavedDraft && !await dialog.confirm(text("exportUnsavedAsk"))) return;
+        setBusy(true);
+        try {
+            const [snapshot, projectTree] = await Promise.all([
+                browserIde("snapshot",{project:projectRoot}),
+                browserIde("tree",{project:projectRoot}),
+            ]);
+            const zip = await projectZip(projectRoot, snapshot.files || {}, projectTree.entries || []);
+            const url = URL.createObjectURL(zip);
+            try {
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = projectRoot + ".zip";
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            } finally {
+                window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+            }
+            setStatus(fill("exportDone",{project:projectRoot,count:Object.keys(snapshot.files || {}).length}));
+        } catch (error) {
+            const message = error instanceof Error ? error.message : text("exportFailed");
+            setStatus(message);
+            dialog.notify(message);
+        } finally {setBusy(false);}
     };
 
     const handleCancel = () => {
@@ -213,10 +246,10 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
                         {isEditing ? <Check size={14} /> : <Lock size={14} />}
                     </button>
 
-                    <button type="button" disabled={busy || !projectRoot} onClick={() => void syncDisk()}
+                    <button type="button" disabled={busy || !projectRoot} onClick={() => void exportProject()}
                         className="flex items-center gap-1 rounded-lg border border-white/15 px-2 py-1.5 text-[#c1d1fa] hover:bg-white/10 disabled:opacity-40"
-                        title={text("syncHint")}>
-                        <RefreshCw size={14} className={busy ? "animate-spin" : ""}/><span className="hidden sm:inline text-[11px]">{text("sync")}</span>
+                        title={text("exportHint")} aria-label={text("exportProject")}>
+                        <Download size={14}/><span className="hidden sm:inline text-[11px]">{text("exportProject")}</span>
                     </button>
                     <button type="button" disabled={!projectRoot || busy} onClick={handleNewFolder} className="p-1.5 hover:bg-white/10 rounded text-slate-300 disabled:opacity-40" title={text("newFolder")}><FolderPlus size={14}/></button>
                     {projectRoot && Object.keys(repository || {}).length > 0 && (
