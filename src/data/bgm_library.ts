@@ -11,7 +11,7 @@ export const BGM_LIBRARY: BGMTrack[] = [
     id: "demo_music",
     name: "Music (Demo)",
     artist: "System",
-    src: "/music/demo.mp3", 
+    src: "/music/cloud-demo.wav", 
     is_bgm: true,
     category: "bgm"
   }

@@ -332,9 +332,9 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
                 </>}
                 {(["sliding", "novel", "infinite", "chat"].includes(activeMode)) && <>
                 <SwitchRow title={t("settings.imageGen")} description={deepText(locale, "cloud.image.requiresModel")} checked={values.imageGen} onClick={() => onToggle("imageGen")} icon={ImageIcon} />
-                {values.imageGen && <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-xs font-semibold tracking-wide text-slate-700">Image Studio · {deepText(locale, "settings.imageHeading")}</p>
-                  <label className="block text-xs text-slate-600">{deepText(locale, "settings.imageProvider")}<select value={imageSettings.provider} onChange={e => onImageSettingsChange({provider: e.target.value})} className="mt-1 block w-full rounded-lg border bg-white p-2 text-sm">
+                  <label className="block text-xs text-slate-600">{deepText(locale, "settings.imageProvider")}<select value={imageSettings.provider} onChange={e => onImageSettingsChange({provider: e.target.value})} className="mt-1 block w-full rounded-lg border bg-white p-2 text-sm"><option value="">{deepText(locale, "cloud.image.chooseProvider")}</option>
 
                     {falConfigured && !disabledProviders.includes("fal") && <option value="fal">fal.ai</option>}
                     {providers.filter(p => p.configured && (p.id === 'google' || p.id === 'openrouter' || (p.custom && capabilityFor(p.id, providerCapabilities).image))).map(p => <option key={p.id} value={p.id}>{p.label}</option>)}

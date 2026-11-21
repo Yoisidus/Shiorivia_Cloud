@@ -2,6 +2,7 @@ import type { Locale } from "./locale";
 
 /** Localizable interface copy; never use these strings as persisted IDs. */
 const strings: Record<string, readonly [string, string, string, string, string]> = {
+  "cloud.image.chooseProvider": ["选择图像供应商", "選擇圖像供應商", "Select image provider", "画像プロバイダーを選択", "이미지 공급자 선택"],
   "cloud.byok.heading": ["云端 API 配置 · BYOK", "雲端 API 設定 · BYOK", "Cloud API configuration · BYOK", "Cloud API 設定 · BYOK", "Cloud API 설정 · BYOK"],
   "cloud.byok.warning": ["密钥仅保存在此浏览器的 IndexedDB（不加密），模型请求时会发送给云端代理和所选供应商。请勿在共享设备保存密钥。", "金鑰僅儲存於此瀏覽器的 IndexedDB（未加密），呼叫模型時會傳給雲端代理及供應商。請勿在共用裝置儲存金鑰。", "Keys stay in this browser's IndexedDB (not encrypted). They are sent to the Cloud proxy and provider when making requests. Avoid saving keys on shared devices.", "キーはこのブラウザの IndexedDB に保存されます（暗号化なし）。リクエスト時には Cloud プロキシとプロバイダーへ送信されます。共有端末での保存は避けてください。", "키는 이 브라우저의 IndexedDB에 암호화 없이 저장됩니다. 모델 요청 시 Cloud 프록시와 공급자로 전송됩니다. 공용 기기에 저장하지 마세요."],
   "cloud.byok.url": ["自定义供应商 URL（HTTPS）", "自訂供應商 URL（HTTPS）", "Custom provider URL (HTTPS)", "カスタムプロバイダー URL（HTTPS）", "사용자 지정 공급자 URL(HTTPS)"],
