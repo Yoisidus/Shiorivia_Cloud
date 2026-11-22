@@ -39,3 +39,6 @@ GitHub Actions runs these on `rebuild/local-foundation`. The tests cover Indexed
 See [Cloud browser security](docs/cloud-browser-security.md), [virtual IDE](docs/cloud-virtual-ide.md), and [original rebuild checkpoint](docs/cloud-rebuild-checkpoint.md).
 
 **Maintainer note:** If a beta regression affects users, rollback reference is `archive/cloud-before-local-rebuild-2026-11-21`; do not force-push away history.
+
+### Official Cloud art
+The 512px app icon, 32px favicon and 1200×630 Open Graph preview were imported intact from the approved Shiorivia brand release. Git SHA-1 checksums match the pinned upstream Local artwork; Git LFS pointer placeholders were replaced with real PNG bytes.
