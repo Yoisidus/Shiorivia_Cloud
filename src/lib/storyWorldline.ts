@@ -215,6 +215,16 @@ export function worldlinePeriodFor(worldline: StoryWorldline, worldId: string | 
 /** An existing legacy timeline is never silently discarded or rewritten. */
 export function describeStoryWorldline(value: StoryWorldline, locale?: string): string {
   const stage = value.canonTimeline.find(item => item.era === value.era && item.period === value.period);
-  const description = locale ? timelineStageDescription(stage, locale) : "";
-  return `${value.worldName} · ${value.kind === "canon" ? "原作" : "AU"} · ${locale ? displayWorldlineEra(value.worldId, value.era, locale) : value.era} / ${value.period}${description ? ` · ${description}` : ""}${value.kind === "au" && value.basePeriod ? ` · 基准：${locale ? displayWorldlineEra(value.worldId, value.baseEra || "", locale) : (value.baseEra || "")} / ${value.basePeriod}` : ""}${value.event ? ` · ${value.event}` : ""}`;
+  // Older saved BanG Dream! timelines may lack non-Chinese descriptions.
+  // Display a localized fallback without mutating any saved stage/era IDs.
+  const fallback = value.worldId === BANG_DREAM_WORLD_ID
+    ? BANG_DREAM_CANON.find(item => item.era === value.era && item.period === value.period)
+    : undefined;
+  const description = locale ? timelineStageDescription(stage, locale) || timelineStageDescription(fallback, locale) : "";
+  const localized = locale && TIMELINE_LOCALES.some(item => item === locale);
+  const kind = value.kind === "canon"
+    ? (localized ? deepText(locale as TimelineLocale, "viae.worldline.canon") : "原作")
+    : "AU";
+  const baseline = localized ? deepText(locale as TimelineLocale, "worldline.summaryBaseline") : "基准";
+  return `${value.worldName} · ${kind} · ${locale ? displayWorldlineEra(value.worldId, value.era, locale) : value.era} / ${value.period}${description ? ` · ${description}` : ""}${value.kind === "au" && value.basePeriod ? ` · ${baseline}：${locale ? displayWorldlineEra(value.worldId, value.baseEra || "", locale) : (value.baseEra || "")} / ${value.basePeriod}` : ""}${value.event ? ` · ${value.event}` : ""}`;
 }

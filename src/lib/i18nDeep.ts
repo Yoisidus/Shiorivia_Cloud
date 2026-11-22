@@ -588,6 +588,7 @@ const strings: Record<string, readonly [string, string, string, string, string]>
   "worldline.otherWorld": ["其他世界观", "其他世界觀", "Additional world", "追加の世界観", "추가 세계관"],
   "worldline.removeWorld": ["移除世界观", "移除世界觀", "Remove world", "世界観を除外", "세계관 제거"],
   "worldline.baseEra": ["基准 ERA", "基準 ERA", "Baseline ERA", "基準 ERA", "기준 ERA"],
+  "worldline.summaryBaseline": ["基准", "基準", "Baseline", "基準", "기준"],
   "worldline.basePeriod": ["基准 PERIOD", "基準 PERIOD", "Baseline PERIOD", "基準 PERIOD", "기준 PERIOD"],
   "worldline.chooseEra": ["请选择 ERA", "請選擇 ERA", "Select ERA", "ERA を選択", "ERA 선택"],
   "worldline.choosePeriod": ["请选择 PERIOD", "請選擇 PERIOD", "Select PERIOD", "PERIOD を選択", "PERIOD 선택"],

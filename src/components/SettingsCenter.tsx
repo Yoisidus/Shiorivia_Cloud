@@ -338,22 +338,45 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
                                 <SectionTitle>{deepText(locale, "settings.providerHeading")} · {t("settings.providers")}</SectionTitle>
                 <div className="mb-7 space-y-2">
                   {providers.map((provider) => (
-                    <div key={provider.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm">
-                      <div className="min-w-0">
-                        <p className="font-semibold">{provider.label} {provider.id === "fal" && <span className="ml-2 text-[10px] font-normal text-[#71917d]">IMAGE ONLY</span>} {provider.id !== "fal" && activeProvider === provider.id && <span className="ml-1 text-[10px] text-emerald-600">{t("settings.active")}</span>}</p>
-                        <p className="mt-1 text-xs text-slate-400">{provider.custom ? t("settings.custom") : t("settings.default")}</p>
+                    <div key={provider.id} className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words font-semibold">
+                            {provider.label}
+                            {provider.id === "fal" && <span className="ml-2 text-[10px] font-normal text-[#71917d]">IMAGE ONLY</span>}
+                            {provider.id !== "fal" && activeProvider === provider.id && <span className="ml-1 text-[10px] text-emerald-600">{t("settings.active")}</span>}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">{provider.custom ? t("settings.custom") : t("settings.default")}</p>
+                        </div>
+                        <button type="button" disabled={!provider.configured} aria-pressed={!disabledProviders.includes(provider.id)}
+                          onClick={() => onToggleProvider(provider.id)}
+                          className={`shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold ${disabledProviders.includes(provider.id) ? "border-slate-200 bg-slate-50 text-slate-400" : "border-emerald-200 bg-emerald-50 text-emerald-700"} disabled:opacity-40`}>
+                          {disabledProviders.includes(provider.id) ? t("settings.disabled") : t("settings.enabled")}
+                        </button>
                       </div>
-                      {provider.custom && <label className="block mt-2 max-w-[250px] text-[11px] text-slate-500">{deepText(locale, "settings.displayName")}
-                        <input aria-label={`${provider.id} ${deepText(locale, "settings.displayName")}`} value={providerAliases[provider.id] || ""}
-                          onChange={event => onProviderAliasChange(provider.id, event.target.value)}
-                          placeholder={provider.id} maxLength={40}
-                          className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-[#8ea9cd]" />
-                      </label>}
-                      {provider.custom && <div className="flex shrink-0 gap-2 text-[11px] text-slate-600"><label className="flex items-center gap-1"><input type="checkbox" checked={capabilityFor(provider.id, providerCapabilities).llm} onChange={e => onProviderCapabilitiesChange(provider.id, { llm: e.target.checked })}/>LLM</label><label className="flex items-center gap-1"><input type="checkbox" checked={capabilityFor(provider.id, providerCapabilities).image} onChange={e => onProviderCapabilitiesChange(provider.id, { image: e.target.checked })}/>{deepText(locale, "settings.imageCapability")}</label></div>}
-                      <button type="button" disabled={!provider.configured} aria-pressed={!disabledProviders.includes(provider.id)} onClick={() => onToggleProvider(provider.id)}
-                        className={`shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold ${disabledProviders.includes(provider.id) ? "border-slate-200 bg-slate-50 text-slate-400" : "border-emerald-200 bg-emerald-50 text-emerald-700"} disabled:opacity-40`}>
-                        {disabledProviders.includes(provider.id) ? t("settings.disabled") : t("settings.enabled")}
-                      </button>
+                      {provider.custom && (
+                        <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
+                          <label className="block w-full text-[11px] text-slate-500">
+                            {deepText(locale, "settings.displayName")}
+                            <input aria-label={`${provider.id} ${deepText(locale, "settings.displayName")}`}
+                              value={providerAliases[provider.id] || ""}
+                              onChange={event => onProviderAliasChange(provider.id, event.target.value)}
+                              placeholder={provider.id} maxLength={40}
+                              className="mt-1 block w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-xs text-slate-700 outline-none focus:border-[#8ea9cd]" />
+                          </label>
+                          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
+                            <label className="inline-flex min-h-8 items-center gap-2">
+                              <input type="checkbox" checked={capabilityFor(provider.id, providerCapabilities).llm}
+                                onChange={e => onProviderCapabilitiesChange(provider.id, { llm: e.target.checked })} />LLM
+                            </label>
+                            <label className="inline-flex min-h-8 items-center gap-2">
+                              <input type="checkbox" checked={capabilityFor(provider.id, providerCapabilities).image}
+                                onChange={e => onProviderCapabilitiesChange(provider.id, { image: e.target.checked })} />
+                              {deepText(locale, "settings.imageCapability")}
+                            </label>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
