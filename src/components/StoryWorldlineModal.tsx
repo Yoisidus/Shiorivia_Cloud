@@ -8,7 +8,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
 import {
   BANG_DREAM_WORLD_ID, BANG_DREAM_WORLD_NAME, describeStoryWorldline, parseStoryWorldline,
-  worldlineFor, type StoryWorldline,
+  worldlineFor, displayWorldlineEra, type StoryWorldline,
 } from "../lib/storyWorldline";
 
 export function StoryWorldlineModal({ isOpen, value, legacyTimeline, worlds, onSave, onClose, onOpenCharta }: {
@@ -68,12 +68,12 @@ export function StoryWorldlineModal({ isOpen, value, legacyTimeline, worlds, onS
             <h3 className="text-xs font-semibold text-[#3f7551]">{deepText(locale, "worldline.auBaseline")} *</h3>
             <p className="text-[11px] leading-5 text-[#738d79]">{deepText(locale, "worldline.auExplain")}</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <label className="text-xs">{deepText(locale, "worldline.baseEra")} *<select value={draft.baseEra || ""} onChange={e=>setDraft(p=>({...p,baseEra:e.target.value,basePeriod:""}))} className={fieldClass}><option value="">{deepText(locale, "worldline.chooseBaseEra")}</option>{baseEras.map(era=><option key={era} value={era}>{era}</option>)}</select></label>
+              <label className="text-xs">{deepText(locale, "worldline.baseEra")} *<select value={draft.baseEra || ""} onChange={e=>setDraft(p=>({...p,baseEra:e.target.value,basePeriod:""}))} className={fieldClass}><option value="">{deepText(locale, "worldline.chooseBaseEra")}</option>{baseEras.map(era=><option key={era} value={era}>{displayWorldlineEra(draft.worldId, era, locale)}</option>)}</select></label>
               <label className="text-xs">{deepText(locale, "worldline.basePeriod")} *<select value={draft.basePeriod || ""} onChange={e=>setDraft(p=>({...p,basePeriod:e.target.value,baseEra:p.canonTimeline.find(stage=>stage.period===e.target.value)?.era || p.baseEra}))} className={fieldClass}><option value="">{deepText(locale, "worldline.chooseBasePeriod")}</option>{basePeriods.map(stage=><option key={stage.period} value={stage.period}>{stage.period}</option>)}</select></label>
             </div>
           </section>}
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="text-xs font-semibold">ERA · {deepText(locale, "worldline.eraLabel")} *{draft.kind==="canon" ? <select value={draft.era} onChange={e=>setEra(e.target.value)} className={fieldClass}><option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(era=><option key={era} value={era}>{era}</option>)}</select> : <input maxLength={100} value={draft.era} onChange={e=>setDraft(previous=>({...previous,era:e.target.value}))} placeholder={deepText(locale, "worldline.auEraPlaceholder")} className={fieldClass}/>}</label>
+            <label className="text-xs font-semibold">ERA · {deepText(locale, "worldline.eraLabel")} *{draft.kind==="canon" ? <select value={draft.era} onChange={e=>setEra(e.target.value)} className={fieldClass}><option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(era=><option key={era} value={era}>{displayWorldlineEra(draft.worldId, era, locale)}</option>)}</select> : <input maxLength={100} value={draft.era} onChange={e=>setDraft(previous=>({...previous,era:e.target.value}))} placeholder={deepText(locale, "worldline.auEraPlaceholder")} className={fieldClass}/>}</label>
             <label className="text-xs font-semibold">PERIOD · {deepText(locale, "worldline.periodLabel")} *{draft.kind==="canon" ? <select value={draft.period} onChange={e=>setPeriod(e.target.value)} className={fieldClass}><option value="">{deepText(locale, "worldline.choosePeriod")}</option>{periods.map(period=><option key={period} value={period}>{period}</option>)}</select> : <input maxLength={100} value={draft.period} onChange={e=>setDraft(previous=>({...previous,period:e.target.value}))} placeholder={deepText(locale, "worldline.auPeriodPlaceholder")} className={fieldClass}/>}</label>
           </div>
           {draft.kind === "canon" && <button type="button" onClick={() => setDraft(previous => ({ ...previous, era: "", period: "" }))} className="text-[11px] text-[#608569] underline">{deepText(locale, "worldline.resetStage")}</button>}

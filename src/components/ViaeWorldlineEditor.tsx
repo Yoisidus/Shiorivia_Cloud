@@ -5,7 +5,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
 import type { ChartaWorld } from "../lib/chartaWorld";
 import { canExtendWorldline } from "../lib/worldlineLock";
-import { BANG_DREAM_WORLD_ID, BANG_DREAM_WORLD_NAME, BANG_DREAM_CANON, worldlineFor, worldlineStageIndex, timelineStageDescription, type StoryWorldline } from "../lib/storyWorldline";
+import { BANG_DREAM_WORLD_ID, BANG_DREAM_WORLD_NAME, BANG_DREAM_CANON, worldlineFor, worldlineStageIndex, timelineStageDescription, displayWorldlineEra, type StoryWorldline } from "../lib/storyWorldline";
 
 const selectStyle = "mt-1 w-full rounded-lg border border-[#dfe6eb] bg-white px-3 py-2.5 text-xs text-[#253f58] outline-none focus:border-[#bfaa7b]";
 const rowStyle = "rounded-xl border border-[#e7e9ea] bg-[#fcfcfa] p-3";
@@ -79,7 +79,7 @@ export function ViaeWorldlineEditor({ value, onChange, worlds, saved }: {
         <div className="grid grid-cols-2 gap-2">
           <label className="text-[11px]">{deepText(locale, "worldline.baseEra")} *<select value={value.baseEra || ""} className={selectStyle}
             disabled={primaryLocked} onChange={e => safeChange({ ...value, baseEra: e.target.value, basePeriod: undefined })}>
-            <option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(v => <option key={v} value={v}>{v}</option>)}</select></label>
+            <option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(v => <option key={v} value={v}>{displayWorldlineEra(value.worldId, v, locale)}</option>)}</select></label>
           <label className="text-[11px]">{deepText(locale, "worldline.basePeriod")} *<select value={value.basePeriod || ""} className={selectStyle}
             disabled={primaryLocked} onChange={e => safeChange({ ...value, basePeriod: e.target.value, baseEra: stages.find(s => s.period === e.target.value)?.era || value.baseEra })}>
             <option value="">{deepText(locale, "worldline.choosePeriod")}</option>{base.map(s => <option key={s.period} value={s.period}>{s.period}</option>)}</select></label>
@@ -92,7 +92,7 @@ export function ViaeWorldlineEditor({ value, onChange, worlds, saved }: {
       <div className="grid grid-cols-2 gap-2">
         <label className="text-[11px]">ERA · {deepText(locale, "worldline.eraLabel")} *{value.kind === "canon"
           ? <select disabled={!timeEditable} value={value.era} className={selectStyle} onChange={e => { const candidate = stages.find((s,index) => s.era === e.target.value && (minIndex < 0 || index >= minIndex)); if(candidate) safeChange({ ...value, era: candidate.era, period: candidate.period }); }}>
-              <option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(v => <option key={v} value={v}>{v}</option>)}</select>
+              <option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(v => <option key={v} value={v}>{displayWorldlineEra(value.worldId, v, locale)}</option>)}</select>
           : <input disabled={primaryLocked} value={value.era} maxLength={100} onChange={e => safeChange({ ...value, era: e.target.value })} className={selectStyle} placeholder={deepText(locale, "worldline.auEraPlaceholder")}/>}</label>
         <label className="text-[11px]">PERIOD · {deepText(locale, "worldline.periodLabel")} *{value.kind === "canon"
           ? <select disabled={!timeEditable} value={value.period} className={selectStyle} onChange={e => safeChange({
@@ -124,7 +124,7 @@ export function ViaeWorldlineEditor({ value, onChange, worlds, saved }: {
               <div className="grid grid-cols-2 gap-2">
                 <label className="text-[11px]">{deepText(locale, "worldline.baseEra")} *<select disabled={protectedSecondary.has(entry.worldId)} value={entry.baseEra} className={selectStyle}
                   onChange={e => modifyCross({ ...cross, secondary: cross.secondary.map((s, i) => i === index ? { ...s, baseEra: e.target.value, basePeriod: "" } : s) })}>
-                  <option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(era => <option key={era} value={era}>{era}</option>)}</select></label>
+                  <option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(era => <option key={era} value={era}>{displayWorldlineEra(entry.worldId, era, locale)}</option>)}</select></label>
                 <label className="text-[11px]">{deepText(locale, "worldline.basePeriod")} *<select disabled={protectedSecondary.has(entry.worldId)} value={entry.basePeriod} className={selectStyle}
                   onChange={e => modifyCross({ ...cross, secondary: cross.secondary.map((s, i) => i === index
                     ? { ...s, basePeriod: e.target.value, baseEra: s.canonTimeline.find(t => t.period === e.target.value)?.era || s.baseEra } : s) })}>

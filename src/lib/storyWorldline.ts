@@ -24,6 +24,19 @@ export function timelineStageDescription(stage: ChartaTimelineStage | undefined,
   return stage.descriptions?.[locale as TimelineLocale]?.trim() || "";
 }
 
+/** Localize built-in BanG Dream! era labels without changing saved timeline IDs. */
+const BANG_DREAM_ERA_LABELS: Record<string, Record<string, string>> = {
+  "早年": { "zh-CN": "早年", "zh-TW": "早年", en: "Early years", ja: "幼少期", ko: "어린 시절" },
+  "初三春夏季": { "zh-CN": "初三春夏季", "zh-TW": "國三春夏", en: "Final middle-school year · spring/summer", ja: "中学3年 · 春夏", ko: "중학교 3학년 · 봄/여름" },
+  "初三、毕业后的暑假": { "zh-CN": "初三、毕业后的暑假", "zh-TW": "國中畢業後的暑假", en: "Summer after middle-school graduation", ja: "中学卒業後の夏休み", ko: "중학교 졸업 후 여름방학" },
+  "高一秋冬季": { "zh-CN": "高一秋冬季", "zh-TW": "高一秋冬", en: "First high-school year · autumn/winter", ja: "高校1年 · 秋冬", ko: "고등학교 1학년 · 가을/겨울" },
+  "高一春夏季": { "zh-CN": "高一春夏季", "zh-TW": "高一春夏", en: "First high-school year · spring/summer", ja: "高校1年 · 春夏", ko: "고등학교 1학년 · 봄/여름" },
+  "未来": { "zh-CN": "未来", "zh-TW": "未來", en: "Future", ja: "未来", ko: "미래" },
+};
+export function displayWorldlineEra(worldId: string, era: string, locale: string): string {
+  return worldId === BANG_DREAM_WORLD_ID ? BANG_DREAM_ERA_LABELS[era]?.[locale] || era : era;
+}
+
 /** The archive order, not the T-x-y number or era spelling, defines progression. */
 export function worldlineStageIndex(worldline: Pick<StoryWorldline, "kind" | "canonTimeline" | "era" | "period">): number {
   return worldline.canonTimeline.findIndex(stage => stage.era === worldline.era && stage.period === worldline.period);
@@ -203,5 +216,5 @@ export function worldlinePeriodFor(worldline: StoryWorldline, worldId: string | 
 export function describeStoryWorldline(value: StoryWorldline, locale?: string): string {
   const stage = value.canonTimeline.find(item => item.era === value.era && item.period === value.period);
   const description = locale ? timelineStageDescription(stage, locale) : "";
-  return `${value.worldName} · ${value.kind === "canon" ? "原作" : "AU"} · ${value.era} / ${value.period}${description ? ` · ${description}` : ""}${value.kind === "au" && value.basePeriod ? ` · 基准：${value.baseEra || ""} / ${value.basePeriod}` : ""}${value.event ? ` · ${value.event}` : ""}`;
+  return `${value.worldName} · ${value.kind === "canon" ? "原作" : "AU"} · ${locale ? displayWorldlineEra(value.worldId, value.era, locale) : value.era} / ${value.period}${description ? ` · ${description}` : ""}${value.kind === "au" && value.basePeriod ? ` · 基准：${locale ? displayWorldlineEra(value.worldId, value.baseEra || "", locale) : (value.baseEra || "")} / ${value.basePeriod}` : ""}${value.event ? ` · ${value.event}` : ""}`;
 }

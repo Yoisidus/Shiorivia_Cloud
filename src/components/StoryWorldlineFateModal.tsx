@@ -10,7 +10,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
 import {
   BANG_DREAM_WORLD_ID, BANG_DREAM_WORLD_NAME, describeStoryWorldline,
-  parseStoryWorldline, worldlineFor, timelineStageDescription, worldlineStageIndex, type StoryWorldline,
+  parseStoryWorldline, worldlineFor, timelineStageDescription, worldlineStageIndex, displayWorldlineEra, type StoryWorldline,
 } from "../lib/storyWorldline";
 
 const geometric = { fontFamily: 'Bahnschrift, "DIN Alternate", "Arial Narrow", "Yu Gothic", "Noto Sans SC", sans-serif' };
@@ -172,7 +172,7 @@ export function StoryWorldlineFateModal({ isOpen, value, legacyTimeline, worlds,
                   <div className="grid grid-cols-2 gap-3">
                     <label className="text-[11px] text-[#526b5b]">{deepText(locale, "worldline.baseEra")} *
                       <select disabled={previousSecondary.has(entry.worldId)} className={inputStyle} value={entry.baseEra} onChange={e => changeSecondaryBaseline(index, e.target.value, "")}>
-                        <option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(era => <option key={era} value={era}>{era}</option>)}
+                        <option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(era => <option key={era} value={era}>{displayWorldlineEra(entry.worldId, era, locale)}</option>)}
                       </select>
                     </label>
                     <label className="text-[11px] text-[#526b5b]">{deepText(locale, "worldline.basePeriod")} *
@@ -207,7 +207,7 @@ export function StoryWorldlineFateModal({ isOpen, value, legacyTimeline, worlds,
             <h3 className="text-xs font-bold tracking-[.12em] text-[#456b57]" style={geometric}>{deepText(locale, "worldline.auBaseline")} *</h3>
             <p className="text-[11px] leading-6 text-[#718c7a]">{deepText(locale, "worldline.auExplain")}</p>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-xs font-semibold">{deepText(locale, "worldline.baseEra")} *<select disabled={primaryLocked} className={inputStyle} value={draft.baseEra || ""} onChange={e=>setDraft(p=>({...p,baseEra:e.target.value,basePeriod:""}))}><option value="">{deepText(locale, "worldline.chooseBaseEra")}</option>{baseEras.map(era=><option key={era} value={era}>{era}</option>)}</select></label>
+              <label className="text-xs font-semibold">{deepText(locale, "worldline.baseEra")} *<select disabled={primaryLocked} className={inputStyle} value={draft.baseEra || ""} onChange={e=>setDraft(p=>({...p,baseEra:e.target.value,basePeriod:""}))}><option value="">{deepText(locale, "worldline.chooseBaseEra")}</option>{baseEras.map(era=><option key={era} value={era}>{displayWorldlineEra(draft.worldId, era, locale)}</option>)}</select></label>
               <label className="text-xs font-semibold">{deepText(locale, "worldline.basePeriod")} *<select disabled={primaryLocked} className={inputStyle} value={draft.basePeriod || ""} onChange={e=>setDraft(p=>({...p,basePeriod:e.target.value,baseEra:p.canonTimeline.find(stage=>stage.period===e.target.value)?.era || p.baseEra}))}><option value="">{deepText(locale, "worldline.chooseBasePeriod")}</option>{basePeriods.map(stage=><option key={stage.period} value={stage.period}>{stage.period}{timelineStageDescription(stage, locale) ? " · " + timelineStageDescription(stage, locale) : ""}</option>)}</select></label>
             </div>
           </section>}
@@ -220,7 +220,7 @@ export function StoryWorldlineFateModal({ isOpen, value, legacyTimeline, worlds,
           </div>}
           <section className="grid gap-4 sm:grid-cols-2">
             <label className="text-xs font-bold tracking-[.12em]" style={geometric}>03 · ERA / {deepText(locale, "worldline.eraLabel")} *
-              {draft.kind==="canon" ? <select disabled={!timeEditable} value={draft.era} onChange={e=>chooseEra(e.target.value)} className={inputStyle}><option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(era=><option key={era} value={era}>{era}</option>)}</select> : <input disabled={!timeEditable} value={draft.era} maxLength={100} placeholder={deepText(locale, "worldline.auEraPlaceholder")} onChange={e=>setDraft(p=>({...p,era:e.target.value}))} className={inputStyle}/>}</label>
+              {draft.kind==="canon" ? <select disabled={!timeEditable} value={draft.era} onChange={e=>chooseEra(e.target.value)} className={inputStyle}><option value="">{deepText(locale, "worldline.chooseEra")}</option>{eras.map(era=><option key={era} value={era}>{displayWorldlineEra(draft.worldId, era, locale)}</option>)}</select> : <input disabled={!timeEditable} value={draft.era} maxLength={100} placeholder={deepText(locale, "worldline.auEraPlaceholder")} onChange={e=>setDraft(p=>({...p,era:e.target.value}))} className={inputStyle}/>}</label>
             <label className="text-xs font-bold tracking-[.12em]" style={geometric}>04 · PERIOD / {deepText(locale, "worldline.periodLabel")} *
               {draft.kind==="canon" ? <select disabled={!timeEditable} value={draft.period} onChange={e=>choosePeriod(e.target.value)} className={inputStyle}><option value="">{deepText(locale, "worldline.choosePeriod")}</option>{periods.map(period=><option key={period} value={period}>{period}{timelineStageDescription(stages.find(s => s.period === period), locale) ? " · " + timelineStageDescription(stages.find(s => s.period === period), locale) : ""}</option>)}</select> : <input disabled={!timeEditable} value={draft.period} maxLength={100} placeholder={deepText(locale, "worldline.auPeriodPlaceholder")} onChange={e=>setDraft(p=>({...p,period:e.target.value}))} className={inputStyle}/>}</label>
           </section>
