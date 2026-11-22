@@ -74,11 +74,17 @@ type Props = {
   falConfigured: boolean;
   cloudCredentials: CloudCredentials;
   onCloudCredentialChange: (id:string, next:CloudCredential) => Promise<void>;
-  credentialVaultStatus: "loading" | "setup" | "migrate" | "locked" | "unlocked" | "error";
+  credentialVaultStatus: "loading" | "setup" | "migrate" | "editing" | "locked" | "error";
   credentialVaultBusy: boolean;
   credentialVaultError: string;
+  credentialVaultDraft: CloudCredentials;
+  credentialVaultHasSaved: boolean;
+  credentialRuntimeUnlocked: boolean;
   onCredentialVaultSubmit: (passphrase: string, confirmation: string) => Promise<boolean>;
-  onCredentialVaultLock: () => Promise<void>;
+  onCredentialVaultEdit: (passphrase: string) => Promise<boolean>;
+  onCredentialVaultCancelEdit: () => void;
+  onCredentialVaultDecrypt: (passphrase: string) => Promise<boolean>;
+  onCredentialVaultClearMemory: () => void;
   onCredentialVaultReset: () => Promise<void>;
 };
 
@@ -122,11 +128,13 @@ function SwitchRow({ title, description, checked, onClick, icon: Icon }: {
   );
 }
 
-export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onToggleDebug, debugDrawTagsEnabled, onToggleDebugDrawTags, danmakuEnabled, onToggleDanmaku, danmakuCount, onDanmakuCountChange, terminalRequestLogEnabled, onToggleTerminalRequestLog, terminalLogEnabled, onToggleTerminalLog, engineeringTransitionEnabled, onToggleEngineeringTransition, curtainTransitionEnabled, onToggleCurtainTransition, geminiNarrativeStyleEnabled, onToggleGeminiNarrativeStyle, engineeringLoreRelationshipsEnabled, engineeringLoreExperiencesEnabled, onToggleEngineeringLoreRelationships, onToggleEngineeringLoreExperiences, onTestEffect, isStory, activeMode, contextWindowTokens, onContextWindowChange, storyTheme, onStoryThemeChange, activeProvider, providers, disabledProviders, onToggleProvider, autoSync, autoSyncInterval, onAutoSyncChange, onAutoSyncIntervalChange, webToolConfig, onWebToolConfigChange, providerAliases, onProviderAliasChange, imageSettings, onImageSettingsChange, providerCapabilities, onProviderCapabilitiesChange, falConfigured, cloudCredentials, onCloudCredentialChange, credentialVaultStatus, credentialVaultBusy, credentialVaultError, onCredentialVaultSubmit, onCredentialVaultLock, onCredentialVaultReset }: Props) {
+export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onToggleDebug, debugDrawTagsEnabled, onToggleDebugDrawTags, danmakuEnabled, onToggleDanmaku, danmakuCount, onDanmakuCountChange, terminalRequestLogEnabled, onToggleTerminalRequestLog, terminalLogEnabled, onToggleTerminalLog, engineeringTransitionEnabled, onToggleEngineeringTransition, curtainTransitionEnabled, onToggleCurtainTransition, geminiNarrativeStyleEnabled, onToggleGeminiNarrativeStyle, engineeringLoreRelationshipsEnabled, engineeringLoreExperiencesEnabled, onToggleEngineeringLoreRelationships, onToggleEngineeringLoreExperiences, onTestEffect, isStory, activeMode, contextWindowTokens, onContextWindowChange, storyTheme, onStoryThemeChange, activeProvider, providers, disabledProviders, onToggleProvider, autoSync, autoSyncInterval, onAutoSyncChange, onAutoSyncIntervalChange, webToolConfig, onWebToolConfigChange, providerAliases, onProviderAliasChange, imageSettings, onImageSettingsChange, providerCapabilities, onProviderCapabilitiesChange, falConfigured, cloudCredentials, onCloudCredentialChange, credentialVaultStatus, credentialVaultBusy, credentialVaultError, credentialVaultDraft, credentialVaultHasSaved, credentialRuntimeUnlocked, onCredentialVaultSubmit, onCredentialVaultEdit, onCredentialVaultCancelEdit, onCredentialVaultDecrypt, onCredentialVaultClearMemory, onCredentialVaultReset }: Props) {
   const dialog = useAppDialog();
   const [activeTab, setActiveTab] = useState<Tab>("general");
   const [vaultPassphrase, setVaultPassphrase] = useState("");
   const [vaultConfirm, setVaultConfirm] = useState("");
+  const [vaultEditPassphrase, setVaultEditPassphrase] = useState("");
+  const [vaultDecryptPassphrase, setVaultDecryptPassphrase] = useState("");
   useEffect(() => { if (!open) { setVaultPassphrase(""); setVaultConfirm(""); } }, [open]);
 
   const { t, locale, setLocale } = useLanguage();
@@ -228,49 +236,106 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
                   <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#3d6657]"><LockKeyhole size={17}/>{deepText(locale,"cloud.vault.title")}</h3>
                   {credentialVaultStatus==="loading"&&<p className="text-xs">{deepText(locale,"cloud.vault.loading")}</p>}
                   {credentialVaultStatus==="error"&&<div className="flex flex-wrap items-center gap-3"><p role="alert" className="text-xs text-red-700">{deepText(locale,"cloud.vault.corrupt")}</p><button type="button" disabled={credentialVaultBusy} onClick={()=>void onCredentialVaultReset()} className="text-xs text-red-700 underline">{deepText(locale,"cloud.vault.reset")}</button></div>}
-                  {credentialVaultStatus==="unlocked"?<div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-emerald-800">{deepText(locale,"cloud.vault.unlocked")}</p>
-                    <button type="button" disabled={credentialVaultBusy} onClick={()=>void onCredentialVaultLock()}
-                      className="rounded-lg border bg-white px-3 py-2 text-xs font-semibold">{deepText(locale,"cloud.vault.lock")}</button>
-                  </div>:["setup","migrate","locked"].includes(credentialVaultStatus)?<form className="space-y-3" onSubmit={e=>{
-                    e.preventDefault();void onCredentialVaultSubmit(vaultPassphrase,vaultConfirm).then(ok=>{if(ok){setVaultPassphrase("");setVaultConfirm("");}});
-                  }}>
-                    <p className="text-xs leading-5">{deepText(locale,credentialVaultStatus==="migrate"?"cloud.vault.migrate":credentialVaultStatus==="setup"?"cloud.vault.setup":"cloud.vault.locked")}</p>
-                    <label className="block text-xs font-semibold">{deepText(locale,"cloud.vault.passphrase")}
-                      <input type="password" required autoComplete={credentialVaultStatus==="locked"?"current-password":"new-password"}
-                        value={vaultPassphrase} onChange={e=>setVaultPassphrase(e.target.value)}
-                        className="mt-1 block w-full rounded-lg border border-slate-200 bg-white p-2 text-sm"/>
-                    </label>
-                    {credentialVaultStatus!=="locked"&&<label className="block text-xs font-semibold">{deepText(locale,"cloud.vault.confirm")}
-                      <input type="password" required autoComplete="new-password" value={vaultConfirm} onChange={e=>setVaultConfirm(e.target.value)}
-                        className="mt-1 block w-full rounded-lg border border-slate-200 bg-white p-2 text-sm"/>
-                    </label>}
-                    <div className="flex flex-wrap items-center gap-3">
-                      <button type="submit" disabled={credentialVaultBusy} className="rounded-lg bg-[#457b60] px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">
-                        {deepText(locale,credentialVaultStatus==="locked"?"cloud.vault.unlock":"cloud.vault.protect")}</button>
-                      {credentialVaultStatus==="locked"&&<button type="button" disabled={credentialVaultBusy} onClick={()=>void onCredentialVaultReset()}
-                        className="text-xs text-red-700 underline">{deepText(locale,"cloud.vault.reset")}</button>}
+                  {credentialVaultStatus==="locked"&&<div className="space-y-3">
+                    <p className="text-xs leading-5 text-slate-700">{deepText(locale,"cloud.vault.saved")}</p>
+                    <form className="space-y-2" onSubmit={e=>{
+                      e.preventDefault();
+                      void onCredentialVaultEdit(vaultEditPassphrase).then(ok=>{if(ok)setVaultEditPassphrase("");});
+                    }}>
+                      <label className="block text-xs font-semibold">{deepText(locale,"cloud.vault.edit")}
+                        <input type="password" autoComplete="off" required value={vaultEditPassphrase}
+                          onChange={e=>setVaultEditPassphrase(e.target.value)} placeholder={deepText(locale,"cloud.vault.passphrase")}
+                          className="mt-1 block w-full rounded-lg border border-slate-200 bg-white p-2 text-sm"/>
+                      </label>
+                      <button type="submit" disabled={credentialVaultBusy} className="rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold disabled:opacity-40">
+                        {deepText(locale,"cloud.vault.edit")}
+                      </button>
+                    </form>
+                    <button type="button" disabled={credentialVaultBusy} onClick={()=>void onCredentialVaultReset()}
+                      className="text-xs text-red-700 underline disabled:opacity-40">{deepText(locale,"cloud.vault.reset")}</button>
+                  </div>}
+                  {["setup","migrate","editing"].includes(credentialVaultStatus)&&<>
+                    <p className="mb-3 text-xs leading-5 text-slate-600">
+                      {deepText(locale,credentialVaultStatus==="migrate"?"cloud.vault.migrate":credentialVaultStatus==="editing"?"cloud.vault.editing":"cloud.vault.setup")}
+                    </p>
+                    <form id="vault-save-form" className="space-y-3" onSubmit={e=>{
+                      e.preventDefault();
+                      void onCredentialVaultSubmit(vaultPassphrase,vaultConfirm).then(ok=>{
+                        if(ok){setVaultPassphrase("");setVaultConfirm("");setVaultEditPassphrase("");setVaultDecryptPassphrase("");}
+                      });
+                    }}>
+                      {credentialVaultStatus!=="editing"&&<>
+                        <label className="block text-xs font-semibold">{deepText(locale,"cloud.vault.passphrase")}
+                          <input type="password" required autoComplete="new-password"
+                            value={vaultPassphrase} onChange={e=>setVaultPassphrase(e.target.value)}
+                            className="mt-1 block w-full rounded-lg border border-slate-200 bg-white p-2 text-sm"/>
+                        </label>
+                        <label className="block text-xs font-semibold">{deepText(locale,"cloud.vault.confirm")}
+                          <input type="password" required autoComplete="new-password" value={vaultConfirm}
+                            onChange={e=>setVaultConfirm(e.target.value)}
+                            className="mt-1 block w-full rounded-lg border border-slate-200 bg-white p-2 text-sm"/>
+                        </label>
+                      </>}
+                    </form>
+                    <div className="mt-4 grid gap-3">
+                      {providers.map(p=>{
+                        const value=credentialVaultDraft[p.id]||{apiKey:"",baseURL:""};
+                        return <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                          <p className="mb-3 text-sm font-semibold text-slate-700">{p.label}</p>
+                          {p.custom&&<label className="block text-xs text-slate-600">{deepText(locale,"cloud.byok.url")}
+                            <input type="url" autoComplete="off" value={value.baseURL}
+                              disabled={credentialVaultBusy}
+                              onChange={e=>void onCloudCredentialChange(p.id,{...value,baseURL:e.target.value})}
+                              placeholder="https://example.com/v1" maxLength={500} className="mb-3 mt-1 w-full rounded-lg border p-2 font-mono text-xs"/>
+                          </label>}
+                          <label className="block text-xs text-slate-600">{deepText(locale,"cloud.byok.key")}
+                            <input type="password" autoComplete="new-password" spellCheck={false} value={value.apiKey}
+                              disabled={credentialVaultBusy}
+                              onChange={e=>void onCloudCredentialChange(p.id,{...value,apiKey:e.target.value})}
+                              placeholder="••••••••••" maxLength={400} className="mt-1 w-full rounded-lg border p-2 font-mono text-xs"/>
+                          </label>
+                        </div>;
+                      })}
                     </div>
-                  </form>:null}
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button type="submit" form="vault-save-form" disabled={credentialVaultBusy}
+                        className="rounded-lg bg-[#457b60] px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">
+                        <LockKeyhole size={14} className="mr-1 inline"/>
+                        {deepText(locale,"cloud.vault.saveLock")}
+                      </button>
+                      {credentialVaultStatus==="editing"&&<button type="button" disabled={credentialVaultBusy}
+                        onClick={()=>onCredentialVaultCancelEdit()} className="text-xs text-slate-600 underline">
+                        {deepText(locale,"cloud.vault.cancelEdit")}
+                      </button>}
+                    </div>
+                  </>}
                   {credentialVaultError&&<p role="alert" className="mt-3 text-xs text-red-700">{credentialVaultError}</p>}
                 </div>
-                {credentialVaultStatus==="unlocked"&&<div className="mb-7 grid gap-3">
-                  {providers.map(p=>{
-                    const value=cloudCredentials[p.id]||{apiKey:"",baseURL:""};
-                    return <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-4">
-                      <p className="mb-3 text-sm font-semibold text-slate-700">{p.label}</p>
-                      {p.custom&&<label className="block text-xs text-slate-600">{deepText(locale,"cloud.byok.url")}
-                        <input type="url" autoComplete="off" value={value.baseURL} onChange={e=>void onCloudCredentialChange(p.id,{...value,baseURL:e.target.value})}
-                          placeholder="https://example.com/v1" maxLength={500} className="mb-3 mt-1 w-full rounded-lg border p-2 font-mono text-xs"/></label>}
-                      <label className="block text-xs text-slate-600">{deepText(locale,"cloud.byok.key")}
-                        <input type="password" autoComplete="new-password" spellCheck={false} value={value.apiKey}
-                          onChange={e=>void onCloudCredentialChange(p.id,{...value,apiKey:e.target.value})}
-                          placeholder="••••••••••" maxLength={400} className="mt-1 w-full rounded-lg border p-2 font-mono text-xs"/>
-                      </label>
-                    </div>;
-                  })}
+                {credentialVaultHasSaved&&<div className="mb-7 rounded-xl border border-sky-200 bg-sky-50/50 p-4">
+                  <h3 className="mb-2 text-sm font-semibold text-[#315879]">{deepText(locale,"cloud.vault.decryptTitle")}</h3>
+                  {credentialRuntimeUnlocked?<div className="space-y-3">
+                    <p className="text-xs leading-5 text-sky-800">{deepText(locale,"cloud.vault.runtimeReady")}</p>
+                    <button type="button" disabled={credentialVaultBusy} onClick={()=>onCredentialVaultClearMemory()}
+                      className="rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-semibold disabled:opacity-40">
+                      {deepText(locale,"cloud.vault.clearMemory")}
+                    </button>
+                  </div>:<form className="space-y-3" onSubmit={e=>{
+                    e.preventDefault();
+                    void onCredentialVaultDecrypt(vaultDecryptPassphrase).then(ok=>{if(ok)setVaultDecryptPassphrase("");});
+                  }}>
+                    <p className="text-xs leading-5 text-slate-600">{deepText(locale,"cloud.vault.decryptHelp")}</p>
+                    <label className="block text-xs font-semibold">{deepText(locale,"cloud.vault.passphrase")}
+                      <input type="password" required autoComplete="off" value={vaultDecryptPassphrase}
+                        onChange={e=>setVaultDecryptPassphrase(e.target.value)}
+                        className="mt-1 block w-full rounded-lg border border-sky-200 bg-white p-2 text-sm"/>
+                    </label>
+                    <button type="submit" disabled={credentialVaultBusy||credentialVaultStatus==="editing"}
+                      className="rounded-lg bg-[#416a85] px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">
+                      {deepText(locale,"cloud.vault.decryptAction")}
+                    </button>
+                  </form>}
                 </div>}
-                <SectionTitle>{deepText(locale, "settings.providerHeading")} · {t("settings.providers")}</SectionTitle>
+                                <SectionTitle>{deepText(locale, "settings.providerHeading")} · {t("settings.providers")}</SectionTitle>
                 <div className="mb-7 space-y-2">
                   {providers.map((provider) => (
                     <div key={provider.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm">

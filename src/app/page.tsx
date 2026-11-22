@@ -139,26 +139,35 @@ export default function Home() {
     const [providerCapabilities, setProviderCapabilities] = useState<Record<string, ProviderCapability>>({});
     const [providerAliases, setProviderAliases] = useState<Record<string, string>>({});
     const [falConfigured, setFalConfigured] = useState(false);
+    // Stored vault/editor and decrypted runtime credentials are independent.
+    // Only cloudCredentials is passed to model providers; vaultDraft is never used for API requests.
     const [cloudCredentials, setCloudCredentials] = useState<CloudCredentials>({});
-    const credentialsRef = useRef<CloudCredentials>({});
-    const credentialSaveQueue = useRef<Promise<void>>(Promise.resolve());
-    const vaultKeyRef = useRef<CryptoKey | null>(null);
-    const vaultSaltRef = useRef("");
-    const vaultCiphertextRef = useRef("");
-    const legacyCredentialsRef = useRef<CloudCredentials>({});
-    const [vaultStatus, setVaultStatus] = useState<"loading" | "setup" | "migrate" | "locked" | "unlocked" | "error">("loading");
+    const [vaultDraft, setVaultDraft] = useState<CloudCredentials>({});
+    const [vaultStatus, setVaultStatus] = useState<"loading" | "setup" | "migrate" | "editing" | "locked" | "error">("loading");
+    const [vaultHasSaved, setVaultHasSaved] = useState(false);
+    const [runtimeUnlocked, setRuntimeUnlocked] = useState(false);
     const [vaultBusy, setVaultBusy] = useState(false);
     const [vaultError, setVaultError] = useState("");
+    const editorKeyRef = useRef<CryptoKey | null>(null);
+    const editorSaltRef = useRef("");
+    const editorCiphertextRef = useRef("");
+    const vaultOperationRef = useRef(false);
     const [allProviders, setAllProviders] = useState<PublicLocalProvider[]>(DEFAULT_LOCAL_PROVIDERS);
+
     useEffect(() => {
         let mounted = true;
         void browserRead<unknown>("cloud:byok", null).then(saved => {
             if (!mounted) return;
-            if (saved === null) setVaultStatus("setup");
-            else if (isCredentialVaultRecord(saved)) setVaultStatus("locked");
-            else if (typeof saved === "object" && !Array.isArray(saved)) {
-                // Migrate legacy plaintext only once the user creates a passphrase.
-                legacyCredentialsRef.current = safeCloudCredentials(saved);
+            if (saved === null) {
+                setVaultHasSaved(false);
+                setVaultStatus("setup");
+            } else if (isCredentialVaultRecord(saved)) {
+                setVaultHasSaved(true);
+                setVaultStatus("locked");
+            } else if (typeof saved === "object" && !Array.isArray(saved)) {
+                // Migration is explicitly saved as encrypted data before any provider use.
+                setVaultDraft(safeCloudCredentials(saved));
+                setVaultHasSaved(false);
                 setVaultStatus("migrate");
             } else {
                 setVaultStatus("error");
@@ -171,123 +180,137 @@ export default function Home() {
         });
         return () => { mounted = false; };
     }, []);
+
+    const clearRuntimeCredentials = () => {
+        // Clearing the reference is best-effort; JavaScript engines manage GC.
+        setCloudCredentials({});
+        setRuntimeUnlocked(false);
+    };
+    const clearVaultEditor = () => {
+        editorKeyRef.current = null;
+        editorSaltRef.current = "";
+        editorCiphertextRef.current = "";
+        setVaultDraft({});
+    };
     const submitCloudVault = async (passphrase: string, confirmation: string): Promise<boolean> => {
-        if (vaultBusy || !["setup", "migrate", "locked"].includes(vaultStatus)) return false;
+        if (vaultOperationRef.current || !["setup", "migrate", "editing"].includes(vaultStatus)) return false;
         setVaultError("");
-        if (vaultStatus !== "locked" && (passphrase.length < 12 || passphrase !== confirmation)) {
+        if (vaultStatus !== "editing" && (passphrase.length < 12 || passphrase !== confirmation)) {
             setVaultError(deepText(locale, passphrase.length < 12 ? "cloud.vault.short" : "cloud.vault.mismatch"));
             return false;
         }
+        vaultOperationRef.current = true;
         setVaultBusy(true);
         try {
-            if (vaultStatus === "locked") {
-                const saved = await browserRead<unknown>("cloud:byok", null);
-                if (!isCredentialVaultRecord(saved)) throw new Error("Invalid vault record.");
-                const unlocked = await unlockCredentialVault(saved, passphrase);
-                vaultKeyRef.current = unlocked.key;
-                vaultSaltRef.current = saved.salt;
-                vaultCiphertextRef.current = saved.ciphertext;
-                credentialsRef.current = unlocked.credentials;
-                setCloudCredentials(unlocked.credentials);
+            const draft = safeCloudCredentials(vaultDraft);
+            if (vaultStatus === "editing") {
+                const key = editorKeyRef.current, salt = editorSaltRef.current;
+                if (!key || !salt) throw new Error("Editor is not unlocked.");
+                const sealed = await encryptCredentialVault(draft, key, salt);
+                await browserMutate<unknown>("cloud:byok", current => {
+                    if (!isCredentialVaultRecord(current)
+                        || current.salt !== salt || current.ciphertext !== editorCiphertextRef.current) {
+                        throw new Error("Vault changed in another browser tab.");
+                    }
+                    return sealed;
+                });
             } else {
-                const initial = vaultStatus === "migrate" ? legacyCredentialsRef.current : {};
-                const created = await createCredentialVault(passphrase, initial);
-                // One committed IndexedDB write atomically replaces any old plaintext.
-                await browserWrite("cloud:byok", created.record);
-                vaultKeyRef.current = created.key;
-                vaultSaltRef.current = created.record.salt;
-                vaultCiphertextRef.current = created.record.ciphertext;
-                credentialsRef.current = initial;
-                setCloudCredentials(initial);
-                legacyCredentialsRef.current = {};
+                const created = await createCredentialVault(passphrase, draft);
+                await browserMutate<unknown>("cloud:byok", current => {
+                    if (isCredentialVaultRecord(current)) throw new Error("Vault changed in another browser tab.");
+                    if (vaultStatus === "setup" && current !== undefined) throw new Error("Vault changed in another browser tab.");
+                    return created.record;
+                });
             }
-            setVaultStatus("unlocked");
+            clearVaultEditor();
+            clearRuntimeCredentials();
+            setVaultHasSaved(true);
+            setVaultStatus("locked");
             return true;
-        } catch {
-            setVaultError(deepText(locale, vaultStatus === "locked" ? "cloud.vault.unlockFailed" : "cloud.byok.storageError"));
+        } catch (error) {
+            const conflict = error instanceof Error && error.message.includes("Vault changed");
+            setVaultError(deepText(locale, conflict ? "cloud.vault.conflict" : "cloud.byok.storageError"));
             return false;
         } finally {
+            vaultOperationRef.current = false;
             setVaultBusy(false);
         }
     };
-    const lockCloudVault = async () => {
+    const startVaultEditor = async (passphrase: string): Promise<boolean> => {
+        if (vaultOperationRef.current || vaultStatus !== "locked" || !vaultHasSaved) return false;
+        vaultOperationRef.current = true;
         setVaultBusy(true);
-        await credentialSaveQueue.current.catch(() => {});
-        vaultKeyRef.current = null;
-        vaultSaltRef.current = "";
-        vaultCiphertextRef.current = "";
-        credentialsRef.current = {};
-        setCloudCredentials({});
+        setVaultError("");
+        try {
+            const saved = await browserRead<unknown>("cloud:byok", null);
+            if (!isCredentialVaultRecord(saved)) throw new Error("Vault record missing.");
+            const unlocked = await unlockCredentialVault(saved, passphrase);
+            editorKeyRef.current = unlocked.key;
+            editorSaltRef.current = saved.salt;
+            editorCiphertextRef.current = saved.ciphertext;
+            setVaultDraft(unlocked.credentials);
+            clearRuntimeCredentials();
+            setVaultStatus("editing");
+            return true;
+        } catch {
+            setVaultError(deepText(locale, "cloud.vault.unlockFailed"));
+            return false;
+        } finally {
+            vaultOperationRef.current = false;
+            setVaultBusy(false);
+        }
+    };
+    const cancelVaultEditor = () => {
+        if (vaultStatus !== "editing" || vaultBusy) return;
+        clearVaultEditor();
         setVaultStatus("locked");
-        setVaultBusy(false);
+        setVaultError("");
+    };
+    const decryptVaultForUse = async (passphrase: string): Promise<boolean> => {
+        if (vaultOperationRef.current || !vaultHasSaved || vaultStatus === "editing") return false;
+        vaultOperationRef.current = true;
+        setVaultBusy(true);
+        setVaultError("");
+        try {
+            const saved = await browserRead<unknown>("cloud:byok", null);
+            if (!isCredentialVaultRecord(saved)) throw new Error("Vault record missing.");
+            const { credentials } = await unlockCredentialVault(saved, passphrase);
+            setCloudCredentials(credentials);
+            setRuntimeUnlocked(true);
+            return true;
+        } catch {
+            clearRuntimeCredentials();
+            setVaultError(deepText(locale, "cloud.vault.unlockFailed"));
+            return false;
+        } finally {
+            vaultOperationRef.current = false;
+            setVaultBusy(false);
+        }
     };
     const resetCloudVault = async () => {
-        if (!await dialog.confirm(deepText(locale, "cloud.vault.resetConfirm"), {tone:"officina"})) return;
+        if (vaultOperationRef.current) return;
+        if (!await dialog.confirm(deepText(locale, "cloud.vault.resetConfirm"), { tone: "officina" })) return;
+        if (vaultOperationRef.current) return;
+        vaultOperationRef.current = true;
         setVaultBusy(true);
         try {
-            await credentialSaveQueue.current.catch(() => {});
             await browserDelete("cloud:byok");
-            vaultKeyRef.current = null;
-            vaultSaltRef.current = "";
-            vaultCiphertextRef.current = "";
-            credentialsRef.current = {};
-            setCloudCredentials({});
+            clearVaultEditor();
+            clearRuntimeCredentials();
+            setVaultHasSaved(false);
             setVaultStatus("setup");
             setVaultError("");
-        } catch { setVaultError(deepText(locale,"cloud.byok.storageError")); }
-        finally { setVaultBusy(false); }
+        } catch {
+            setVaultError(deepText(locale, "cloud.byok.storageError"));
+        } finally {
+            vaultOperationRef.current = false;
+            setVaultBusy(false);
+        }
     };
     const updateCloudCredential = async (id: string, next: CloudCredential) => {
-        const key = vaultKeyRef.current, salt = vaultSaltRef.current;
-        if (vaultStatus !== "unlocked" || !key || !salt) {
-            setVaultError(deepText(locale,"cloud.vault.unlockFirst"));
-            return;
-        }
-        const updated = safeCloudCredentials({...credentialsRef.current,[id]:next});
-        credentialsRef.current = updated;
-        setCloudCredentials(updated);
-        // Each edit is encrypted with a fresh IV and queued in input order.
-        const job = credentialSaveQueue.current.catch(() => {}).then(async () => {
-            const sealed = await encryptCredentialVault(updated, key, salt);
-            await browserMutate<unknown>("cloud:byok", current => {
-                if (!isCredentialVaultRecord(current)
-                    || current.salt !== salt || current.ciphertext !== vaultCiphertextRef.current) {
-                    throw new Error("Vault changed in another browser tab.");
-                }
-                return sealed;
-            });
-            vaultCiphertextRef.current = sealed.ciphertext;
-        });
-        credentialSaveQueue.current = job;
-        try { await job; } catch (error) {
-            const conflict = error instanceof Error && error.message.includes("Vault changed");
-            if (conflict) {
-                vaultKeyRef.current = null;
-                vaultSaltRef.current = "";
-                vaultCiphertextRef.current = "";
-                credentialsRef.current = {};
-                setCloudCredentials({});
-                setVaultStatus("locked");
-            }
-            setVaultError(deepText(locale, conflict ? "cloud.vault.conflict" : "cloud.byok.storageError"));
-        }
+        if (!["setup", "migrate", "editing"].includes(vaultStatus) || vaultBusy) return;
+        setVaultDraft(current => safeCloudCredentials({ ...current, [id]: next }));
     };
-    // A dormant page should not leave expensive provider credentials unlocked indefinitely.
-    useEffect(() => {
-        if (vaultStatus !== "unlocked") return;
-        let timer: ReturnType<typeof setTimeout>;
-        const reset = () => {
-            clearTimeout(timer);
-            timer = setTimeout(() => { void lockCloudVault(); }, 20 * 60 * 1000);
-        };
-        const events = ["pointerdown", "keydown", "focus"] as const;
-        for (const event of events) window.addEventListener(event, reset, { passive: true });
-        reset();
-        return () => {
-            clearTimeout(timer);
-            for (const event of events) window.removeEventListener(event, reset);
-        };
-    }, [vaultStatus]);
     useEffect(() => {
         const builtins = DEFAULT_LOCAL_PROVIDERS.map(p => ({
             ...p, configured: Boolean(cloudCredentials[p.id]?.apiKey),
@@ -837,8 +860,14 @@ export default function Home() {
                 credentialVaultStatus={vaultStatus}
                 credentialVaultBusy={vaultBusy}
                 credentialVaultError={vaultError}
+                credentialVaultDraft={vaultDraft}
+                credentialVaultHasSaved={vaultHasSaved}
+                credentialRuntimeUnlocked={runtimeUnlocked}
                 onCredentialVaultSubmit={submitCloudVault}
-                onCredentialVaultLock={lockCloudVault}
+                onCredentialVaultEdit={startVaultEditor}
+                onCredentialVaultCancelEdit={cancelVaultEditor}
+                onCredentialVaultDecrypt={decryptVaultForUse}
+                onCredentialVaultClearMemory={clearRuntimeCredentials}
                 onCredentialVaultReset={resetCloudVault}
                 />
             </>
@@ -928,8 +957,14 @@ export default function Home() {
                 credentialVaultStatus={vaultStatus}
                 credentialVaultBusy={vaultBusy}
                 credentialVaultError={vaultError}
+                credentialVaultDraft={vaultDraft}
+                credentialVaultHasSaved={vaultHasSaved}
+                credentialRuntimeUnlocked={runtimeUnlocked}
                 onCredentialVaultSubmit={submitCloudVault}
-                onCredentialVaultLock={lockCloudVault}
+                onCredentialVaultEdit={startVaultEditor}
+                onCredentialVaultCancelEdit={cancelVaultEditor}
+                onCredentialVaultDecrypt={decryptVaultForUse}
+                onCredentialVaultClearMemory={clearRuntimeCredentials}
                 onCredentialVaultReset={resetCloudVault}
                 />
 
@@ -1049,8 +1084,14 @@ export default function Home() {
                 credentialVaultStatus={vaultStatus}
                 credentialVaultBusy={vaultBusy}
                 credentialVaultError={vaultError}
+                credentialVaultDraft={vaultDraft}
+                credentialVaultHasSaved={vaultHasSaved}
+                credentialRuntimeUnlocked={runtimeUnlocked}
                 onCredentialVaultSubmit={submitCloudVault}
-                onCredentialVaultLock={lockCloudVault}
+                onCredentialVaultEdit={startVaultEditor}
+                onCredentialVaultCancelEdit={cancelVaultEditor}
+                onCredentialVaultDecrypt={decryptVaultForUse}
+                onCredentialVaultClearMemory={clearRuntimeCredentials}
                 onCredentialVaultReset={resetCloudVault}
             />
             </>
@@ -1385,8 +1426,14 @@ export default function Home() {
                 credentialVaultStatus={vaultStatus}
                 credentialVaultBusy={vaultBusy}
                 credentialVaultError={vaultError}
+                credentialVaultDraft={vaultDraft}
+                credentialVaultHasSaved={vaultHasSaved}
+                credentialRuntimeUnlocked={runtimeUnlocked}
                 onCredentialVaultSubmit={submitCloudVault}
-                onCredentialVaultLock={lockCloudVault}
+                onCredentialVaultEdit={startVaultEditor}
+                onCredentialVaultCancelEdit={cancelVaultEditor}
+                onCredentialVaultDecrypt={decryptVaultForUse}
+                onCredentialVaultClearMemory={clearRuntimeCredentials}
                 onCredentialVaultReset={resetCloudVault}
             />
             <MemoryVaultModal
