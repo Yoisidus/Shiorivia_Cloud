@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session, ChatFolder } from "../types";
 import { collectAppendDeltas, completedTurns } from "../lib/appendSync";
 import type { LocalSyncPreferences } from "../lib/localSyncPreferences";
-import { browserRead, browserWrite } from "../lib/browserStore";
+import { browserRead, browserWrite, browserMutate } from "../lib/browserStore";
+import { withCloudGenesisSession } from "../lib/cloudGenesisSession";
 import { useAppDialog } from "../context/DialogContext";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
@@ -47,7 +48,18 @@ export const useLocalFileSync = (isGlobalGenerating: boolean, showToast: (msg: s
       const payload: SavedSessionState = { sessions, folders, globalWorldInfo, bgImage };
       const snapshot = JSON.stringify(payload);
       if (mode === "force_pull" || !initLoaded) {
-        const data = saved?.data || EMPTY;
+        // The initial Officina greeting is app-created, not an unsaved user edit.
+        // Commit it before marking hydration complete to avoid a false dirty badge.
+        // The mutation preserves other origin data and cannot overwrite a newer session.
+        const checkpoint = saved?.data?.sessions?.length ? saved
+          : await browserMutate<StoredSessions>(STORAGE_KEY, current => {
+              if (current?.data?.sessions?.length) return current;
+              return {
+                data: withCloudGenesisSession(current?.data || EMPTY, locale, Date.now()),
+                lastModified: Date.now(),
+              };
+            });
+        const data = checkpoint?.data || EMPTY;
         setSessions(data.sessions || []);
         setFolders(data.folders || []);
         setGlobalWorldInfo(data.globalWorldInfo || "");
@@ -56,7 +68,7 @@ export const useLocalFileSync = (isGlobalGenerating: boolean, showToast: (msg: s
           sessions: data.sessions || [], folders: data.folders || [],
           globalWorldInfo: data.globalWorldInfo || "", bgImage: data.bgImage || null,
         });
-        lastModified.current = saved?.lastModified || 0;
+        lastModified.current = checkpoint?.lastModified || 0;
         dirty.current = false;
         setInitLoaded(true);
         setStatus("idle");

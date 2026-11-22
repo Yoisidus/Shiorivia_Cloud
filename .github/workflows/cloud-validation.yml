@@ -28,6 +28,8 @@ jobs:
         run: npm install --no-save --no-package-lock fake-indexeddb@6
       - name: Validate TypeScript types
         run: npx tsc --noEmit
+      - name: Verify first-run browser session is a saved checkpoint
+        run: npm run test:cloud-bootstrap
       - name: Exercise Cloud IDE persistence and ZIP compatibility
         run: npm run test:cloud-ide
       - name: Verify public Cloud API request guards and size limits
