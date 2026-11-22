@@ -170,10 +170,23 @@ export const NovelInterface = ({
         style: deepText(locale, `novel.preset.${i}.style`),
     }));
     const dialog = useAppDialog();
-    const [leftOpen, setLeftOpen] = useState(true);
-    const [rightOpen, setRightOpen] = useState(true);
+    const [leftOpen, setLeftOpen] = useState(false);
+    const [rightOpen, setRightOpen] = useState(false);
     const [showMemoryVault, setShowMemoryVault] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const media = window.matchMedia("(max-width: 767px)");
+        const syncLayout = () => {
+            const mobile = media.matches;
+            setIsMobile(mobile);
+            // Desktop starts with both docked panels; mobile starts with neither overlay.
+            setLeftOpen(!mobile);
+            setRightOpen(!mobile);
+        };
+        syncLayout();
+        media.addEventListener("change", syncLayout);
+        return () => media.removeEventListener("change", syncLayout);
+    }, []);
     const theme = THEMES.paper;
 
     const confirmStopGeneration = async () => {
@@ -477,18 +490,18 @@ export const NovelInterface = ({
                         className={`
                 flex flex-col shrink-0 border-r ${theme.border} ${theme.sidebar}
                 ${isMobile
-                                ? "fixed inset-y-0 left-0 z-[100] w-[280px] shadow-[10px_0_30px_rgba(0,0,0,0.5)]" // 手机：加重阴影，覆盖在最上层
+                                ? "fixed inset-y-0 left-0 z-[100] w-[min(85vw,280px)] shadow-[10px_0_30px_rgba(0,0,0,0.5)]" // 手机：加重阴影，覆盖在最上层
                                 : "relative z-10 shadow-xl" 
                             }
             `}
                     >
-                        <div className="w-[280px] h-full flex flex-col">
+                        <div className="w-full md:w-[280px] h-full flex flex-col">
                             <div className={`
                             border-b ${theme.border} flex items-center justify-between
                             pt-[calc(1.5rem+env(safe-area-inset-top))] pb-6 px-6 
                         `}>
                                 <div className="flex items-center gap-3 overflow-hidden"><Book className={theme.accent} size={20} /><span className={`font-bold text-lg tracking-widest ${theme.title} truncate`}>{currentSession.title}</span></div>
-                                <button onClick={() => setLeftOpen(false)} className={`${theme.text} hover:${theme.accent}`}><X size={18} /></button>
+                                <button onClick={() => setLeftOpen(false)} className={`min-h-10 min-w-10 rounded-lg ${theme.text} hover:${theme.accent}`} aria-label={deepText(locale, "novel.toc")}><X size={18} /></button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin">
                                 <div className={`text-[10px] font-bold ${theme.text} opacity-60 uppercase mb-2`}>{deepText(locale, "novel.toolbar.chapters")}</div>
@@ -518,7 +531,7 @@ export const NovelInterface = ({
                     min-h-[3.5rem]
                 `}>
                     <div className="justify-self-start">
-                        <button type="button" onClick={() => setLeftOpen(!leftOpen)} className={`rounded-lg p-2 transition-colors ${theme.text} ${theme.hover}`} title={deepText(locale, "novel.toc")} aria-label={deepText(locale, "novel.toc")}><AlignLeft size={19} /></button>
+                        <button type="button" onClick={() => { setLeftOpen(!leftOpen); if (isMobile) setRightOpen(false); }} className={`rounded-lg p-2 transition-colors ${theme.text} ${theme.hover}`} title={deepText(locale, "novel.toc")} aria-label={deepText(locale, "novel.toc")}><AlignLeft size={19} /></button>
                     </div>
                     <h1 className={`whitespace-nowrap text-sm font-semibold tracking-[0.24em] sm:text-base ${theme.title}`}>TELA</h1>
                     <div className="flex items-center justify-self-end gap-0.5 sm:gap-1">
@@ -529,7 +542,7 @@ export const NovelInterface = ({
                             <span className="rounded bg-[#f1e2c7] px-1.5 text-[10px] font-mono">{parseLocalMemoryEntries(currentSession.stm).length}/{parseLocalMemoryEntries(currentSession.ltm).length}</span>
                         </button>
                         <button type="button" onClick={onOpenSettings} className={`rounded-lg p-2 transition-colors ${theme.text} ${theme.hover}`} title={`Shiorivia · ${deepText(locale, "common.settings")}`} aria-label={deepText(locale, "common.settings")}><Settings2 size={19} /></button>
-                        <button type="button" onClick={() => setRightOpen(!rightOpen)} className={`rounded-lg p-2 transition-colors ${theme.text} ${theme.hover}`} title={deepText(locale, "novel.ui.sidebarOpen")} aria-label={deepText(locale, "novel.ui.sidebarOpen")}><PanelRight size={19} /></button>
+                        <button type="button" onClick={() => { setRightOpen(!rightOpen); if (isMobile) setLeftOpen(false); }} className={`rounded-lg p-2 transition-colors ${theme.text} ${theme.hover}`} title={deepText(locale, "novel.ui.sidebarOpen")} aria-label={deepText(locale, "novel.ui.sidebarOpen")}><PanelRight size={19} /></button>
                     </div>
                 </div>
 
@@ -634,18 +647,18 @@ export const NovelInterface = ({
                         className={`
                 flex flex-col shrink-0 border-l ${theme.border} ${theme.sidebar}
                 ${isMobile
-                                ? "fixed inset-y-0 right-0 z-[100] w-[320px] shadow-[-10px_0_30px_rgba(0,0,0,0.5)]" // 手机：覆盖层
+                                ? "fixed inset-y-0 right-0 z-[100] w-[min(88vw,320px)] shadow-[-10px_0_30px_rgba(0,0,0,0.5)]" // 手机：覆盖层
                                 : "relative z-10 shadow-xl"
                             }
-                pt-safe
+                md:pt-0
             `}
                     >
-                        <div className="w-[320px] h-full flex flex-col">
+                        <div className="w-full md:w-[320px] h-full flex flex-col">
                             <div className={`
                             border-b ${theme.border} flex justify-between items-center
                             pt-[calc(1.5rem+env(safe-area-inset-top))] pb-6 px-6
                         `}>
-                                <div><div className={`text-[10px] font-bold ${theme.text} opacity-50 uppercase tracking-widest mb-1`}>TELA · CREATION</div><h2 className={`text-xl font-serif ${theme.title}`}>{deepText(locale, "novel.controls")}</h2></div>{isMobile && <button onClick={() => setRightOpen(false)} className={`${theme.text} hover:${theme.accent}`}><X /></button>}</div>
+                                <div><div className={`text-[10px] font-bold ${theme.text} opacity-50 uppercase tracking-widest mb-1`}>TELA · CREATION</div><h2 className={`text-xl font-serif ${theme.title}`}>{deepText(locale, "novel.controls")}</h2></div>{isMobile && <button onClick={() => setRightOpen(false)} className={`min-h-10 min-w-10 rounded-lg ${theme.text} hover:${theme.accent}`} aria-label={deepText(locale, "novel.ui.sidebarOpen")}><X /></button>}</div>
 
                             <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin">
 

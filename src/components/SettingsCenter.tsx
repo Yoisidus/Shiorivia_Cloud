@@ -341,9 +341,9 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
                     <div key={provider.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm">
                       <div className="min-w-0">
                         <p className="font-semibold">{provider.label} {provider.id === "fal" && <span className="ml-2 text-[10px] font-normal text-[#71917d]">IMAGE ONLY</span>} {provider.id !== "fal" && activeProvider === provider.id && <span className="ml-1 text-[10px] text-emerald-600">{t("settings.active")}</span>}</p>
-                        <p className="mt-1 text-xs text-slate-400">{provider.configured ? t("settings.configured") : t("settings.unconfigured")}{" · "}{provider.custom ? t("settings.custom") : t("settings.default")}</p>
+                        <p className="mt-1 text-xs text-slate-400">{provider.custom ? t("settings.custom") : t("settings.default")}</p>
                       </div>
-                      {provider.custom && <label className="block mt-2 max-w-[250px] text-[11px] text-slate-500">{deepText(locale, "settings.providerAlias")}
+                      {provider.custom && <label className="block mt-2 max-w-[250px] text-[11px] text-slate-500">{deepText(locale, "settings.displayName")}
                         <input aria-label={`${provider.id} ${deepText(locale, "settings.displayName")}`} value={providerAliases[provider.id] || ""}
                           onChange={event => onProviderAliasChange(provider.id, event.target.value)}
                           placeholder={provider.id} maxLength={40}

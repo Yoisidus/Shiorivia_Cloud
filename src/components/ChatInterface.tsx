@@ -470,7 +470,7 @@ export const ChatInterface = ({
                 <div className="flex items-center gap-1 md:gap-2">
 
                     <button type="button" onClick={onOpenHub} className="rounded-full p-2 text-slate-500 transition-colors hover:bg-gray-100" title={deepText(locale, "chat.toolbar.home")} aria-label={deepText(locale, "chat.toolbar.home")}><House size={19} /></button>
-                    {currentSession?.memoryMode !== "infinite" && <button type="button" onClick={onOpenMemory} className="rounded-full p-2 text-slate-500 transition-colors hover:bg-gray-100" title={deepText(locale, "chat.toolbar.memoryVault")} aria-label={deepText(locale, "chat.toolbar.memoryVault")}><Brain size={19} /></button>}
+                    {currentSession?.memoryMode !== "infinite" && <button type="button" onClick={onOpenMemory} className="hidden md:inline-flex rounded-full p-2 text-slate-500 transition-colors hover:bg-gray-100" title={deepText(locale, "chat.toolbar.memoryVault")} aria-label={deepText(locale, "chat.toolbar.memoryVault")}><Brain size={19} /></button>}
 
                     <div className="relative">
                         <button
@@ -544,7 +544,7 @@ export const ChatInterface = ({
                     <div className="relative"> 
                         <button
                             onClick={() => setShowFullPlayer(true)}
-                            className={`relative p-2 hover:bg-gray-100 rounded-full transition-colors ${isPlaying ? 'text-rose-500' : 'text-gray-400'}`}
+                            className={`relative hidden md:inline-flex p-2 hover:bg-gray-100 rounded-full transition-colors ${isPlaying ? 'text-rose-500' : 'text-gray-400'}`}
                             title={deepText(locale, "chat.toolbar.musicPlayer")}
                         >
                             <Disc size={20} className={isPlaying ? "animate-spin-slow" : ""} style={{ animationDuration: '3s' }} />
@@ -581,14 +581,26 @@ export const ChatInterface = ({
                         exit={{ height: 0, opacity: 0 }}
                         className="md:hidden bg-white/90 backdrop-blur border-b border-gray-100 overflow-hidden z-10 shadow-sm"
                     >
-                        <div className="p-3 grid grid-cols-4 gap-2">
+                        <div className="p-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                             <ToolButtons isMobile={true} />
+                            {currentSession?.memoryMode !== "infinite" && (
+                                <button type="button" onClick={() => { setShowMobileTopMenu(false); onOpenMemory(); }}
+                                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-2 text-xs font-semibold text-emerald-700"
+                                    aria-label={deepText(locale, "chat.toolbar.memoryVault")}>
+                                    <Brain size={16}/>{deepText(locale, "chat.toolbar.memoryVault")}
+                                </button>
+                            )}
+                            <button type="button" onClick={() => { setShowMobileTopMenu(false); setShowFullPlayer(true); }}
+                                className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700"
+                                aria-label={deepText(locale, "chat.toolbar.musicPlayer")}>
+                                <Disc size={16}/>{deepText(locale, "chat.toolbar.musicPlayer")}
+                            </button>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <div className="z-10">
+            <div className="z-10 hidden md:block">
                 <MiniPlayer
                     onExpand={() => setShowFullPlayer(true)}
                     rightSidebarOpen={rightSidebarOpen}
