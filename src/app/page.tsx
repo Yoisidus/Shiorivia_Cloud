@@ -218,7 +218,7 @@ export default function Home() {
         setVaultBusy(false);
     };
     const resetCloudVault = async () => {
-        if (!await dialog.confirm(deepText(locale, "cloud.vault.resetConfirm"), {tone:"danger"})) return;
+        if (!await dialog.confirm(deepText(locale, "cloud.vault.resetConfirm"), {tone:"officina"})) return;
         setVaultBusy(true);
         try {
             await credentialSaveQueue.current.catch(() => {});
