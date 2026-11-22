@@ -6,7 +6,7 @@ import { ArrowRight, ArrowDownUp, ChevronDown, ChevronRight, Disc3, ListMusic, M
 import { useMusic } from "../context/MusicContext";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
-import { musicFolderTree, type MusicFolder } from "../lib/musicPlaylists";
+import { musicFolderTree, playlistDisplayName, type MusicFolder } from "../lib/musicPlaylists";
 import { parseLrc, type LyricLine } from "../lib/lrcParser";
 
 const seconds = (n: number) => {
@@ -22,12 +22,12 @@ function PlaylistTree({ folders, selected, onSelect, depth = 0 }: {
   return <div className="space-y-1">
     {folders.map(folder => <div key={folder.key}>
       <div className="flex items-center gap-1 rounded-lg hover:bg-white/5" style={{ paddingLeft: `${depth * 13 + 6}px` }}>
-        <button type="button" aria-label={`${deepText(locale, "music.ui.expand")} ${folder.name}`} onClick={() => setExpanded(p => ({ ...p, [folder.key]: !p[folder.key] }))} className="rounded p-1.5 text-[#a8b8c9] hover:text-[#ecd9b8]">
+        <button type="button" aria-label={`${deepText(locale, "music.ui.expand")} ${playlistDisplayName(folder, locale)}`} onClick={() => setExpanded(p => ({ ...p, [folder.key]: !p[folder.key] }))} className="rounded p-1.5 text-[#a8b8c9] hover:text-[#ecd9b8]">
           {folder.children.length ? (expanded[folder.key] ? <ChevronDown size={14}/> : <ChevronRight size={14}/>) : <span className="block w-3.5"/>}
         </button>
         <button type="button" onClick={() => onSelect(folder.key)} aria-pressed={selected === folder.key} className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 text-left text-xs ${selected === folder.key ? "bg-[#c2a577]/20 text-[#eedbb5]" : "text-[#c4d0db]"}`}>
           <FolderClosed size={14} className="shrink-0 text-[#c7af80]"/>
-          <span className="min-w-0 flex-1 truncate">{folder.name}</span>
+          <span className="min-w-0 flex-1 truncate">{playlistDisplayName(folder, locale)}</span>
           <span className="text-[10px] opacity-60">{folder.count}</span>
         </button>
       </div>

@@ -66,6 +66,7 @@ const strings: Record<string, readonly [string, string, string, string, string]>
   "cloud.image.noGallery": ["云端版不将生成图片写入公共服务器图库。", "雲端版不會將生成圖片寫入公用伺服器圖庫。", "Cloud does not store generated images in a shared server gallery.", "Cloud は生成画像を共有サーバーのギャラリーに保存しません。", "Cloud는 생성 이미지를 공유 서버 갤러리에 저장하지 않습니다."],
   "viae.actionOpen": ["开启", "開啟", "Start", "始める", "시작"],
   "viae.actionCreate": ["创建", "建立", "Create", "作成", "만들기"],
+  "music.ui.builtinLibrary": ["内置曲库", "內建曲庫", "Built-in library", "内蔵ライブラリ", "내장 음악 라이브러리"],
   "music.ui.expand": ["展开", "展開", "Expand", "展開", "펼치기"],
   "music.ui.cover": ["音乐封面", "音樂封面", "Album cover", "アルバムアート", "앨범 표지"],
   "music.ui.instrumental": ["暂无歌词 · 纯音乐", "暫無歌詞 · 純音樂", "No lyrics · Instrumental", "歌詞なし · インストゥルメンタル", "가사 없음 · 연주곡"],

@@ -1,6 +1,13 @@
 import type { BGMTrack } from "../data/bgm_library";
+import type { Locale } from "./locale";
+import { deepText } from "./i18nDeep";
 
 export type MusicFolder = { key: string; name: string; count: number; children: MusicFolder[] };
+
+/** Keep playlist keys stable; localize the built-in folder only when rendering. */
+export function playlistDisplayName(folder: Pick<MusicFolder, "key" | "name">, locale: Locale): string {
+  return folder.key === "内置曲库" ? deepText(locale, "music.ui.builtinLibrary") : folder.name;
+}
 
 /** Folder names are presentation metadata, never filesystem paths supplied to an API. */
 export function playlistParts(track: BGMTrack): string[] {
