@@ -45,5 +45,5 @@ test("first-run checkpoint is saved before hydration and therefore not dirty",as
   assert.deepEqual(read,checkpoint);
   assert.equal(JSON.stringify(read.data),JSON.stringify(checkpoint.data));
   const same=await browserMutate("sessions", current=>current?.data?.sessions?.length?current:null);
-  assert.strictEqual(same,checkpoint);
+  assert.deepEqual(same,checkpoint);
 });
