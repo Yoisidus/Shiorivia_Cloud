@@ -35,7 +35,7 @@ import { DEFAULT_IMAGE_SETTINGS, capabilityFor, type ImageSettings, type Provide
 import { DEFAULT_WEB_TOOL_CONFIG, normalizeWebToolConfig, normalizeProviderAliases, type WebToolConfig } from "../lib/webToolSettings";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
-import { browserRead, browserWrite, browserDelete } from "../lib/browserStore";
+import { browserRead, browserWrite, browserDelete, browserMutate } from "../lib/browserStore";
 import { createCredentialVault, encryptCredentialVault, isCredentialVaultRecord, unlockCredentialVault } from "../lib/cloudCredentialVault";
 import { safeCloudCredentials, type CloudCredentials, type CloudCredential } from "../lib/cloudCredentials";
 import { defaultSessionTitle, sessionGreeting, officinaUnassignedWelcome, umbraUnassignedWelcome } from "../lib/sessionTitles";
@@ -144,6 +144,7 @@ export default function Home() {
     const credentialSaveQueue = useRef<Promise<void>>(Promise.resolve());
     const vaultKeyRef = useRef<CryptoKey | null>(null);
     const vaultSaltRef = useRef("");
+    const vaultCiphertextRef = useRef("");
     const legacyCredentialsRef = useRef<CloudCredentials>({});
     const [vaultStatus, setVaultStatus] = useState<"loading" | "setup" | "migrate" | "locked" | "unlocked" | "error">("loading");
     const [vaultBusy, setVaultBusy] = useState(false);
@@ -185,6 +186,7 @@ export default function Home() {
                 const unlocked = await unlockCredentialVault(saved, passphrase);
                 vaultKeyRef.current = unlocked.key;
                 vaultSaltRef.current = saved.salt;
+                vaultCiphertextRef.current = saved.ciphertext;
                 credentialsRef.current = unlocked.credentials;
                 setCloudCredentials(unlocked.credentials);
             } else {
@@ -194,6 +196,7 @@ export default function Home() {
                 await browserWrite("cloud:byok", created.record);
                 vaultKeyRef.current = created.key;
                 vaultSaltRef.current = created.record.salt;
+                vaultCiphertextRef.current = created.record.ciphertext;
                 credentialsRef.current = initial;
                 setCloudCredentials(initial);
                 legacyCredentialsRef.current = {};
@@ -212,6 +215,7 @@ export default function Home() {
         await credentialSaveQueue.current.catch(() => {});
         vaultKeyRef.current = null;
         vaultSaltRef.current = "";
+        vaultCiphertextRef.current = "";
         credentialsRef.current = {};
         setCloudCredentials({});
         setVaultStatus("locked");
@@ -225,6 +229,7 @@ export default function Home() {
             await browserDelete("cloud:byok");
             vaultKeyRef.current = null;
             vaultSaltRef.current = "";
+            vaultCiphertextRef.current = "";
             credentialsRef.current = {};
             setCloudCredentials({});
             setVaultStatus("setup");
@@ -243,11 +248,46 @@ export default function Home() {
         setCloudCredentials(updated);
         // Each edit is encrypted with a fresh IV and queued in input order.
         const job = credentialSaveQueue.current.catch(() => {}).then(async () => {
-            await browserWrite("cloud:byok", await encryptCredentialVault(updated,key,salt));
+            const sealed = await encryptCredentialVault(updated, key, salt);
+            await browserMutate<unknown>("cloud:byok", current => {
+                if (!isCredentialVaultRecord(current)
+                    || current.salt !== salt || current.ciphertext !== vaultCiphertextRef.current) {
+                    throw new Error("Vault changed in another browser tab.");
+                }
+                return sealed;
+            });
+            vaultCiphertextRef.current = sealed.ciphertext;
         });
         credentialSaveQueue.current = job;
-        try { await job; } catch { setVaultError(deepText(locale,"cloud.byok.storageError")); }
+        try { await job; } catch (error) {
+            const conflict = error instanceof Error && error.message.includes("Vault changed");
+            if (conflict) {
+                vaultKeyRef.current = null;
+                vaultSaltRef.current = "";
+                vaultCiphertextRef.current = "";
+                credentialsRef.current = {};
+                setCloudCredentials({});
+                setVaultStatus("locked");
+            }
+            setVaultError(deepText(locale, conflict ? "cloud.vault.conflict" : "cloud.byok.storageError"));
+        }
     };
+    // A dormant page should not leave expensive provider credentials unlocked indefinitely.
+    useEffect(() => {
+        if (vaultStatus !== "unlocked") return;
+        let timer: ReturnType<typeof setTimeout>;
+        const reset = () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => { void lockCloudVault(); }, 20 * 60 * 1000);
+        };
+        const events = ["pointerdown", "keydown", "focus"] as const;
+        for (const event of events) window.addEventListener(event, reset, { passive: true });
+        reset();
+        return () => {
+            clearTimeout(timer);
+            for (const event of events) window.removeEventListener(event, reset);
+        };
+    }, [vaultStatus]);
     useEffect(() => {
         const builtins = DEFAULT_LOCAL_PROVIDERS.map(p => ({
             ...p, configured: Boolean(cloudCredentials[p.id]?.apiKey),
