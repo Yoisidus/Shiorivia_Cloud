@@ -3,7 +3,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const ts = require("typescript");
-global.crypto = require("node:crypto").webcrypto;
+// Node 22 already exposes WebCrypto on globalThis.crypto.
 require.extensions[".ts"] = function (mod, name) {
   const transpiled = ts.transpileModule(fs.readFileSync(name, "utf8"), {
     fileName: name, compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }
