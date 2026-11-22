@@ -38,3 +38,37 @@ test("worldline display localizes the era without changing data", () => {
   assert.match(describeStoryWorldline(worldline, "ja"), /高校1年/);
   assert.equal(JSON.stringify(worldline), before);
 });
+
+test("VIAE timeline preview uses English labels and English stage copy", () => {
+  const worldline = { ...worldlineFor(null), era: "高一春夏季", period: "T-5-6" };
+  const english = describeStoryWorldline(worldline, "en");
+  assert.match(english, /Canon/);
+  assert.match(english, /First high-school year/);
+  assert.match(english, /T-5-6/);
+  assert.doesNotMatch(english, /原作|基准|高一春夏季/);
+});
+
+test("older built-in timeline previews lacking English copy still translate", () => {
+  const worldline = {
+    ...worldlineFor(null),
+    era: "高一春夏季",
+    period: "T-5-6",
+    canonTimeline: BANG_DREAM_CANON.map(stage => ({era:stage.era, period:stage.period})),
+  };
+  const before = JSON.stringify(worldline);
+  assert.match(describeStoryWorldline(worldline, "en"), /MyGO!!!!!|Reunited|First high-school year/);
+  assert.doesNotMatch(describeStoryWorldline(worldline, "en"), /高一春夏季|原作/);
+  assert.equal(JSON.stringify(worldline), before);
+});
+
+test("AU baseline label is translated without changing the timeline ID", () => {
+  const worldline = {
+    ...worldlineFor(null), kind:"au",
+    era:"Another path", period:"AU-1",
+    baseEra:"高一春夏季", basePeriod:"T-5-6",
+  };
+  const english = describeStoryWorldline(worldline, "en");
+  assert.match(english, /Baseline/);
+  assert.match(english, /First high-school year/);
+  assert.doesNotMatch(english, /基准/);
+});
