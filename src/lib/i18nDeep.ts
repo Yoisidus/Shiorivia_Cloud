@@ -29,6 +29,7 @@ const strings: Record<string, readonly [string, string, string, string, string]>
   "cloud.vault.saved": ["密钥已加密保存在浏览器里。如需修改，请先输入保存时的口令。","金鑰已加密儲存在瀏覽器。如需修改，請先輸入儲存時的口令。","Your keys are saved encrypted in this browser. Enter the vault passphrase to edit them.","キーはブラウザに暗号化保存されています。編集するには保管庫のパスフレーズを入力してください。","키가 이 브라우저에 암호화되어 저장되었습니다. 수정하려면 보관함 암호문구를 입력하세요."],
   "cloud.vault.edit": ["编辑已保存的密钥","編輯已儲存的金鑰","Edit saved API keys","保存済みキーを編集","저장된 API 키 편집"],
   "cloud.vault.editing": ["正在编辑密钥草稿。修改不会立即保存，也不会提供给聊天；完成后点击「加密保存并锁定」。","正在編輯金鑰草稿。修改不會立即儲存或供對話使用；完成後按「加密儲存並鎖定」。","You are editing a draft. Changes are not saved or used for chat until you encrypt, save and lock.","編集中の内容は保存されず、チャットにも使われません。完了したら暗号化保存・ロックしてください。","수정 중인 초안은 저장되거나 채팅에 사용되지 않습니다. 완료 후 암호화 저장 및 잠금을 누르세요."],
+  "cloud.vault.keyRequired": ["请至少填写一个 API Key，再点击加密保存。", "請至少填寫一個 API Key，再按加密儲存。", "Enter at least one API key before encrypting and saving.", "暗号化保存する前に API キーを1つ以上入力してください。", "암호화 저장 전에 API 키를 하나 이상 입력하세요."],
   "cloud.vault.saveLock": ["加密保存并锁定","加密儲存並鎖定","Encrypt, save and lock","暗号化して保存・ロック","암호화 저장 및 잠금"],
   "cloud.vault.cancelEdit": ["取消编辑","取消編輯","Discard edits","編集を破棄","편집 취소"],
   "cloud.vault.decryptTitle": ["解密密钥 · 提供给 AI 使用","解密金鑰 · 供 AI 使用","Decrypt keys for AI use","AI 用のキーを復号","AI 사용을 위한 키 복호화"],
