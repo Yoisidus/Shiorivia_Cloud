@@ -36,6 +36,7 @@ const strings: Record<string, readonly [string, string, string, string, string]>
   "cloud.vault.mismatch": ["两次输入的口令不一致。","兩次輸入的口令不一致。","Passphrases do not match.","パスフレーズが一致しません。","암호문구가 일치하지 않습니다."],
   "cloud.vault.unlockFailed": ["解锁失败：口令有误或密文已损坏。","解鎖失敗：口令錯誤或密文損壞。","Unlock failed: wrong passphrase or corrupted vault.","解除失敗：パスフレーズが違うかデータが破損しています。","잠금 해제 실패: 잘못된 암호문구 또는 손상된 데이터."],
   "cloud.vault.unlockFirst": ["请先在设置中心解锁密钥保险箱。","請先在設定中心解鎖密鑰保險箱。","Unlock the key vault in Settings first.","設定でキー保管庫を解除してください。","설정에서 키 보관함을 잠금 해제하세요."],
+  "cloud.vault.conflict": ["API 密钥已在另一标签页更新。保险箱已锁定，请重新解锁并确认最新内容。", "API 金鑰已在其他分頁更新。保險箱已鎖定，請重新解鎖並確認最新內容。", "API keys changed in another tab. The vault has been locked; unlock again to review the latest values.", "別のタブで API キーが変更されました。保管庫をロックしたため、再度解除して最新の値をご確認ください。", "다른 탭에서 API 키가 변경되었습니다. 보관함이 잠겼으니 다시 잠금 해제해 최신 값을 확인하세요."],
   "cloud.vault.corrupt": ["保存的密钥数据无法识别，请检查浏览器数据。","已儲存的金鑰資料無法辨識，請檢查瀏覽器資料。","Saved key data is unrecognized. Inspect browser data.","保存されたキー情報を認識できません。ブラウザデータをご確認ください。","저장된 키 데이터를 인식할 수 없습니다. 브라우저 데이터를 확인하세요."],
   "cloud.byok.key": ["API 密钥（遮蔽显示）", "API 金鑰（遮蔽顯示）", "API key (masked)", "API キー（マスク表示）", "API 키(마스킹)"],
   "cloud.byok.storageError": ["无法读取或保存浏览器中的 API 设置。", "無法讀取或儲存瀏覽器內的 API 設定。", "Could not read or save API settings in this browser.", "ブラウザの API 設定を読み書きできませんでした。", "브라우저 API 설정을 읽거나 저장하지 못했습니다."],

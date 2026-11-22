@@ -41,3 +41,30 @@ test("short passphrases and tampered ciphertext fail", async () => {
   const c = record.ciphertext[0] === "A" ? "B" : "A";
   await assert.rejects(unlockCredentialVault({...record, ciphertext: c + record.ciphertext.slice(1)}, "correct-long-passphrase"));
 });
+
+test("encrypted vault writes reject stale tabs and never expose plaintext in IndexedDB", async () => {
+  const { indexedDB } = require("fake-indexeddb");
+  global.indexedDB = indexedDB;
+  const { browserRead, browserWrite, browserMutate } = require("../src/lib/browserStore.ts");
+  const record1 = await createCredentialVault("long-vault-passphrase-001", {
+    openrouter: { apiKey: "key-a-secret-0001", baseURL: "" },
+  });
+  await browserWrite("cloud:byok", record1.record);
+  const firstSeen = await browserRead("cloud:byok", null);
+  assert.ok(!JSON.stringify(firstSeen).includes("key-a-secret-0001"));
+  const second = await encryptCredentialVault({
+    openrouter: { apiKey: "key-b-secret-0002", baseURL: "" },
+  }, record1.key, record1.record.salt);
+  await browserMutate("cloud:byok", current => {
+    assert.equal(current.ciphertext, record1.record.ciphertext);
+    return second;
+  });
+  await assert.rejects(browserMutate("cloud:byok", current => {
+    if (current.ciphertext !== record1.record.ciphertext) throw new Error("Vault changed in another tab.");
+    return record1.record;
+  }), /changed/i);
+  const saved = await browserRead("cloud:byok", null);
+  assert.equal(saved.ciphertext, second.ciphertext);
+  assert.equal((await unlockCredentialVault(saved, "long-vault-passphrase-001")).credentials.openrouter.apiKey,
+    "key-b-secret-0002");
+});

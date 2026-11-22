@@ -20,7 +20,7 @@
 
 - The global HTTP 503 staging block has been removed for manual beta testing. The API proxy checks same-origin writes, rejects CORS preflight, applies best-effort per-instance rate caps, and uses bounded JSON readers (chat 2 MiB, summarize 256 KiB, draw 128 KiB).
 - **Rate caps are not distributed** between Vercel instances. A production-scale rollout requires edge/WAF protection, abuse monitoring and load testing. Use your own provider API keys, with provider-side budget caps.
-- Sessions and Charta data remain **not encrypted**. BYOK keys are encrypted at rest using PBKDF2-SHA256 + AES-256-GCM; the passphrase is not saved and is required when opening a fresh tab. Existing plaintext keys require one-time migration via Settings. A lost passphrase cannot recover keys. Encryption does not protect against malicious scripts, browser extensions or an unlocked device. Set provider spending limits.
+- Sessions and Charta data remain **not encrypted**. BYOK keys are encrypted at rest using PBKDF2-SHA256 + AES-256-GCM; the passphrase is not saved and is required when opening a fresh tab. An unlocked idle tab locks after 20 minutes, and conflicting edits from another tab require unlocking again. Existing plaintext keys require one-time migration via Settings. A lost passphrase cannot recover keys. Encryption does not protect against malicious scripts, browser extensions or an unlocked device. Set provider spending limits.
 - Old Local-only routes `/api/ide`, `/api/upload`, `/api/auth` return 410; no server filesystem access.
 - Five-language interactive browser acceptance, full model-provider verification, quota exhaustion, and real device testing require manual owner validation. Three inherited image placeholders also need replacement.
 

@@ -14,3 +14,5 @@ The automated CI suite verifies API request size boundaries, origin policy, Type
 
 ### Credential vault update
 BYOK values are protected at rest by a passphrase-derived PBKDF2-SHA256 (310,000 iterations) AES-256-GCM browser vault. A fresh 96-bit IV is used for each write. The passphrase and non-exportable CryptoKey are memory-only; each newly opened tab requires a passphrase. Legacy plaintext BYOK entries are migrated only after a passphrase is chosen and replaced atomically. A forgotten passphrase requires deleting saved keys. Encryption does not prevent XSS, malicious browser extensions, unlocked devices or a compromised client/browser; spending limits and HTTPS remain necessary.
+
+The vault auto-locks after 20 minutes without user interaction. A ciphertext compare-and-swap in the same IndexedDB transaction rejects conflicting writes across tabs rather than silently overwriting a more recent key record.
