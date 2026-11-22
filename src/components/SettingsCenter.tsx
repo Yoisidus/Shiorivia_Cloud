@@ -344,7 +344,7 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
                           <p className="break-words font-semibold">
                             {provider.label}
                             {provider.id === "fal" && <span className="ml-2 text-[10px] font-normal text-[#71917d]">IMAGE ONLY</span>}
-                            {provider.id !== "fal" && activeProvider === provider.id && <span className="ml-1 text-[10px] text-emerald-600">{t("settings.active")}</span>}
+                            {provider.configured && provider.id !== "fal" && activeProvider === provider.id && <span className="ml-1 text-[10px] text-emerald-600">{t("settings.active")}</span>}
                           </p>
                           <p className="mt-1 text-xs text-slate-400">{provider.custom ? t("settings.custom") : t("settings.default")}</p>
                         </div>

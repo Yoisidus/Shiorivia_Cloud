@@ -109,22 +109,23 @@ export const SidebarLeft = ({
             setBindingSessionId(null);
         } catch (e: any) { dialog.notify(e.message); }
     };
-    const [modelGroups, setModelGroups] = useState<LocalModelGroup[]>(fallbackModelGroups(apiProvider));
+    const [modelGroups, setModelGroups] = useState<LocalModelGroup[]>([]);
+    const hasUsableProvider = (providers as PublicLocalProvider[]).some(p => p.configured && p.id === apiProvider);
     const [catalogSource, setCatalogSource] = useState("fallback");
     const { savedModels, saveModel, forgetModel } = useSavedModels();
     const saveCustomModel = () => saveModel(apiProvider, String(customModelId || ""));
     const forgetCustomModel = (id: string) => forgetModel(apiProvider, id);
     useEffect(() => {
         let active = true;
-        setModelGroups(fallbackModelGroups(apiProvider));
+        setModelGroups(hasUsableProvider && !apiProvider.startsWith("custom_") ? fallbackModelGroups(apiProvider) : []);
         setCatalogSource("fallback");
-        if (!apiProvider || apiProvider.startsWith("custom_")) return;
+        if (!hasUsableProvider || apiProvider.startsWith("custom_")) return;
         fetch(`/api/providers?models=${encodeURIComponent(apiProvider)}`)
             .then(async (res) => { if (!res.ok) throw new Error("Catalog unavailable"); return res.json(); })
             .then((data) => { if (active && Array.isArray(data.groups)) { setModelGroups(data.groups); setCatalogSource(data.source || "fallback"); } })
             .catch(() => { /* Offline fallback remains visible. */ });
         return () => { active = false; };
-    }, [apiProvider]);
+    }, [apiProvider, hasUsableProvider]);
 
     const toggleSelect = (id: string) => {
         const newSet = new Set(selectedIds);
@@ -174,9 +175,9 @@ export const SidebarLeft = ({
                                     ))}
                                     {providers.length === 0 && <p className="col-span-2 px-2 py-2 text-[11px] text-amber-600">{deepText(locale, "explorer.noKey")}</p>}
                                 </div>
-                                {!apiProvider.startsWith("custom_") && <p className="mb-2 text-[10px] text-slate-400">{catalogSource === "live" ? deepText(locale, "sidebar.left.liveModels") : deepText(locale, "sidebar.left.offlineModels")}</p>}
+                                {hasUsableProvider && !apiProvider.startsWith("custom_") && <p className="mb-2 text-[10px] text-slate-400">{catalogSource === "live" ? deepText(locale, "sidebar.left.liveModels") : deepText(locale, "sidebar.left.offlineModels")}</p>}
 
-                                {!apiProvider.startsWith("custom_") && modelGroups.map((g: any) => (
+                                {hasUsableProvider && !apiProvider.startsWith("custom_") && modelGroups.map((g: any) => (
                                     <div key={g.groupName} className="mb-1">
                                         <button onClick={() => setExpandedGroups((prev: any) => prev.includes(g.groupName) ? prev.filter((x: any) => x !== g.groupName) : [...prev, g.groupName])} className="w-full flex justify-between p-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 rounded">
                                             <span>{g.groupName}</span>
@@ -194,8 +195,8 @@ export const SidebarLeft = ({
                                     </div>
                                 ))}
 
-                                {apiProvider.startsWith("custom_") && <p className="mb-2 text-[11px] leading-5 text-[#70818c]">{deepText(locale, "sidebar.left.customProviderHelp")}</p>}
-                                <div className="mt-3 border-t border-[#e7ebee] pt-3">
+                                {hasUsableProvider && apiProvider.startsWith("custom_") && <p className="mb-2 text-[11px] leading-5 text-[#70818c]">{deepText(locale, "sidebar.left.customProviderHelp")}</p>}
+                                {hasUsableProvider && <div className="mt-3 border-t border-[#e7ebee] pt-3">
                                     <div className="mb-2 flex items-center justify-between text-[10px] text-slate-500"><span className="font-semibold tracking-wide">{deepText(locale, "sidebar.left.customModel")}</span><span>{deepText(locale, "sidebar.left.currentProvider")}</span></div>
                                     <div className="flex gap-1.5">
                                         <input aria-label={deepText(locale, "sidebar.left.modelId")} value={customModelId} onChange={(e: any) => setCustomModelId(e.target.value)} placeholder={deepText(locale, "sidebar.left.modelPlaceholder")} className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-slate-400" />
@@ -215,7 +216,7 @@ export const SidebarLeft = ({
                                             ))}
                                         </div>
                                     )}
-                                </div>
+                                </div>}
                             </div>
                             <div className="flex-1 flex flex-col min-h-0 bg-white p-2">
                                 <div className="flex justify-between items-center mb-2 px-1">

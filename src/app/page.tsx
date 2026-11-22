@@ -132,7 +132,7 @@ export default function Home() {
         expandedGroups: ["Gemini (Google)"] as string[]
     });
 
-    const [apiProvider, setApiProvider] = useState<string>('openrouter');
+    const [apiProvider, setApiProvider] = useState<string>('');
     const [providerModels, setProviderModels] = useState<ProviderModelSelections>({});
     const [settingsHydrated, setSettingsHydrated] = useState(false);
     const [disabledProviders, setDisabledProviders] = useState<string[]>([]);
@@ -334,7 +334,7 @@ export default function Home() {
             if (saved && typeof saved === "object") {
                 if (Array.isArray(saved.disabledProviders)) setDisabledProviders(saved.disabledProviders.filter((x: unknown) => typeof x === "string"));
                 setProviderAliases(normalizeProviderAliases(saved.providerAliases));
-                const restoredProvider = typeof saved.apiProvider === "string" ? saved.apiProvider : "openrouter";
+                const restoredProvider = typeof saved.apiProvider === "string" ? saved.apiProvider : "";
                 if (typeof saved.apiProvider === "string") setApiProvider(saved.apiProvider);
                 const restoredModels = parseProviderModelSelections(saved.providerModels);
                 setProviderModels(restoredModels);
@@ -391,16 +391,19 @@ export default function Home() {
         ...p, label: p.custom ? providerAliases[p.id] || p.label : p.label,
     })), [allProviders, providerAliases]);
     const visibleProviders = useMemo(() => getVisibleLocalProviders(displayProviders.filter(p => !p.custom || capabilityFor(p.id, providerCapabilities).llm), disabledProviders), [displayProviders, disabledProviders, providerCapabilities]);
+    // The last selected provider is a preference, not a usable API connection.
+    // A locked/empty BYOK vault must never appear as an active provider.
+    const effectiveApiProvider = visibleProviders.some(p => p.id === apiProvider) ? apiProvider : "";
     useEffect(() => { setFalConfigured(Boolean(cloudCredentials.fal?.apiKey)); }, [cloudCredentials]);
     useEffect(() => {
-        if (!settingsHydrated || !allProviders.some(p => p.configured)) return;
+        if (!settingsHydrated || visibleProviders.length === 0) return;
         if (!visibleProviders.some(p => p.id === apiProvider)) {
             const nextId = visibleProviders[0]?.id || '';
             if (nextId === apiProvider) return;
             setApiProvider(nextId);
             setConfig(prev => ({ ...prev, ...modelSelectionFor(providerModels, nextId) }));
         }
-    }, [settingsHydrated, visibleProviders, apiProvider, allProviders, providerModels]);
+    }, [settingsHydrated, visibleProviders, apiProvider, providerModels]);
     const selectProvider = (id: string) => {
         if (!visibleProviders.some(p => p.id === id)) return;
         if (id === apiProvider) return;
@@ -495,7 +498,7 @@ export default function Home() {
         showToast: ui.showToast,
         setIsGlobalGenerating,
         manualOutfitId,
-        apiProvider, cloudCredentials,
+        apiProvider: effectiveApiProvider, cloudCredentials,
         customCharacters: charta.characters,
         storyWorlds: worldLibrary.worlds,
         customSelves: selfLibrary.selves,
@@ -842,7 +845,7 @@ export default function Home() {
                 onContextWindowChange={(value) => setConfig(prev => ({ ...prev, contextWindowTokens: value }))}
                     storyTheme={config.storyTheme}
                     onStoryThemeChange={(value) => setConfig(prev => ({ ...prev, storyTheme: value }))}
-                    activeProvider={apiProvider}
+                    activeProvider={effectiveApiProvider}
                     providers={displayProviders}
                     disabledProviders={disabledProviders}
                     onToggleProvider={toggleProviderDisabled}
@@ -897,7 +900,7 @@ export default function Home() {
                     onManualSync={() => cloud.triggerSync("manual")}
                     syncStatus={cloud.status}
                     providers={visibleProviders}
-                    provider={apiProvider}
+                    provider={effectiveApiProvider}
                     onProviderChange={selectProvider}
                     model={config.selectedModel}
                     customModel={config.customModelId}
@@ -939,7 +942,7 @@ export default function Home() {
                 onContextWindowChange={(value) => setConfig(prev => ({ ...prev, contextWindowTokens: value }))}
                     storyTheme={config.storyTheme}
                     onStoryThemeChange={value => setConfig(prev => ({ ...prev, storyTheme: value }))}
-                    activeProvider={apiProvider}
+                    activeProvider={effectiveApiProvider}
                     providers={displayProviders}
                     disabledProviders={disabledProviders}
                     onToggleProvider={toggleProviderDisabled}
@@ -982,7 +985,7 @@ export default function Home() {
             <NovelInterface
                 currentSession={currentSession}
                 initialSelectedModel={config.customModelId || config.selectedModel}
-                provider={apiProvider}
+                provider={effectiveApiProvider}
                 providers={visibleProviders}
                 onProviderChange={selectProvider}
                 selectedModel={config.selectedModel}
@@ -1066,7 +1069,7 @@ export default function Home() {
                 onContextWindowChange={(value) => setConfig(prev => ({ ...prev, contextWindowTokens: value }))}
                 storyTheme={config.storyTheme}
                 onStoryThemeChange={value => setConfig(prev => ({ ...prev, storyTheme: value }))}
-                activeProvider={apiProvider}
+                activeProvider={effectiveApiProvider}
                 providers={displayProviders}
                 disabledProviders={disabledProviders}
                 onToggleProvider={toggleProviderDisabled}
@@ -1186,7 +1189,7 @@ export default function Home() {
                     handleImportData={fileHandler.handleImportData}
                     importInputRef={fileHandler.importInputRef}
 
-                    apiProvider={apiProvider}
+                    apiProvider={effectiveApiProvider}
                     setApiProvider={selectProvider}
                     providers={visibleProviders}
                     isMobile={false} 
@@ -1235,7 +1238,7 @@ export default function Home() {
                     dbChars={allChars} currentOutfitId={manualOutfitId} setManualOutfitId={setManualOutfitId}
                     isGlobalGenerating={isGlobalGenerating}
 
-                    apiProvider={apiProvider}
+                    apiProvider={effectiveApiProvider}
                     setApiProvider={selectProvider}
 
                     handleSend={engine.handleSend} stopGeneration={engine.stopGeneration}
@@ -1408,7 +1411,7 @@ export default function Home() {
                 onContextWindowChange={(value) => setConfig(prev => ({ ...prev, contextWindowTokens: value }))}
                 storyTheme={config.storyTheme}
                 onStoryThemeChange={(value) => setConfig(prev => ({ ...prev, storyTheme: value }))}
-                activeProvider={apiProvider}
+                activeProvider={effectiveApiProvider}
                 providers={displayProviders}
                 disabledProviders={disabledProviders}
                 onToggleProvider={toggleProviderDisabled}
