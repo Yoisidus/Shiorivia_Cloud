@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   twitter: { card: "summary_large_image", images: ["/shiorivia-og.png"] },
   icons: {
-    icon: "/icon.svg",
+    icon: [{ url: "/shiorivia-favicon-32.png", sizes: "32x32", type: "image/png" }, { url: "/icon.svg", type: "image/svg+xml" }],
     apple: "/shiorivia-app-icon.png",
   },
   appleWebApp: {

@@ -12,7 +12,7 @@
 | Officina IDE | Text/code projects up to 500 files, 256 KiB per file, 5 MiB per project; atomic writes and cross-tab change alerts |
 | Project export | Browser-generated ZIP containing root project folder, nested files and empty directories; extract into Local's `IDE/` to transfer |
 | AI code edits | Explicit review before model-suggested file writes or patch application; bounded excerpts shared only with approval |
-| Models | User-provided DeepSeek / OpenRouter / Google credentials (BYOK), stored in that browser and sent to Cloud proxy per request |
+| Models | User-provided DeepSeek / OpenRouter / Google BYOK credentials, AES-256-GCM encrypted at rest with a user passphrase, decrypted only in the unlocked page for Cloud proxy requests |
 | Custom provider endpoints | **Disabled by default**, pending DNS rebinding/SSRF audit |
 | Media | Hosted image providers only; local ComfyUI, server uploads, filesystem IDE and automatic music scanning disabled |
 
@@ -20,7 +20,7 @@
 
 - The global HTTP 503 staging block has been removed for manual beta testing. The API proxy checks same-origin writes, rejects CORS preflight, applies best-effort per-instance rate caps, and uses bounded JSON readers (chat 2 MiB, summarize 256 KiB, draw 128 KiB).
 - **Rate caps are not distributed** between Vercel instances. A production-scale rollout requires edge/WAF protection, abuse monitoring and load testing. Use your own provider API keys, with provider-side budget caps.
-- Sensitive browser data including BYOK keys is **not encrypted at rest**. Avoid sharing the browser profile and regularly export valuable work.
+- Sessions and Charta data remain **not encrypted**. BYOK keys are encrypted at rest using PBKDF2-SHA256 + AES-256-GCM; the passphrase is not saved and is required when opening a fresh tab. Existing plaintext keys require one-time migration via Settings. A lost passphrase cannot recover keys. Encryption does not protect against malicious scripts, browser extensions or an unlocked device. Set provider spending limits.
 - Old Local-only routes `/api/ide`, `/api/upload`, `/api/auth` return 410; no server filesystem access.
 - Five-language interactive browser acceptance, full model-provider verification, quota exhaustion, and real device testing require manual owner validation. Three inherited image placeholders also need replacement.
 
@@ -34,7 +34,7 @@ npm run test:cloud-api
 npm run build
 ```
 
-GitHub Actions runs these on `rebuild/local-foundation`. The tests cover IndexedDB version conflicts, batch AI patches, invalid paths, ZIP round trips, JSON size limits, and API origin rules. A successful build is **not** a substitute for real browser tests.
+GitHub Actions runs these on `rebuild/local-foundation`. The tests cover IndexedDB version conflicts, batch AI patches, invalid paths, ZIP round trips, JSON size limits, API origin rules, and encryption vault round trips. A successful build is **not** a substitute for real browser tests.
 
 See [Cloud browser security](docs/cloud-browser-security.md), [virtual IDE](docs/cloud-virtual-ide.md), and [original rebuild checkpoint](docs/cloud-rebuild-checkpoint.md).
 

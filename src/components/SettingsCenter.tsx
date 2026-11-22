@@ -127,6 +127,7 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
   const [activeTab, setActiveTab] = useState<Tab>("general");
   const [vaultPassphrase, setVaultPassphrase] = useState("");
   const [vaultConfirm, setVaultConfirm] = useState("");
+  useEffect(() => { if (!open) { setVaultPassphrase(""); setVaultConfirm(""); } }, [open]);
 
   const { t, locale, setLocale } = useLanguage();
 
@@ -226,7 +227,7 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
                 <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
                   <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#3d6657]"><LockKeyhole size={17}/>{deepText(locale,"cloud.vault.title")}</h3>
                   {credentialVaultStatus==="loading"&&<p className="text-xs">{deepText(locale,"cloud.vault.loading")}</p>}
-                  {credentialVaultStatus==="error"&&<p role="alert" className="text-xs text-red-700">{deepText(locale,"cloud.vault.corrupt")}</p>}
+                  {credentialVaultStatus==="error"&&<div className="flex flex-wrap items-center gap-3"><p role="alert" className="text-xs text-red-700">{deepText(locale,"cloud.vault.corrupt")}</p><button type="button" disabled={credentialVaultBusy} onClick={()=>void onCredentialVaultReset()} className="text-xs text-red-700 underline">{deepText(locale,"cloud.vault.reset")}</button></div>}
                   {credentialVaultStatus==="unlocked"?<div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs text-emerald-800">{deepText(locale,"cloud.vault.unlocked")}</p>
                     <button type="button" disabled={credentialVaultBusy} onClick={()=>void onCredentialVaultLock()}
