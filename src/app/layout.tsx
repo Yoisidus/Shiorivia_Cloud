@@ -5,6 +5,7 @@ import Script from "next/script";
 import { MusicProvider } from "../context/MusicContext";
 import { LanguageProvider } from "../context/LanguageContext";
 import { DialogProvider } from "../context/DialogContext";
+import { SingleTabGate } from "../components/SingleTabGate";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const serif = Noto_Serif_SC({ 
@@ -67,9 +68,11 @@ export default function RootLayout({
           strategy="beforeInteractive"
         />}
         
-        <MusicProvider>
-          <LanguageProvider><DialogProvider>{children}</DialogProvider></LanguageProvider>
-        </MusicProvider>
+        <LanguageProvider>
+          <SingleTabGate>
+            <MusicProvider><DialogProvider>{children}</DialogProvider></MusicProvider>
+          </SingleTabGate>
+        </LanguageProvider>
       </body>
     </html>
   );
