@@ -21,12 +21,12 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   // Public Cloud metadata resolves against the hosted origin.
   metadataBase: new URL("https://app.shiorivia.com"),
-  title: "Shiorivia",
-  description: "Shiorivia Cloud — a browser-first AI storytelling and chat experience.",
+  title: "Shiorivia · Cloud Edition",
+  description: "Where Stories Find Their Way — a browser-first, multilingual AI conversation and interactive storytelling studio with encrypted BYOK keys.",
   manifest: "/manifest.json",
   openGraph: {
-    title: "Shiorivia",
-    description: "Where Stories Find Their Way.",
+    title: "Shiorivia · Cloud Edition",
+    description: "Where Stories Find Their Way. Explore AI conversations, characters, stories and novels in your browser.",
     images: [{ url: "/shiorivia-og.png", width: 1200, height: 630, alt: "Shiorivia Star Road" }],
   },
   twitter: { card: "summary_large_image", images: ["/shiorivia-og.png"] },
