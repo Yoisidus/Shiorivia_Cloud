@@ -35,7 +35,8 @@ import { DEFAULT_IMAGE_SETTINGS, capabilityFor, type ImageSettings, type Provide
 import { DEFAULT_WEB_TOOL_CONFIG, normalizeWebToolConfig, normalizeProviderAliases, type WebToolConfig } from "../lib/webToolSettings";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
-import { browserRead, browserWrite } from "../lib/browserStore";
+import { browserRead, browserWrite, browserDelete } from "../lib/browserStore";
+import { createCredentialVault, encryptCredentialVault, isCredentialVaultRecord, unlockCredentialVault } from "../lib/cloudCredentialVault";
 import { safeCloudCredentials, type CloudCredentials, type CloudCredential } from "../lib/cloudCredentials";
 import { defaultSessionTitle, sessionGreeting, officinaUnassignedWelcome, umbraUnassignedWelcome } from "../lib/sessionTitles";
 import { isEngineeringCharacterLocked } from "../lib/engineeringSession";
@@ -141,30 +142,111 @@ export default function Home() {
     const [cloudCredentials, setCloudCredentials] = useState<CloudCredentials>({});
     const credentialsRef = useRef<CloudCredentials>({});
     const credentialSaveQueue = useRef<Promise<void>>(Promise.resolve());
+    const vaultKeyRef = useRef<CryptoKey | null>(null);
+    const vaultSaltRef = useRef("");
+    const legacyCredentialsRef = useRef<CloudCredentials>({});
+    const [vaultStatus, setVaultStatus] = useState<"loading" | "setup" | "migrate" | "locked" | "unlocked" | "error">("loading");
+    const [vaultBusy, setVaultBusy] = useState(false);
+    const [vaultError, setVaultError] = useState("");
     const [allProviders, setAllProviders] = useState<PublicLocalProvider[]>(DEFAULT_LOCAL_PROVIDERS);
     useEffect(() => {
         let mounted = true;
-        void browserRead<CloudCredentials>("cloud:byok",{}).then(saved => {
+        void browserRead<unknown>("cloud:byok", null).then(saved => {
             if (!mounted) return;
-            // A slow disk read must never overwrite credentials already typed by the user.
-            if (!credentialDirty.current) {
-                credentialsRef.current = safeCloudCredentials(saved);
-                setCloudCredentials(credentialsRef.current);
+            if (saved === null) setVaultStatus("setup");
+            else if (isCredentialVaultRecord(saved)) setVaultStatus("locked");
+            else if (typeof saved === "object" && !Array.isArray(saved)) {
+                // Migrate legacy plaintext only once the user creates a passphrase.
+                legacyCredentialsRef.current = safeCloudCredentials(saved);
+                setVaultStatus("migrate");
+            } else {
+                setVaultStatus("error");
+                setVaultError(deepText(locale, "cloud.vault.corrupt"));
             }
-        }).catch(() => ui.showToast(deepText(locale,"cloud.byok.storageError")));
-        return () => {mounted=false};
+        }).catch(() => {
+            if (!mounted) return;
+            setVaultStatus("error");
+            setVaultError(deepText(locale, "cloud.byok.storageError"));
+        });
+        return () => { mounted = false; };
     }, []);
-    const credentialDirty = useRef(false);
-    const updateCloudCredential = async (id:string, next:CloudCredential) => {
-        credentialDirty.current = true;
+    const submitCloudVault = async (passphrase: string, confirmation: string): Promise<boolean> => {
+        if (vaultBusy || !["setup", "migrate", "locked"].includes(vaultStatus)) return false;
+        setVaultError("");
+        if (vaultStatus !== "locked" && (passphrase.length < 12 || passphrase !== confirmation)) {
+            setVaultError(deepText(locale, passphrase.length < 12 ? "cloud.vault.short" : "cloud.vault.mismatch"));
+            return false;
+        }
+        setVaultBusy(true);
+        try {
+            if (vaultStatus === "locked") {
+                const saved = await browserRead<unknown>("cloud:byok", null);
+                if (!isCredentialVaultRecord(saved)) throw new Error("Invalid vault record.");
+                const unlocked = await unlockCredentialVault(saved, passphrase);
+                vaultKeyRef.current = unlocked.key;
+                vaultSaltRef.current = saved.salt;
+                credentialsRef.current = unlocked.credentials;
+                setCloudCredentials(unlocked.credentials);
+            } else {
+                const initial = vaultStatus === "migrate" ? legacyCredentialsRef.current : {};
+                const created = await createCredentialVault(passphrase, initial);
+                // One committed IndexedDB write atomically replaces any old plaintext.
+                await browserWrite("cloud:byok", created.record);
+                vaultKeyRef.current = created.key;
+                vaultSaltRef.current = created.record.salt;
+                credentialsRef.current = initial;
+                setCloudCredentials(initial);
+                legacyCredentialsRef.current = {};
+            }
+            setVaultStatus("unlocked");
+            return true;
+        } catch {
+            setVaultError(deepText(locale, vaultStatus === "locked" ? "cloud.vault.unlockFailed" : "cloud.byok.storageError"));
+            return false;
+        } finally {
+            setVaultBusy(false);
+        }
+    };
+    const lockCloudVault = async () => {
+        setVaultBusy(true);
+        await credentialSaveQueue.current.catch(() => {});
+        vaultKeyRef.current = null;
+        vaultSaltRef.current = "";
+        credentialsRef.current = {};
+        setCloudCredentials({});
+        setVaultStatus("locked");
+        setVaultBusy(false);
+    };
+    const resetCloudVault = async () => {
+        if (!await dialog.confirm(deepText(locale, "cloud.vault.resetConfirm"), {tone:"danger"})) return;
+        setVaultBusy(true);
+        try {
+            await credentialSaveQueue.current.catch(() => {});
+            await browserDelete("cloud:byok");
+            vaultKeyRef.current = null;
+            vaultSaltRef.current = "";
+            credentialsRef.current = {};
+            setCloudCredentials({});
+            setVaultStatus("setup");
+            setVaultError("");
+        } catch { setVaultError(deepText(locale,"cloud.byok.storageError")); }
+        finally { setVaultBusy(false); }
+    };
+    const updateCloudCredential = async (id: string, next: CloudCredential) => {
+        const key = vaultKeyRef.current, salt = vaultSaltRef.current;
+        if (vaultStatus !== "unlocked" || !key || !salt) {
+            setVaultError(deepText(locale,"cloud.vault.unlockFirst"));
+            return;
+        }
         const updated = safeCloudCredentials({...credentialsRef.current,[id]:next});
         credentialsRef.current = updated;
         setCloudCredentials(updated);
-        // Keep writes ordered: a slow earlier keystroke may not overwrite a later one.
-        const job = credentialSaveQueue.current.catch(() => {}).then(() => browserWrite("cloud:byok",updated));
+        // Each edit is encrypted with a fresh IV and queued in input order.
+        const job = credentialSaveQueue.current.catch(() => {}).then(async () => {
+            await browserWrite("cloud:byok", await encryptCredentialVault(updated,key,salt));
+        });
         credentialSaveQueue.current = job;
-        try { await job; }
-        catch { ui.showToast(deepText(locale,"cloud.byok.storageError")); }
+        try { await job; } catch { setVaultError(deepText(locale,"cloud.byok.storageError")); }
     };
     useEffect(() => {
         const builtins = DEFAULT_LOCAL_PROVIDERS.map(p => ({
@@ -209,8 +291,8 @@ export default function Home() {
                         : prev.imageSettings,
                     tts: false, // TTS is under development
                     musicControl: false,
-                    terminalRequestLog: saved.terminalRequestLog === true,
-                    terminalLog: saved.terminalLog === true,
+                    terminalRequestLog: false,
+                    terminalLog: false,
                     engineeringTransition: typeof saved.engineeringTransition === "boolean" ? saved.engineeringTransition : false,
                     curtainTransition: saved.curtainTransition !== false,
                     geminiNarrativeStyle: saved.geminiNarrativeStyle === true,
@@ -231,8 +313,8 @@ export default function Home() {
     useEffect(() => {
         if (!settingsHydrated) return;
         try {
-            const { webSearch, webToolConfig, imageGen, danmakuEnabled, danmakuCount, debugDrawTags, tts, musicControl, terminalRequestLog, terminalLog, engineeringTransition, curtainTransition, geminiNarrativeStyle, engineeringLoreRelationships, engineeringLoreExperiences, contextWindowTokens, storyTheme, imageSettings } = config;
-            window.localStorage.setItem("shiorivia_local_preferences_v1", JSON.stringify({ webSearch, webToolConfig, imageGen, danmakuEnabled, danmakuCount, debugDrawTags, tts: false, musicControl, terminalRequestLog, terminalLog, engineeringTransition, curtainTransition, geminiNarrativeStyle, engineeringLoreRelationships, engineeringLoreExperiences, contextWindowTokens, storyTheme, imageSettings, disabledProviders, apiProvider, providerCapabilities, providerModels, providerAliases }));
+            const { webSearch, webToolConfig, imageGen, danmakuEnabled, danmakuCount, debugDrawTags, tts, musicControl, engineeringTransition, curtainTransition, geminiNarrativeStyle, engineeringLoreRelationships, engineeringLoreExperiences, contextWindowTokens, storyTheme, imageSettings } = config;
+            window.localStorage.setItem("shiorivia_local_preferences_v1", JSON.stringify({ webSearch, webToolConfig, imageGen, danmakuEnabled, danmakuCount, debugDrawTags, tts: false, musicControl, engineeringTransition, curtainTransition, geminiNarrativeStyle, engineeringLoreRelationships, engineeringLoreExperiences, contextWindowTokens, storyTheme, imageSettings, disabledProviders, apiProvider, providerCapabilities, providerModels, providerAliases }));
         } catch {
             // Local settings are best-effort; chat saves use their own storage.
         }
@@ -341,7 +423,7 @@ export default function Home() {
     const engine = useChatEngine({
         currentSession, currentSessionId, setSessions: cloud.setSessions,
         activeCharacterId, voiceVariant,
-        config: { ...config, terminalRequestLog: ui.debugMode && config.terminalRequestLog, terminalLog: ui.debugMode && config.terminalLog },
+        config: { ...config, terminalRequestLog: false, terminalLog: false },
         setTrackId: music.setTrackId,
         showToast: ui.showToast,
         setIsGlobalGenerating,
@@ -703,6 +785,12 @@ export default function Home() {
                         falConfigured={falConfigured}
                 cloudCredentials={cloudCredentials}
                 onCloudCredentialChange={updateCloudCredential}
+                credentialVaultStatus={vaultStatus}
+                credentialVaultBusy={vaultBusy}
+                credentialVaultError={vaultError}
+                onCredentialVaultSubmit={submitCloudVault}
+                onCredentialVaultLock={lockCloudVault}
+                onCredentialVaultReset={resetCloudVault}
                 />
                 <TransitionEffects key={curtainCycle} effect={ui.effect} onComplete={handleEffectComplete} />
             </>
@@ -789,6 +877,12 @@ export default function Home() {
                     falConfigured={falConfigured}
                 cloudCredentials={cloudCredentials}
                 onCloudCredentialChange={updateCloudCredential}
+                credentialVaultStatus={vaultStatus}
+                credentialVaultBusy={vaultBusy}
+                credentialVaultError={vaultError}
+                onCredentialVaultSubmit={submitCloudVault}
+                onCredentialVaultLock={lockCloudVault}
+                onCredentialVaultReset={resetCloudVault}
                 />
 
             </>
@@ -905,6 +999,12 @@ export default function Home() {
                 falConfigured={falConfigured}
                 cloudCredentials={cloudCredentials}
                 onCloudCredentialChange={updateCloudCredential}
+                credentialVaultStatus={vaultStatus}
+                credentialVaultBusy={vaultBusy}
+                credentialVaultError={vaultError}
+                onCredentialVaultSubmit={submitCloudVault}
+                onCredentialVaultLock={lockCloudVault}
+                onCredentialVaultReset={resetCloudVault}
             />
             </>
         );
@@ -1236,6 +1336,12 @@ export default function Home() {
                 falConfigured={falConfigured}
                 cloudCredentials={cloudCredentials}
                 onCloudCredentialChange={updateCloudCredential}
+                credentialVaultStatus={vaultStatus}
+                credentialVaultBusy={vaultBusy}
+                credentialVaultError={vaultError}
+                onCredentialVaultSubmit={submitCloudVault}
+                onCredentialVaultLock={lockCloudVault}
+                onCredentialVaultReset={resetCloudVault}
             />
             <MemoryVaultModal
                 open={showMemoryVault && currentSession?.memoryMode !== "infinite"}
