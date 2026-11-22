@@ -11,3 +11,6 @@ Server file and media endpoints from Local have been removed; `/api/ide`, `/api/
 Text/source attachments have a 1 MiB cap; Charta JSON imports discard standees and picture avatars. **BYOK keys are not encrypted in IndexedDB**, regardless of masked password fields.
 
 The automated CI suite verifies API request size boundaries, origin policy, TypeScript, browser IDE transactional writes and ZIP structure; five-locale interactive browser testing, quotas, full BYOK provider requests, real-device behavior, and production-grade distributed rate limiting are still outstanding. Beta is owner-led manual testing, not a security certification.
+
+### Credential vault update
+BYOK values are protected at rest by a passphrase-derived PBKDF2-SHA256 (310,000 iterations) AES-256-GCM browser vault. A fresh 96-bit IV is used for each write. The passphrase and non-exportable CryptoKey are memory-only; each newly opened tab requires a passphrase. Legacy plaintext BYOK entries are migrated only after a passphrase is chosen and replaced atomically. A forgotten passphrase requires deleting saved keys. Encryption does not prevent XSS, malicious browser extensions, unlocked devices or a compromised client/browser; spending limits and HTTPS remain necessary.
