@@ -60,11 +60,18 @@ test("closing original frees the lock for a manual retry", async () => {
   await flush();
 });
 
-test("cancellation before the asynchronous lock callback cannot activate a stale page", async () => {
+test("cancellation before a delayed lock callback cannot activate a stale page", async () => {
   const locks = new FakeWebLocks();
   const statuses = [];
-  const cancel = startSingleTabLease(locks, s => statuses.push(s));
+  const delayed = {
+    request: async (name, options, callback) => {
+      await new Promise(resolve => setImmediate(resolve));
+      return locks.request(name, options, callback);
+    },
+  };
+  const cancel = startSingleTabLease(delayed, s => statuses.push(s));
   cancel();
+  await flush();
   await flush();
   assert.deepEqual(statuses, []);
   assert.equal(locks.held, false);
