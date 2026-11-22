@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useCallback, useEffect, useRef } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
 
@@ -9,13 +10,26 @@ import { deepText } from "../lib/i18nDeep";
  * holds the title, and rolls back up. This is a CSS-only overlay so the Local
  * edition does not depend on downloaded assets or external imagery.
  */
-export function ParchmentScrollTransition({ compact = false }: { compact?: boolean }) {
+export function ParchmentScrollTransition({ compact = false, onComplete }: { compact?: boolean; onComplete?: () => void }) {
   const { locale } = useLanguage();
   const duration = compact ? 2.35 : 2.8;
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  const didComplete = useRef(false);
+  const complete = useCallback(() => {
+    if (didComplete.current) return;
+    didComplete.current = true;
+    onCompleteRef.current?.();
+  }, []);
+  useEffect(() => {
+    // Animation completion is primary; this only handles throttled/reduced-motion tabs.
+    const fallback = window.setTimeout(complete, duration * 1000 + 500);
+    return () => window.clearTimeout(fallback);
+  }, [duration, complete]);
   return (
     <motion.div role="presentation" aria-hidden="true"
       className="pointer-events-none fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-[#251a14]/75"
-      initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }}
+      initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 1, 0] }} onAnimationComplete={complete}
       transition={{ duration, times: [0, 0.13, 0.86, 1], ease: "easeInOut" }}>
       <motion.div className="relative flex h-[min(62vh,390px)] w-[min(86vw,760px)] items-stretch justify-center"
         initial={{ scaleX: 0.03 }} animate={{ scaleX: [0.03, 1, 1, 0.03] }}

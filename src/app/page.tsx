@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -754,14 +754,23 @@ export default function Home() {
         (effectiveConfig.outfits && Object.keys(effectiveConfig.outfits).length > 0)
     );
 
+    // Keep the same transition host mounted while the hub, Tela and other
+    // modes swap screens. Otherwise enter/exit unmounts and restarts the scroll.
+    const renderWithTransition = (screen: ReactNode) => (
+        <>
+            {screen}
+            <TransitionEffects key={curtainCycle} effect={ui.effect} onComplete={handleEffectComplete} />
+        </>
+    );
+
     if (showCharta && cloud.initLoaded) {
-        return <ChartaInterface characters={charta.characters} save={charta.save} remove={charta.remove} selfLibrary={selfLibrary} worldLibrary={worldLibrary} initialSection={chartaInitialSection}
+        return renderWithTransition(<ChartaInterface characters={charta.characters} save={charta.save} remove={charta.remove} selfLibrary={selfLibrary} worldLibrary={worldLibrary} initialSection={chartaInitialSection}
             loaded={charta.loaded} storageError={charta.error}
             usedIds={cloud.sessions.flatMap(s => [s.characterId, ...((s.limeGroups || []).flatMap(g => g.members))])}
-            onExit={() => { setShowCharta(false); setShowModeHub(true); }} />;
+            onExit={() => { setShowCharta(false); setShowModeHub(true); }} />);
     }
     if (!cloud.initLoaded || showModeHub) {
-        return (
+        return renderWithTransition(
             <>
                 <ModeHub
                     onEnter={enterMode}
@@ -832,14 +841,13 @@ export default function Home() {
                 onCredentialVaultLock={lockCloudVault}
                 onCredentialVaultReset={resetCloudVault}
                 />
-                <TransitionEffects key={curtainCycle} effect={ui.effect} onComplete={handleEffectComplete} />
             </>
         );
     }
 
     // Legacy persisted ID "lime" remains the VIAE workspace discriminator.
     if (currentSession?.memoryMode === 'lime') {
-        return (
+        return renderWithTransition(
             <>
                 <ViaeInterface
                     session={currentSession}
@@ -930,7 +938,7 @@ export default function Home() {
     }
 
     if (currentSession?.memoryMode === 'novel') {
-        return (
+        return renderWithTransition(
             <>
             <NovelInterface
                 currentSession={currentSession}
@@ -985,7 +993,6 @@ export default function Home() {
                 deleteMessage={engine.handleDeleteMessage}
                 updateSessionInfo={(id: string, up: any) => cloud.setSessions(p => p.map(s => s.id === id ? { ...s, ...up } : s))}
             />
-            <TransitionEffects key={curtainCycle} effect={ui.effect} onComplete={handleEffectComplete} />
             <SettingsCenter
                 open={showSettingsCenter}
                 onClose={() => setShowSettingsCenter(false)}
@@ -1051,7 +1058,7 @@ export default function Home() {
     }
 
 
-    return (
+    return renderWithTransition(
         <div
             className="flex h-screen text-slate-800 font-sans overflow-hidden relative"
             onDrop={fileHandler.handleBgDrop}
@@ -1265,7 +1272,6 @@ export default function Home() {
                 />
             </div>
 
-            <TransitionEffects key={curtainCycle} effect={ui.effect} onComplete={handleEffectComplete} />
 
             <CodeRepositoryModal isOpen={ui.showCodeRepo} onClose={() => ui.setShowCodeRepo(false)}
                 repository={currentSession?.codeRepository || {}} onUpdate={engine.handleRepoUpdate}

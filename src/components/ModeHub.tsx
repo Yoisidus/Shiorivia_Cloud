@@ -66,7 +66,7 @@ export function ModeHub({ onEnter, onResume, onOpenSettings, onOpenCharta, hasSe
             <img src="/shiorivia-app-icon.png" alt="Shiorivia official icon" width={48} height={48} className="h-12 w-12 rounded-2xl shadow-sm" />
             <div>
               <p className="text-sm font-black tracking-[0.17em]">SHIORIVIA</p>
-              <p className="text-[11px] text-slate-500">Local Edition</p>
+              <p className="text-[11px] text-slate-500">Cloud Edition</p>
             </div>
           </div>
           <button type="button" onClick={onOpenSettings} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white/85 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-white" aria-label={t("settings.title")}>

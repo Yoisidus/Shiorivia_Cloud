@@ -9,8 +9,8 @@ const EKG_PATH = "M0,50 L20,50 L25,40 L30,60 L35,30 L45,80 L55,20 L65,50 L100,50
 const TransitionEffectsMobile = ({ effect, onComplete }: { effect: EffectType, onComplete: () => void }) => {
 
   useEffect(() => {
-    if (effect !== "none") {
-      const duration = effect === "glitch" ? 4000 : effect === "parchment" ? 2400 : 3000;
+    if (effect !== "none" && effect !== "parchment") {
+      const duration = effect === "glitch" ? 4000 : 3000;
       const timer = setTimeout(() => onComplete(), duration);
       return () => clearTimeout(timer);
     }
@@ -22,7 +22,7 @@ const TransitionEffectsMobile = ({ effect, onComplete }: { effect: EffectType, o
 
   return (
     <AnimatePresence>
-      {effect === "parchment" && <ParchmentScrollTransition compact />}
+      {effect === "parchment" && <ParchmentScrollTransition compact onComplete={onComplete} />}
       {effect === "curtain" && (
         <motion.div className="fixed inset-0 z-[9999] pointer-events-none flex items-center justify-center overflow-hidden" exit={{ opacity: 1, transition: { duration: 0.75 } }}>
           <motion.div initial={{ x: "-100%" }} animate={{ x: "0%" }} exit={{ x: "-100%" }}
