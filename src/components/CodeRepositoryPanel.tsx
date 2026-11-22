@@ -225,10 +225,10 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
     };
 
     return (
-        <div className={`bg-[#0b1125] flex flex-col text-[#cbd6f1] font-mono text-xs overflow-hidden shadow-[0_30px_100px_rgba(8,13,34,.48)] border-[#7788b6]/30 ${isFullScreen ? 'fixed inset-0 z-[100]' : 'w-full h-[min(80dvh,820px)] min-h-[550px] rounded-2xl border'}`}>
+        <div className={`bg-[#0b1125] flex flex-col text-[#cbd6f1] font-mono text-xs overflow-hidden shadow-[0_30px_100px_rgba(8,13,34,.48)] border-[#7788b6]/30 ${isFullScreen ? 'fixed inset-0 z-[100]' : 'w-full h-[min(80dvh,820px)] min-h-0 sm:min-h-[550px] rounded-2xl border'}`}>
 
-            <div className="bg-[linear-gradient(110deg,#162546,#242343_65%,#322b4c)] px-4 py-3 border-b border-[#7d83b5]/25 flex justify-between items-center select-none shrink-0">
-                <div className="flex items-center gap-3">
+            <div className="bg-[linear-gradient(110deg,#162546,#242343_65%,#322b4c)] px-2 sm:px-4 py-2 sm:py-3 border-b border-[#7d83b5]/25 flex justify-between items-center gap-1 select-none shrink-0">
+                <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-3">
                     <button
                         onClick={() => setShowSidebar(!showSidebar)}
                         className={`p-1 rounded hover:bg-white/10 ${showSidebar ? 'text-blue-400' : 'text-slate-500'}`}
@@ -237,21 +237,21 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
                         <Sidebar size={14} />
                     </button>
 
-                    <div className="flex items-center gap-2 font-bold text-slate-200">
-                        <Sparkles size={14} className="text-[#a6b9fc]" />
+                    <div className="flex min-w-0 items-center gap-1 sm:gap-2 font-bold text-slate-200">
+                        <Sparkles size={14} className="hidden shrink-0 text-[#a6b9fc] sm:inline" />
                         <span className="hidden md:inline">OFFICINA IDE</span>
                         <button type="button" onClick={() => { void loadProjects(); setShowProjectPicker(v => !v); }}
-                            className="flex max-w-[230px] items-center gap-2 truncate rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-[11px] font-normal text-[#c6d3f2] hover:bg-white/10"
+                            className="flex max-w-[230px] shrink-0 items-center gap-1 sm:gap-2 truncate rounded-lg border border-white/15 bg-white/5 px-1.5 sm:px-2 py-1 text-[11px] font-normal text-[#c6d3f2] hover:bg-white/10"
                             title={projectRoot ? `${text("currentProject")} IDE/${projectRoot}` : text("bindProject")}>
                             <HardDrive size={12} className="shrink-0"/>
-                            <span className="truncate">{projectRoot ? `IDE/${projectRoot}` : text("unboundProject")}</span>
+                            <span className="hidden truncate sm:inline">{projectRoot ? `IDE/${projectRoot}` : text("unboundProject")}</span>
                             <ChevronDown size={12}/>
                         </button>
-                        <span className="md:hidden text-[#a6b9fc] truncate max-w-[100px]">{activeFile}</span>
+                        <span className="min-w-0 max-w-[72px] truncate text-[#a6b9fc] sm:max-w-[100px] md:hidden" title={activeFile}>{activeFile}</span>
                     </div>
                 </div>
 
-                <div className="flex gap-2 items-center">
+                <div className="flex shrink-0 items-center gap-0.5 sm:gap-2">
 
                     {isEditing && (
                         <button onClick={handleCancel} className="p-1.5 hover:bg-white/10 rounded text-red-400" title={text("discard")} aria-label={text("discard")}>
@@ -267,14 +267,14 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
                     </button>
 
                     <button type="button" disabled={busy || !projectRoot} onClick={() => void reloadBrowserProject()}
-                        className="rounded-lg border border-white/15 p-1.5 text-[#b7c8f2] hover:bg-white/10 disabled:opacity-40"
+                        className="hidden sm:inline-flex rounded-lg border border-white/15 p-1.5 text-[#b7c8f2] hover:bg-white/10 disabled:opacity-40"
                         title={text("syncHint")} aria-label={text("sync")}><RefreshCw size={14}/></button>
                     <button type="button" disabled={busy || !projectRoot} onClick={() => void exportProject()}
-                        className="flex items-center gap-1 rounded-lg border border-white/15 px-2 py-1.5 text-[#c1d1fa] hover:bg-white/10 disabled:opacity-40"
+                        className="inline-flex items-center gap-1 rounded-lg border border-white/15 px-1.5 sm:px-2 py-1.5 text-[#c1d1fa] hover:bg-white/10 disabled:opacity-40"
                         title={text("exportHint")} aria-label={text("exportProject")}>
                         <Download size={14}/><span className="hidden sm:inline text-[11px]">{text("exportProject")}</span>
                     </button>
-                    <button type="button" disabled={!projectRoot || busy} onClick={handleNewFolder} className="p-1.5 hover:bg-white/10 rounded text-slate-300 disabled:opacity-40" title={text("newFolder")}><FolderPlus size={14}/></button>
+                    <button type="button" disabled={!projectRoot || busy} onClick={handleNewFolder} className="hidden sm:inline-flex p-1.5 hover:bg-white/10 rounded text-slate-300 disabled:opacity-40" title={text("newFolder")}><FolderPlus size={14}/></button>
                     {projectRoot && Object.keys(repository || {}).length > 0 && (
                         <button type="button" disabled={busy} onClick={importLegacyRepository}
                             className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-indigo-300/30 px-2 py-1.5 text-[11px] text-[#b3c5f2] hover:bg-white/10 disabled:opacity-40"
@@ -283,17 +283,17 @@ const CodeEditor = ({ repository, onUpdate, onClose, isFullScreen, toggleFullScr
                         </button>
                     )}
                     <button onClick={handleNewFile} className="p-1.5 hover:bg-white/10 rounded text-slate-300" title={text("newFile")} aria-label={text("newFile")}><Plus size={14} /></button>
-                    <button onClick={toggleFullScreen} className="p-1.5 hover:bg-white/10 rounded text-slate-300" title={text(isFullScreen ? "exitFullscreen" : "enterFullscreen")} aria-label={text(isFullScreen ? "exitFullscreen" : "enterFullscreen")}>
+                    <button onClick={toggleFullScreen} className="hidden sm:inline-flex p-1.5 hover:bg-white/10 rounded text-slate-300" title={text(isFullScreen ? "exitFullscreen" : "enterFullscreen")} aria-label={text(isFullScreen ? "exitFullscreen" : "enterFullscreen")}>
                         {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                     </button>
-                    <button onClick={onClose} className="p-1.5 hover:bg-red-900/50 rounded text-slate-300 hover:text-red-400" title={text("close")} aria-label={text("close")}>
+                    <button onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-500/25 bg-red-950/20 text-red-200 hover:bg-red-900/50 hover:text-white" title={text("close")} aria-label={text("close")}>
                         <X size={14} />
                     </button>
                 </div>
             </div>
 
             {showProjectPicker && <div className="shrink-0 border-b border-[#6579a4]/40 bg-[#172543] px-4 py-3">
-                <p className="mb-2 text-[11px] text-[#a9b9dc]">{text("projectHelp")}</p>
+                <p className="mb-2 hidden text-[11px] text-[#a9b9dc] sm:block">{text("projectHelp")}</p>
                 <div className="flex flex-wrap gap-2">
                     {projects.map(name => <button type="button" key={name} onClick={() => {
                         onBindProject(name); setShowProjectPicker(false);
