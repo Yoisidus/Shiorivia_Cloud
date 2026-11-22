@@ -10,7 +10,8 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 let changesChannel: BroadcastChannel | null = null;
 
 function channel(): BroadcastChannel | null {
-  if (typeof BroadcastChannel === "undefined") return null;
+  // Browser tabs only: Node and test runners may expose BroadcastChannel globally.
+  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return null;
   if (!changesChannel) {
     try { changesChannel = new BroadcastChannel(CHANNEL); }
     catch { return null; }
