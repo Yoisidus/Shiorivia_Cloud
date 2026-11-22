@@ -1,14 +1,13 @@
-# Shiorivia Local Edition — Security Notes / 安全说明
+# Shiorivia Cloud · Security / 安全说明
 
-**Local-first is not an invitation to public hosting.** The local application includes file storage, local code execution and plugin/media routes that assume a trusted device. Do not expose its Next.js server to the Internet or an untrusted LAN without a separate security design and authentication.
+**Cloud Edition is a browser-first beta, not the Local Edition server.** This page gives a concise description of the actual boundaries, not a certification.
 
-**本地版不等于可直接公网部署。** 当前源码包含文件保存、代码执行等基于可信本机环境设计的接口。除非完成额外鉴权和隔离，否则不要将本地服务端口直接暴露到公网或不受信任的局域网。
+- **API keys / 密钥**: encrypted in the current browser using passphrase-derived AES-256-GCM. The passphrase is not persisted. Edit-and-save is separate from decrypting keys into the active tab's memory for model requests. **Set spending limits** in your provider dashboard.
+- **User content / 用户作品**: sessions, Charta text data, saves and virtual IDE projects use browser IndexedDB and are not encrypted as a group. They are not backed by an account. Save and export important work before clearing site data.
+- **Provider requests / 模型调用**: prompts and request data are sent via the Cloud proxy to the selected AI provider. Browser encryption at rest does not prevent the provider from processing submitted prompts.
+- **Server limits**: same-origin mutation checks, bounded request bodies, best-effort instance-local rate limits and disabled Local filesystem/upload endpoints. Custom arbitrary URL endpoints are off by default.
+- **Tabs / 标签页**: one active Cloud tab per browser profile via Web Locks, primarily to prevent conflicting edits.
 
-- Keep `.env.local`, API keys and `data_storage/` out of Git; rotate keys if accidentally disclosed.
-- Treat screenshots and logs as potentially sensitive: local checkout paths, character/profile descriptions, and user-created worldline text can appear in code/documentation previews or external-service permission prompts. Review what is being shared before approving. A visible local path in source text does **not** by itself imply that an external tool accessed the device's filesystem.
-- LLM prompts, media and search queries are sent to the providers you choose; check their policies.
-- The project uses Next.js 16.4.6; run explicit TypeScript and dependency checks. Framework upgrades do not replace a security audit.
-- Treat any community-provided character scripts, assets or plugin code as untrusted; review before executing.
-- Report security concerns privately to the maintainers once a private channel has been published. Avoid posting exploitable details or secrets in public Issues.
+Do not include real API keys or private conversations in GitHub issues. Do not turn on unreviewed arbitrary outbound provider URLs or Local filesystem execution routes. Keep third-party artwork/character rights in mind. Automated testing does not replace manual browser, provider and device validation.
 
-For hosted BYOK deployments, see the separate `Shiorivia_Cloud` repository and its `SECURITY.md`. This file is guidance, not a completed security audit.
+Detailed boundaries: [Cloud browser security](docs/cloud-browser-security.md) · [API keys](docs/cloud-provider-setup.md) · [Browser backups](docs/cloud-data-and-backups.md). Report sensitive security concerns privately to maintainers when a private contact channel is available.

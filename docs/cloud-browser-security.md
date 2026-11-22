@@ -1,21 +1,22 @@
-# Shiorivia Cloud browser boundary — public beta
+# Shiorivia Cloud · Browser, key and provider boundary
 
-Cloud sessions, Charta, 12 save slots and Officina virtual IDE projects are persisted in origin-scoped IndexedDB; these are **not server accounts**. Storage is not encrypted, may be evicted, and can be cleared. Export important work regularly.
+**Cloud beta / 云端测试版：** origin-scoped browser persistence, user-provided model keys and a constrained request proxy.
 
-The global staging 503 has been replaced by a request-protecting `src/proxy.ts`: cross-origin mutating API requests are rejected and only same-origin browser requests are accepted. CORS preflights receive 405. API caching is disabled and basic security headers are sent. Best-effort rate counters are **per server instance**; they do not provide distributed abuse protection or guarantee against automated use.
+## Browser data
 
-Chat, summarize and image-generation request bodies are streamed through bounded JSON readers, to prevent large chunked bodies bypassing `Content-Length` limits (2 MiB, 256 KiB, 128 KiB respectively). Built-in provider destinations are fixed; custom arbitrary endpoints remain disabled. Model provider keys are supplied by each browser; there are no shared server API keys. Provider-controlled spending limits remain essential.
+- Sessions, Charta, 12 save slots and browser virtual IDE projects use IndexedDB and **are not encrypted as general user content**. There is no account-based sync; browser data can be removed by clearing site storage.
+- The first-run Officina greeting is automatically saved as the initial clean session snapshot; the home-page “Unsaved changes” state is reserved for changes after that checkpoint.
+- BYOK credentials are a separate encrypted IndexedDB record: PBKDF2-SHA256 (310,000 iterations) and AES-256-GCM, with a fresh 96-bit IV for each save. The passphrase is not stored; losing it prevents decrypting saved keys.
+- User edits API keys in a draft, explicitly **encrypts/saves/locks**, then separately **decrypts into current-tab memory** for AI use. Refresh, page close or user clear removes the running app's usable keys. Draft edits never automatically reach a model. Transactional compare-and-swap guards stale ciphertext overwrites.
+- Single-tab Web Locks ensure one active Cloud tab per browser profile. Another tab is blocked before mounting chat or the vault. Separate profiles are independent; the lock is coordination, not a defense against browser malware.
 
-Server file and media endpoints from Local have been removed; `/api/ide`, `/api/upload`, `/api/auth` respond HTTP 410. Filesystem editing remains browser-only. Officina source excerpts are sent to the model only with confirmation; secrets inside ordinary source files are still possible.
+## Model proxy
 
-Text/source attachments have a 1 MiB cap; Charta JSON imports discard standees and picture avatars. **BYOK keys are not encrypted in IndexedDB**, regardless of masked password fields.
+- Same-origin mutation policy in `src/proxy.ts`, disabled CORS preflight, bounded JSON requests (chat 2 MiB, summarize 256 KiB, draw 128 KiB), and best-effort per-instance rate caps. These are not distributed abuse protection.
+- Built-in provider destinations are fixed; arbitrary custom URLs remain disabled by default pending DNS/SSRF review. **Recommend provider-side spending limits** for direct API billing.
+- External AI providers process submitted prompts through the Cloud proxy. User-approved bounded code excerpts may be included in Officina requests.
+- `/api/ide`, `/api/upload`, `/api/auth` return 410; Local filesystem/server upload execution is not exposed.
 
-The automated CI suite verifies API request size boundaries, origin policy, TypeScript, browser IDE transactional writes and ZIP structure; five-locale interactive browser testing, quotas, full BYOK provider requests, real-device behavior, and production-grade distributed rate limiting are still outstanding. Beta is owner-led manual testing, not a security certification.
+## Verification
 
-### Credential vault update
-BYOK values are protected at rest by a passphrase-derived PBKDF2-SHA256 (310,000 iterations) AES-256-GCM browser vault. A fresh 96-bit IV is used for each write. The passphrase and non-exportable CryptoKey are memory-only; each newly opened tab requires a passphrase. Legacy plaintext BYOK entries are migrated only after a passphrase is chosen and replaced atomically. A forgotten passphrase requires deleting saved keys. Encryption does not prevent XSS, malicious browser extensions, unlocked devices or a compromised client/browser; spending limits and HTTPS remain necessary.
-
-The vault has separate encryption/editing and runtime-decryption steps: editing is a memory-only draft until the user explicitly saves and locks an AES-GCM ciphertext. Existing saved keys can be edited only after the passphrase is supplied. The separate decrypt action loads keys into the active tab memory until page reload, close or explicit Clear from memory; the old 20-minute auto-lock is removed. Compare-and-swap protects saved vault overwrites. Editing never automatically supplies draft keys to a model.
-
-### Single active Cloud tab
-The Cloud application is mounted only after an exclusive origin-scoped Web Lock (`shiorivia-cloud-primary-tab-v1`) is acquired. The first active tab keeps the lock while backgrounded; a second tab shows a translated blocked screen and **does not mount the chat, music provider, or BYOK vault**. It does not evict the original tab, and the second tab does not automatically take over. After closing the original tab, the user can explicitly retry. Pagehide releases the lock; bfcache pages re-check on pageshow. Browsers without Web Locks fail closed rather than risk simultaneous editors. Distinct browser profiles and different origins remain independent. This is a client-side coordination/UX feature, not a security boundary; transactional IndexedDB checks remain necessary to protect AI/manual writes and unexpected races.
+CI covers first-run saved state, IndexedDB IDE transactions, ZIP export, crypto round trips, origin/request limits, single-tab handling, TypeScript and build. Five-language real-browser, quota exhaustion and live-model integration acceptance remain manual. See [SECURITY.md](../SECURITY.md), [API guide](cloud-provider-setup.md), [backup guide](cloud-data-and-backups.md).
