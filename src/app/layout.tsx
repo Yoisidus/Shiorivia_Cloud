@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Shiorivia",
     description: "Where Stories Find Their Way.",
-    images: [{ url: "/shiorivia-og.png", width: 1200, height: 630, alt: "Shiorivia Star Road" }],
+    images: [{ url: "/shiorivia-og.png", width: 192, height: 192, alt: "Shiorivia Star Road" }],
   },
   twitter: { card: "summary_large_image", images: ["/shiorivia-og.png"] },
   icons: {
