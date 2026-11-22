@@ -203,6 +203,10 @@ export default function Home() {
         setVaultBusy(true);
         try {
             const draft = safeCloudCredentials(vaultDraft);
+            if (!Object.values(draft).some(entry => entry.apiKey.length > 0)) {
+                setVaultError(deepText(locale, "cloud.vault.keyRequired"));
+                return false;
+            }
             if (vaultStatus === "editing") {
                 const key = editorKeyRef.current, salt = editorSaltRef.current;
                 if (!key || !salt) throw new Error("Editor is not unlocked.");
