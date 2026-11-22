@@ -1,3 +1,5 @@
+> **Local Edition reference / 本地版功能参考**: This document was inherited from [Shiorivia Local](https://github.com/Yoisidus/Shiorivia) and describes Local-only filesystem/API or media features. **Do not follow its `.env.local`, ComfyUI, music scanning or disk paths as hosted Cloud instructions.** For active Cloud behavior, see [Cloud guides](README.md) and [Cloud README](../README.md).
+
 # Local API providers / 本地 API 供应商
 
 Shiorivia Local reads API credentials from **server-side `.env.local`**. Do not use `NEXT_PUBLIC_` prefixes for secrets, and never commit `.env.local`.

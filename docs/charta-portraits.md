@@ -1,3 +1,5 @@
+> **Local Edition reference / 本地版功能参考**: This document was inherited from [Shiorivia Local](https://github.com/Yoisidus/Shiorivia) and describes Local-only filesystem/API or media features. **Do not follow its `.env.local`, ComfyUI, music scanning or disk paths as hosted Cloud instructions.** For active Cloud behavior, see [Cloud guides](README.md) and [Cloud README](../README.md).
+
 # Charta stage portraits (Local Edition)
 
 Charta profiles are stored under the project root at `data_storage/charta/characters.json`.

@@ -1,3 +1,5 @@
+> **Local Edition reference / 本地版功能参考**: This document was inherited from [Shiorivia Local](https://github.com/Yoisidus/Shiorivia) and describes Local-only filesystem/API or media features. **Do not follow its `.env.local`, ComfyUI, music scanning or disk paths as hosted Cloud instructions.** For active Cloud behavior, see [Cloud guides](README.md) and [Cloud README](../README.md).
+
 # Shiorivia Local Music Library
 
 Place music files in the repository-root `music/` directory (this is **not** `public/music/`). Supported audio extensions: `.mp3`, `.m4a`, `.aac`, `.ogg`, `.wav`, `.flac` (playback depends on the browser's codec support).

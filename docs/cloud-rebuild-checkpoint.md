@@ -1,3 +1,5 @@
+> **Historical archive / 历史存档（2026-11-21）**: This document records the former `rebuild/local-foundation` phase and its *then-current* HTTP 503 staging guard. Those temporary branches were retired; Cloud now runs from `dev → main`, with public beta accessible at [app.shiorivia.com](https://app.shiorivia.com). Statements below are historical and **not current setup or security guidance**. For current behavior see [Cloud docs](README.md), [security](cloud-browser-security.md) and [README](../README.md).
+
 # Cloud rebuild checkpoint — 2026-11-21
 
 This is an **engineering checkpoint**, not the Cloud release.
