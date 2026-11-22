@@ -11,7 +11,8 @@
     "test:cloud-api": "node --test tests/cloud-api.test.cjs",
     "test:cloud-vault": "node --test tests/cloud-vault.test.cjs",
     "test:cloud-single-tab": "node --test tests/cloud-single-tab.test.cjs",
-    "test:cloud-bootstrap": "node --test tests/cloud-bootstrap.test.cjs"
+    "test:cloud-bootstrap": "node --test tests/cloud-bootstrap.test.cjs",
+    "test:cloud-worldline": "node --test tests/cloud-worldline.test.cjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.3",

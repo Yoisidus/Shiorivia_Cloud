@@ -30,6 +30,8 @@ jobs:
         run: npx tsc --noEmit
       - name: Verify first-run browser session is a saved checkpoint
         run: npm run test:cloud-bootstrap
+      - name: Verify built-in worldline era translations preserve saved IDs
+        run: npm run test:cloud-worldline
       - name: Exercise Cloud IDE persistence and ZIP compatibility
         run: npm run test:cloud-ide
       - name: Verify public Cloud API request guards and size limits
