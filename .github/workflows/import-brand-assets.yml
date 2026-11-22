@@ -1,0 +1,44 @@
+name: One-time approved brand asset import
+
+on:
+  push:
+    branches:
+      - rebuild/local-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  import-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    if: github.repository == 'Yoisidus/Shiorivia_Cloud'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Retrieve official artwork from pinned Local commit and verify checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://raw.githubusercontent.com/Yoisidus/Shiorivia/c9ba70d7e4e3660af747c44fa0bc148c9c023d15/public"
+          curl --fail --location --retry 3 --max-time 30 "$base/shiorivia-app-icon.png" -o public/shiorivia-app-icon.png
+          curl --fail --location --retry 3 --max-time 30 "$base/shiorivia-favicon-32.png" -o public/shiorivia-favicon-32.png
+          curl --fail --location --retry 3 --max-time 30 "$base/shiorivia-og.png" -o public/shiorivia-og.png
+          printf '%s  %s\n' \
+            'e941349f82adadba2437f304103180c13a818f85166077c252865f7b3452f010' public/shiorivia-app-icon.png \
+            '3dde1f38619cafbf0520508ececce5e3ef81052cc1d908819d05fb9a138fecdf' public/shiorivia-favicon-32.png \
+            'a2982b74c8f1fcd9a45029483471b852d913ee023847191ad824826f4de2111a' public/shiorivia-og.png | sha256sum --check
+      - name: Commit verified brand images only to rebuild branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f public/shiorivia-app-icon.png public/shiorivia-favicon-32.png public/shiorivia-og.png
+          if git diff --cached --quiet; then
+            echo 'Already using exact original artwork.'
+          else
+            git commit -m "fix(cloud-brand): restore exact approved 512px icon, favicon and 1200x630 OG"
+            git push origin HEAD:rebuild/local-foundation
+          fi
