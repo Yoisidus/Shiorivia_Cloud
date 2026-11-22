@@ -1,9 +1,13 @@
-name: Cloud guarded validation
+name: Cloud validation (dev/main)
 
 on:
   push:
     branches:
-      - rebuild/local-foundation
+      - dev
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
