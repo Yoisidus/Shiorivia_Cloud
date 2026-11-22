@@ -40,5 +40,7 @@ jobs:
         run: npm run test:cloud-vault
       - name: Verify single-tab Cloud access
         run: npm run test:cloud-single-tab
+      - name: Verify BYOK-only provider display and localized playlist labels
+        run: npm run test:cloud-provider-ui
       - name: Validate production build
         run: npm run build
