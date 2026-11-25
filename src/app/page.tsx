@@ -1108,7 +1108,7 @@ export default function Home() {
 
     return renderWithTransition(
         <div
-            className="flex h-screen text-slate-800 font-sans overflow-hidden relative"
+            className="standalone-workspace flex h-screen text-slate-800 font-sans overflow-hidden relative"
             onDrop={fileHandler.handleBgDrop}
             onDragOver={(e) => e.preventDefault()}
         >

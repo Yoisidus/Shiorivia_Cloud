@@ -149,8 +149,8 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-900/50 p-2 backdrop-blur-sm sm:p-5" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div role="dialog" aria-modal="true" aria-label={t("settings.title")} className="flex max-h-[calc(100dvh-1rem)] w-full max-w-[960px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#fbfcfb] text-slate-700 shadow-2xl sm:max-h-[calc(100dvh-3rem)]">
+    <div className="settings-overlay fixed inset-0 z-[999] flex items-center justify-center bg-slate-900/50 p-2 backdrop-blur-sm sm:p-5" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div role="dialog" aria-modal="true" aria-label={t("settings.title")} className="settings-panel flex max-h-[calc(100dvh-1rem)] w-full max-w-[960px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#fbfcfb] text-slate-700 shadow-2xl sm:max-h-[calc(100dvh-3rem)]">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3"><Settings2 size={20} className="text-[#517d69]" /><div><h2 className="text-lg font-bold">{t("settings.title")}</h2><p className="text-[11px] text-slate-400">Shiorivia · Cloud</p></div></div>
           <button type="button" onClick={onClose} aria-label={t("settings.close")} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X size={20} /></button>
@@ -168,7 +168,7 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
             })}
           </nav>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-7 sm:py-7">
+          <div className="settings-scroll min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-7 sm:py-7">
             {activeTab === "general" && (
               <section>
                 <h2 className="mb-2 text-xl font-bold">{t("settings.general")}</h2>

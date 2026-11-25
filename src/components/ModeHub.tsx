@@ -58,9 +58,9 @@ export function ModeHub({ onEnter, onResume, onOpenSettings, onOpenCharta, hasSe
   const { t, locale } = useLanguage();
   const modes = buildModes(t);
   return (
-    <main className="relative isolate min-h-[100dvh] overflow-y-auto bg-[#f6f8f7] text-slate-800">
+    <main className="standalone-safe-screen relative isolate min-h-[100dvh] overflow-y-auto bg-[#f6f8f7] text-slate-800">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_15%_15%,#dceae4_0%,transparent_50%),radial-gradient(ellipse_at_90%_85%,#e7e8f5_0%,transparent_48%)]" />
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-4 pb-10 pt-6 sm:px-8 sm:pt-10">
+      <div className="standalone-hub-content mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-4 pb-10 pt-6 sm:px-8 sm:pt-10">
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <img src="/shiorivia-app-icon.png" alt="Shiorivia official icon" width={48} height={48} className="h-12 w-12 rounded-2xl shadow-sm" />
