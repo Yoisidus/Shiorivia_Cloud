@@ -333,7 +333,7 @@ export function ViaeInterface({ session, updateSession, characters, customCharac
   const viewChar = activeGroup ? who(activeGroup.members.includes(activeGroup.defaultPovChar || "") ? activeGroup.defaultPovChar! : activeGroup.members[0]) : undefined;
 
   return (
-    <div className="flex h-[100dvh] min-h-0 w-full overflow-hidden bg-[#fafaf9] font-sans text-[#1b2e48]">
+    <div className="standalone-safe-screen flex h-[100dvh] min-h-0 w-full overflow-hidden bg-[#fafaf9] font-sans text-[#1b2e48]">
       {/* Shared Viae directory — deliberately separate from the Engineering/Story/Chat explorer. */}
       <aside className={`relative z-20 flex w-full shrink-0 flex-col border-r border-[#e5e8eb] bg-white sm:w-[318px] lg:w-[340px] ${activeGroup || creating ? "hidden sm:flex" : "flex"}`}>
         <div className="flex items-center gap-3 border-b border-[#e9edf0] px-5 py-5">
