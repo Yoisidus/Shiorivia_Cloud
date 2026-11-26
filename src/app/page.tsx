@@ -51,6 +51,7 @@ import { toChartaCharConfig, nameForCharta } from "../lib/charta";
 import { ChartaInterface } from "../components/ChartaInterface";
 import { StaticPortraitStage } from "../components/StaticPortraitStage";
 import { useUI } from "../hooks/useUI";
+import { browserChromeColor } from "../lib/browserChromeTheme";
 import { useFileHandler } from "../hooks/useFileHandler";
 import { useAppDialog, type DialogTone } from "../context/DialogContext";
 
@@ -792,6 +793,16 @@ export default function Home() {
             <TransitionEffects key={curtainCycle} effect={ui.effect} onComplete={handleEffectComplete} />
         </>
     );
+
+    // Use the same priority as the mode rendering below. Update both the
+    // document canvas (modern Safari) and metadata (other supporting browsers).
+    const edgeMode = showCharta && cloud.initLoaded ? "charta"
+        : !cloud.initLoaded || showModeHub ? "hub" : currentSession?.memoryMode || "hub";
+    const edgeColor = browserChromeColor(edgeMode, config.storyTheme, dynamicCharacter.hex, Boolean(currentSession?.characterId));
+    useEffect(() => {
+        document.documentElement.style.setProperty("--app-edge-color", edgeColor);
+        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", edgeColor);
+    }, [edgeColor]);
 
     if (showCharta && cloud.initLoaded) {
         return renderWithTransition(<ChartaInterface characters={charta.characters} save={charta.save} remove={charta.remove} selfLibrary={selfLibrary} worldLibrary={worldLibrary} initialSection={chartaInitialSection}

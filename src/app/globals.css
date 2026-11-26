@@ -15,7 +15,7 @@
 }
 
 html, body {
-  background-color: #08182e;
+  background-color: var(--app-edge-color, #f6f8f7);
   color: #ededed;
   font-family: Arial, Helvetica, sans-serif;
   overscroll-behavior-y: none;
@@ -48,10 +48,9 @@ html, body {
 .top-safe-2 {
   top: calc(env(safe-area-inset-top) + 0.5rem);
 }
-/* Safari/Chrome draw their edge-to-edge safe areas from the document canvas.
-   Keep it consistent with the Cloud/Local navy shell rather than black. */
-html { min-height: 100%; background-color: #08182e; }
-body { min-height: 100dvh; background-color: #08182e; }
+/* Match the visible mode at both ends of the document canvas. */
+html { min-height: 100%; background-color: var(--app-edge-color, #f6f8f7); }
+body { min-height: 100dvh; background-color: var(--app-edge-color, #f6f8f7); }
 
 /* Installed phone web apps: respect the actual viewport and device safe areas.
    Keep existing per-header insets in chat/Tela; do not apply a second global inset. */
@@ -112,23 +111,25 @@ body { min-height: 100dvh; background-color: #08182e; }
   }
 }
 
-/* iOS 27 standalone WebKit scroll-edge effect: give the native compositor a
-   fixed top-edge color sample without painting a new overlay or blocking taps.
-   The empty element clips its background to text, so no pixels are drawn.
-   Keep the workaround scoped to installed WebKit phone apps. */
+/* Give mobile WebKit opaque color samples at the viewport edges without
+   painting over content, changing layout, or intercepting touches. Keep the
+   installed-app top blur workaround, now using the current mode's color. */
 .ios-standalone-edge-sample { display: none; }
+.ios-browser-bottom-edge-sample { display: none; }
 @supports (-webkit-touch-callout: none) and (-webkit-background-clip: text) {
-  @media (display-mode: standalone) and (max-width: 767px) {
-    .ios-standalone-edge-sample {
+  @media (max-width: 767px) {
+    .ios-standalone-edge-sample,
+    .ios-browser-bottom-edge-sample {
       display: block;
       position: fixed;
-      inset: 0 0 auto;
       height: 12px;
       z-index: 2147483647;
       pointer-events: none;
-      background-color: #ffffff;
+      background-color: var(--app-edge-color, #f6f8f7);
       -webkit-background-clip: text;
       background-clip: text;
     }
+    .ios-standalone-edge-sample { inset: 0 0 auto; }
+    .ios-browser-bottom-edge-sample { inset: auto 0 0; }
   }
 }
