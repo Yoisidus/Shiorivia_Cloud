@@ -431,7 +431,7 @@ export const ChatInterface = ({
         <div className="flex-1 flex flex-col relative min-w-0" style={{ backgroundColor: (requiresEngineer || requiresChatWorldline || requiresChatCharacter) ? "#f3f7f4" : currentCharacter.hex + "08" }}>
 
             <header className={`
-          flex items-center justify-between px-3 md:px-4 bg-white/95 md:bg-white/80 md:backdrop-blur z-20 border-b border-gray-100/50 shrink-0 relative
+          flex items-center justify-between px-3 md:px-4 bg-white md:bg-white/80 md:backdrop-blur z-20 border-b border-gray-100/50 shrink-0 relative
           pt-safe h-[calc(3.5rem+env(safe-area-inset-top))]
       `}>
 
@@ -827,7 +827,7 @@ export const ChatInterface = ({
                 <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-4 bg-white/50 backdrop-blur-sm shrink-0">
+            <div className="p-4 bg-white md:bg-white/50 md:backdrop-blur-sm shrink-0">
                 {(requiresChatWorldline || requiresChatCharacter) && <div role="status"
                     className="mx-auto mb-3 flex max-w-3xl items-center gap-2 rounded-xl border border-[#dce8df] bg-[#f7faf8] px-4 py-3 text-xs text-[#557968]">
                     <TreeDeciduous size={16}/>

@@ -130,6 +130,19 @@ body { min-height: 100dvh; background-color: var(--app-edge-color, #f6f8f7); }
       background-clip: text;
     }
     .ios-standalone-edge-sample { inset: 0 0 auto; }
-    .ios-browser-bottom-edge-sample { inset: auto 0 0; }
+    .ios-browser-bottom-edge-sample {
+      inset: auto 0 0;
+      background-color: var(--app-bottom-edge-color, var(--app-edge-color, #f6f8f7));
+    }
+  }
+}
+
+/* The actual viewport canvas continues the adjacent surfaces. VIAE's
+   opaque panels cover this backing, leaving matching safe-area gutters. */
+@media (max-width: 767px) {
+  html, body, .viae-edge-surface {
+    background-image: linear-gradient(to bottom,
+      var(--app-edge-color, #f6f8f7) 0 50%,
+      var(--app-bottom-edge-color, var(--app-edge-color, #f6f8f7)) 50% 100%);
   }
 }

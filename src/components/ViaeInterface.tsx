@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { applyBrowserChromeEdges, browserChromeEdges } from "../lib/browserChromeTheme";
 import {
   ArrowLeft, Brain, Check, ChevronRight, Compass, Copy,
   GitMerge, MapPin, Pencil, RotateCcw, Route, Search,
@@ -149,6 +150,10 @@ export function ViaeInterface({ session, updateSession, characters, customCharac
     }
   };
   const [creating, setCreating] = useState(false);
+  const edgeView = creating ? "create" : activeGroup ? "conversation" : "directory";
+  useEffect(() => {
+    applyBrowserChromeEdges(document, browserChromeEdges("lime", edgeView));
+  }, [edgeView]);
   useEffect(() => { setEditingBubble(null); }, [activeGroup?.id]);
   const [kind, setKind] = useState<"direct" | "group">("direct");
   const [selected, setSelected] = useState<string[]>([]);
@@ -333,7 +338,7 @@ export function ViaeInterface({ session, updateSession, characters, customCharac
   const viewChar = activeGroup ? who(activeGroup.members.includes(activeGroup.defaultPovChar || "") ? activeGroup.defaultPovChar! : activeGroup.members[0]) : undefined;
 
   return (
-    <div className="standalone-safe-screen flex h-[100dvh] min-h-0 w-full overflow-hidden bg-[#fafaf9] font-sans text-[#1b2e48]">
+    <div className="standalone-safe-screen viae-edge-surface flex h-[100dvh] min-h-0 w-full overflow-hidden bg-[#fafaf9] font-sans text-[#1b2e48]">
       {/* Shared Viae directory — deliberately separate from the Engineering/Story/Chat explorer. */}
       <aside className={`relative z-20 flex w-full shrink-0 flex-col border-r border-[#e5e8eb] bg-white sm:w-[318px] lg:w-[340px] ${activeGroup || creating ? "hidden sm:flex" : "flex"}`}>
         <div className="flex items-center gap-3 border-b border-[#e9edf0] px-5 py-5">

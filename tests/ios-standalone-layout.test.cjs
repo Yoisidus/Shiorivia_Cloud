@@ -43,28 +43,48 @@ test("iOS standalone top-edge sample is nonpainting and noninteractive", () => {
   assert.ok(css.includes("@supports (-webkit-touch-callout: none)"));
 });
 
-test("browser chrome follows the active mode and story/character theme", () => {
-  const { browserChromeColor } = require("../src/lib/browserChromeTheme.ts");
-  const color = (mode, theme = "sky", hex = "#483d8b", assigned = true) => browserChromeColor(mode, theme, hex, assigned);
-  assert.equal(color("hub"), "#f6f8f7");
-  assert.equal(color("charta"), "#f7f8f5");
-  assert.equal(color("lime"), "#fafaf9");
-  assert.equal(color("novel"), "#fdf6e3");
-  assert.deepEqual(["sky", "sage", "rose"].map(theme => color("sliding", theme)), ["#e0f2fe", "#b7d3b0", "#f4c6d2"]);
-  assert.equal(color("infinite", "sky", "#123456", false), "#dce4e9");
-  assert.equal(color("chat", "sky", "#123456", false), "#f3f7f4");
-  assert.notEqual(color("chat"), color("chat", "sky", "#779977"));
-  assert.match(color("chat"), /^#[0-9a-f]{6}$/);
-  assert.equal(color("chat", "sky", "invalid"), "#dce4e9");
+test("browser chrome follows the actual adjacent surfaces, not story or character accents", () => {
+  const { browserChromeEdges, applyBrowserChromeEdges } = require("../src/lib/browserChromeTheme.ts");
+  const both = color => ({ top: color, bottom: color });
+  for (const mode of ["infinite", "sliding", "chat"]) {
+    assert.deepEqual(browserChromeEdges(mode), both("#ffffff"));
+  }
+  assert.deepEqual(browserChromeEdges("novel"), both("#fdf6e3"));
+  assert.deepEqual(browserChromeEdges("hub"), both("#f6f8f7"));
+  assert.deepEqual(browserChromeEdges("charta"), both("#f7f8f5"));
+  assert.deepEqual(browserChromeEdges("lime", "directory"), { top: "#ffffff", bottom: "#152841" });
+  assert.deepEqual(browserChromeEdges("lime", "create"), { top: "#ffffff", bottom: "#fcfcfb" });
+  assert.deepEqual(browserChromeEdges("lime", "conversation"), both("#ffffff"));
+  const properties = {};
+  let meta;
+  const fakeDocument = {
+    documentElement: { style: { setProperty: (key, value) => { properties[key] = value; } } },
+    querySelector: selector => {
+      assert.equal(selector, 'meta[name="theme-color"]');
+      return { setAttribute: (key, value) => { assert.equal(key, "content"); meta = value; } };
+    },
+  };
+  applyBrowserChromeEdges(fakeDocument, browserChromeEdges("lime", "directory"));
+  assert.equal(properties["--app-edge-color"], "#ffffff");
+  assert.equal(properties["--app-bottom-edge-color"], "#152841");
+  assert.equal(meta, "#ffffff");
+  applyBrowserChromeEdges(fakeDocument, browserChromeEdges("novel"));
+  assert.equal(properties["--app-edge-color"], "#fdf6e3");
+  assert.equal(properties["--app-bottom-edge-color"], "#fdf6e3");
+  assert.equal(meta, "#fdf6e3");
   const page = read("src/app/page.tsx");
   const css = read("src/app/globals.css");
   const layout = read("src/app/layout.tsx");
-  assert.ok(page.includes('style.setProperty("--app-edge-color", edgeColor)'));
-  assert.ok(page.includes('setAttribute("content", edgeColor)'));
-  assert.ok(page.includes("}, [edgeColor])"));
+  const chat = read("src/components/ChatInterface.tsx");
+  const viae = read("src/components/ViaeInterface.tsx");
+  assert.ok(page.includes('if (edgeMode !== "lime") applyBrowserChromeEdges(document, browserChromeEdges(edgeMode))'));
+  assert.ok(viae.includes('applyBrowserChromeEdges(document, browserChromeEdges("lime", edgeView))'));
+  assert.ok(viae.includes("viae-edge-surface"));
+  assert.ok(chat.includes("bg-white md:bg-white/80 md:backdrop-blur"));
+  assert.ok(chat.includes("bg-white md:bg-white/50 md:backdrop-blur-sm"));
   assert.ok(css.includes("background-color: var(--app-edge-color, #f6f8f7)"));
+  assert.ok(css.includes("background-color: var(--app-bottom-edge-color, var(--app-edge-color, #f6f8f7))"));
   assert.ok(layout.includes('className="ios-browser-bottom-edge-sample"'));
-  assert.ok(css.includes(".ios-browser-bottom-edge-sample { inset: auto 0 0; }"));
   assert.match(layout, /themeColor: "#f6f8f7"/);
   assert.equal(JSON.parse(read("public/manifest.json")).theme_color, "#f6f8f7");
 });
