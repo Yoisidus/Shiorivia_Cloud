@@ -104,6 +104,7 @@ test("mini player is default-on, persisted and shared by all supported modes", (
   assert.equal((page.match(/onToggleMiniPlayer=\{/g) || []).length, 4);
   assert.ok(settings.includes('checked={showMiniPlayer} onClick={onToggleMiniPlayer}'));
   assert.ok(chat.includes('{showMiniPlayer && <div className="z-10 shrink-0">'));
+  assert.match(chat, /\{showMiniPlayer && <div className="z-10 shrink-0">[\s\S]*?themeMode="light"\s*\/>\s*<\/div>\}/);
   assert.ok(novel.includes('{showMiniPlayer && <div className="z-10 shrink-0">'));
   assert.ok(!mini.includes("id === 'silence') return null"));
   assert.ok(mini.includes('deepText(locale, "music.miniIdle")'));

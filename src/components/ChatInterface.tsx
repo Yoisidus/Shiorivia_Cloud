@@ -607,7 +607,7 @@ export const ChatInterface = ({
                     rightSidebarOpen={rightSidebarOpen}
                     themeMode="light"
                 />
-            </div>
+            </div>}
 
             <div className="flex-1 overflow-y-auto p-4 md:p-8 md:pr-[350px] space-y-8 scroll-smooth">
                 {currentSession?.messages.map((msg: any, i: number) => {
