@@ -146,3 +146,21 @@ body { min-height: 100dvh; background-color: var(--app-edge-color, #f6f8f7); }
       var(--app-bottom-edge-color, var(--app-edge-color, #f6f8f7)) 50% 100%);
   }
 }
+
+/* Browser-only mobile Tela: avoid heavy shadow/blur being sampled into Safari's
+   bottom chrome. Keep the installed app and desktop composer unchanged. */
+@media (display-mode: browser) and (max-width: 767px) {
+  .novel-composer {
+    background: linear-gradient(to top, #fdf6e3 0%, #fdf6e3 85%, transparent 100%);
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+  }
+  .novel-composer-input {
+    box-shadow: 0 1px 3px rgb(114 94 67 / 0.08);
+    background-color: #fffef8;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .novel-composer button {
+    box-shadow: none;
+  }
+}

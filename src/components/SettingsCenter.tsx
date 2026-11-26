@@ -25,6 +25,8 @@ type Props = {
   open: boolean;
   onClose: () => void;
   values: Record<SettingKey, boolean>;
+  showMiniPlayer: boolean;
+  onToggleMiniPlayer: () => void;
   onToggle: (key: SettingKey) => void;
   debugMode: boolean;
   onToggleDebug: () => void;
@@ -128,7 +130,7 @@ function SwitchRow({ title, description, checked, onClick, icon: Icon }: {
   );
 }
 
-export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onToggleDebug, debugDrawTagsEnabled, onToggleDebugDrawTags, danmakuEnabled, onToggleDanmaku, danmakuCount, onDanmakuCountChange, terminalRequestLogEnabled, onToggleTerminalRequestLog, terminalLogEnabled, onToggleTerminalLog, engineeringTransitionEnabled, onToggleEngineeringTransition, curtainTransitionEnabled, onToggleCurtainTransition, geminiNarrativeStyleEnabled, onToggleGeminiNarrativeStyle, engineeringLoreRelationshipsEnabled, engineeringLoreExperiencesEnabled, onToggleEngineeringLoreRelationships, onToggleEngineeringLoreExperiences, onTestEffect, isStory, activeMode, contextWindowTokens, onContextWindowChange, storyTheme, onStoryThemeChange, activeProvider, providers, disabledProviders, onToggleProvider, autoSync, autoSyncInterval, onAutoSyncChange, onAutoSyncIntervalChange, webToolConfig, onWebToolConfigChange, providerAliases, onProviderAliasChange, imageSettings, onImageSettingsChange, providerCapabilities, onProviderCapabilitiesChange, falConfigured, cloudCredentials, onCloudCredentialChange, credentialVaultStatus, credentialVaultBusy, credentialVaultError, credentialVaultDraft, credentialVaultHasSaved, credentialRuntimeUnlocked, onCredentialVaultSubmit, onCredentialVaultEdit, onCredentialVaultCancelEdit, onCredentialVaultDecrypt, onCredentialVaultClearMemory, onCredentialVaultReset }: Props) {
+export function SettingsCenter({ open, onClose, values, onToggle, showMiniPlayer, onToggleMiniPlayer, debugMode, onToggleDebug, debugDrawTagsEnabled, onToggleDebugDrawTags, danmakuEnabled, onToggleDanmaku, danmakuCount, onDanmakuCountChange, terminalRequestLogEnabled, onToggleTerminalRequestLog, terminalLogEnabled, onToggleTerminalLog, engineeringTransitionEnabled, onToggleEngineeringTransition, curtainTransitionEnabled, onToggleCurtainTransition, geminiNarrativeStyleEnabled, onToggleGeminiNarrativeStyle, engineeringLoreRelationshipsEnabled, engineeringLoreExperiencesEnabled, onToggleEngineeringLoreRelationships, onToggleEngineeringLoreExperiences, onTestEffect, isStory, activeMode, contextWindowTokens, onContextWindowChange, storyTheme, onStoryThemeChange, activeProvider, providers, disabledProviders, onToggleProvider, autoSync, autoSyncInterval, onAutoSyncChange, onAutoSyncIntervalChange, webToolConfig, onWebToolConfigChange, providerAliases, onProviderAliasChange, imageSettings, onImageSettingsChange, providerCapabilities, onProviderCapabilitiesChange, falConfigured, cloudCredentials, onCloudCredentialChange, credentialVaultStatus, credentialVaultBusy, credentialVaultError, credentialVaultDraft, credentialVaultHasSaved, credentialRuntimeUnlocked, onCredentialVaultSubmit, onCredentialVaultEdit, onCredentialVaultCancelEdit, onCredentialVaultDecrypt, onCredentialVaultClearMemory, onCredentialVaultReset }: Props) {
   const dialog = useAppDialog();
   const [activeTab, setActiveTab] = useState<Tab>("general");
   const [vaultPassphrase, setVaultPassphrase] = useState("");
@@ -479,6 +481,7 @@ export function SettingsCenter({ open, onClose, values, onToggle, debugMode, onT
                 <h2 className="mb-2 text-xl font-bold">{t("settings.media")}</h2>
                 <p className="mb-8 text-sm text-slate-400">{t("settings.media.description")}</p>
                 <SectionTitle>{t("settings.voiceAndMusic")}</SectionTitle>
+                <SwitchRow title={deepText(locale, "settings.miniPlayer")} description={deepText(locale, "settings.miniPlayerHelp")} checked={showMiniPlayer} onClick={onToggleMiniPlayer} icon={Music2} />
                 <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-400"><Mic size={18}/><span>{t("settings.tts")} · {deepText(locale, "settings.developing")}</span></div>
                 <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-400"><Music2 size={18}/><span>{t("settings.autoDJ")} · {deepText(locale, "cloud.music.unavailable")}</span></div>
                 <p className="mt-4 text-xs leading-6 text-slate-500">{deepText(locale, "cloud.music.demoOnly")}</p>

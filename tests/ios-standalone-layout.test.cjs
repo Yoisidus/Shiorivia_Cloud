@@ -88,3 +88,38 @@ test("browser chrome follows the actual adjacent surfaces, not story or characte
   assert.match(layout, /themeColor: "#f6f8f7"/);
   assert.equal(JSON.parse(read("public/manifest.json")).theme_color, "#f6f8f7");
 });
+
+test("mini player is default-on, persisted and shared by all supported modes", () => {
+  const page = read("src/app/page.tsx");
+  const settings = read("src/components/SettingsCenter.tsx");
+  const chat = read("src/components/ChatInterface.tsx");
+  const novel = read("src/components/NovelInterface.tsx");
+  const mini = read("src/components/MiniPlayer.tsx");
+  const locales = read("src/lib/i18nDeep.ts");
+  assert.ok(page.includes("showMiniPlayer: true"));
+  assert.ok(page.includes("showMiniPlayer: saved.showMiniPlayer !== false"));
+  assert.match(page, /JSON\.stringify\(\{[^\n]+showMiniPlayer/);
+  assert.ok(page.includes("config.musicControl, config.showMiniPlayer,"));
+  assert.equal((page.match(/showMiniPlayer=\{config\.showMiniPlayer\}/g) || []).length, 6);
+  assert.equal((page.match(/onToggleMiniPlayer=\{/g) || []).length, 4);
+  assert.ok(settings.includes('checked={showMiniPlayer} onClick={onToggleMiniPlayer}'));
+  assert.ok(chat.includes('{showMiniPlayer && <div className="z-10 shrink-0">'));
+  assert.ok(novel.includes('{showMiniPlayer && <div className="z-10 shrink-0">'));
+  assert.ok(!mini.includes("id === 'silence') return null"));
+  assert.ok(mini.includes('deepText(locale, "music.miniIdle")'));
+  for (const key of ["settings.miniPlayer", "settings.miniPlayerHelp", "music.miniIdle"]) {
+    const line = locales.split("\n").find(line => line.trimStart().startsWith(JSON.stringify(key) + ":"));
+    assert.ok(line, key);
+    assert.equal(JSON.parse(line.slice(line.indexOf("[")).trim().replace(/,$/, "")).length, 5);
+  }
+});
+test("mobile browser Tela avoids heavy composer shadow without changing standalone", () => {
+  const css = read("src/app/globals.css");
+  const novel = read("src/components/NovelInterface.tsx");
+  assert.ok(novel.includes("novel-composer absolute bottom-0"));
+  assert.ok(novel.includes("novel-composer-input flex-1"));
+  const section = css.slice(css.lastIndexOf("@media (display-mode: browser) and (max-width: 767px)"));
+  assert.ok(section.includes("backdrop-filter: none"));
+  assert.ok(section.includes("box-shadow: none"));
+  assert.ok(section.includes("#fdf6e3"));
+});

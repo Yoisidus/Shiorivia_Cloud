@@ -293,6 +293,7 @@ export const ChatInterface = ({
     setManualOutfitId,
     createNewSession,
     onOpenHub, onOpenSettings, onOpenMemory,
+    showMiniPlayer = true,
     effectiveConfig,
     charName, outfits,
 }: any) => {
@@ -600,7 +601,7 @@ export const ChatInterface = ({
                 )}
             </AnimatePresence>
 
-            <div className="z-10 hidden md:block">
+            {showMiniPlayer && <div className="z-10 shrink-0">
                 <MiniPlayer
                     onExpand={() => setShowFullPlayer(true)}
                     rightSidebarOpen={rightSidebarOpen}

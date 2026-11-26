@@ -1,5 +1,7 @@
 "use client";
 import { useMusic } from "../context/MusicContext";
+import { useLanguage } from "../context/LanguageContext";
+import { deepText } from "../lib/i18nDeep";
 import { Play, Pause, SkipForward, SkipBack, Disc, ChevronUp, ChevronDown, X, Music } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
@@ -14,14 +16,13 @@ export const MiniPlayer = ({
     themeMode?: 'light' | 'paper'
 }) => {
     const { isPlaying, togglePlay, currentTrack, playNext, playPrev, progress, duration } = useMusic();
+    const { locale } = useLanguage();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         setIsMobile(window.innerWidth < 768);
     }, []);
-
-    if (!currentTrack || currentTrack.id === 'silence') return null;
 
     const percent = duration > 0 ? (progress / duration) * 100 : 0;
 
@@ -34,6 +35,15 @@ export const MiniPlayer = ({
 
     const discStyle = themeMode === "paper" ? "border-[#b3996d] bg-[#463c2e] ring-[#d6bc8a]"
       : "border-[#182b3a] bg-[#111e2b] ring-[#c9ae7b]";
+
+    // A visible idle entry point does not select or start music automatically.
+    if (!currentTrack || currentTrack.id === 'silence') {
+        return <button type="button" onClick={onExpand} className={`flex w-full items-center gap-3 border-b px-4 py-2.5 text-left text-xs ${containerStyle}`}>
+            <Music size={18} aria-hidden="true" />
+            <span className="min-w-0 flex-1">{deepText(locale, "music.miniIdle")}</span>
+            <ChevronDown size={16} aria-hidden="true" />
+        </button>;
+    }
 
     return (
         <AnimatePresence mode="wait">

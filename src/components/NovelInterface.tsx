@@ -160,6 +160,7 @@ export const NovelInterface = ({
     provider, providers = [], onProviderChange,
     selectedModel, customModelId, onModelChange, onCustomModelChange,
     onImportNovelSession,
+    showMiniPlayer = true,
     storyWorlds = [], customCharacters = [], customSelves = [], activeNovelSelf = null, onOpenCharta,
 }: any) => {
     const { locale } = useLanguage();
@@ -546,7 +547,7 @@ export const NovelInterface = ({
                     </div>
                 </div>
 
-                <div className="z-10"><MiniPlayer onExpand={() => setShowFullPlayer(true)} rightSidebarOpen={rightOpen} themeMode="paper" /></div>
+                {showMiniPlayer && <div className="z-10 shrink-0"><MiniPlayer onExpand={() => setShowFullPlayer(true)} rightSidebarOpen={rightOpen} themeMode="paper" /></div>}
                 <ImageLightbox src={previewImage} onClose={() => setPreviewImage(null)} />
 
                 <div className="flex-1 overflow-y-auto p-6 md:p-16 scroll-smooth pb-32">
@@ -599,7 +600,7 @@ export const NovelInterface = ({
                     </div>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#fdf6e3] via-[#fdf6e3] to-transparent p-4 pb-6 z-20">
+                <div className="novel-composer absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#fdf6e3] via-[#fdf6e3] to-transparent p-4 pb-6 z-20">
                     <div className="max-w-2xl mx-auto">
                         {!novelWorldline && <div role="status" className={`mb-3 flex items-center justify-between gap-3 rounded-xl border ${theme.border} ${theme.inputBg} px-3 py-2 text-xs ${theme.text}`}>
                             <span>{deepText(locale, "novel.ui.needWorldline")}</span>
@@ -608,7 +609,7 @@ export const NovelInterface = ({
                         <div className="flex items-end gap-2">
                         <button onClick={() => { const lastAssistIdx = currentSession.messages.map((m: any, i: number) => ({ ...m, i })).filter((m: any) => m.role === 'assistant').pop()?.i; if (lastAssistIdx) handleRegenerate(lastAssistIdx); }} disabled={isLoading || !novelWorldline} className={`p-3 mb-1 rounded-full ${theme.inputBg} backdrop-blur border ${theme.border} opacity-60 hover:opacity-100 hover:text-red-400 transition-all shadow-lg ${theme.subButton}`}><RefreshCw size={18} className={isLoading ? "animate-spin" : ""} /></button>
 
-                        <div className={`flex-1 ${theme.inputBg} backdrop-blur-md border ${theme.border} rounded-2xl flex items-center p-2 shadow-2xl transition-all`}>
+                        <div className={`novel-composer-input flex-1 ${theme.inputBg} backdrop-blur-md border ${theme.border} rounded-2xl flex items-center p-2 shadow-2xl transition-all`}>
                             <input value={directorInput} onChange={(e) => setDirectorInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !isLoading && novelWorldline && handleGenerate('continue')} placeholder={novelWorldline ? deepText(locale, "novel.director") : deepText(locale, "novel.toolbar.worldlineFirst")} className={`flex-1 bg-transparent border-none outline-none text-sm ${theme.title} px-3 font-sans ${theme.placeholder} disabled:cursor-not-allowed disabled:opacity-60`} disabled={isLoading || !novelWorldline} />
 
                             {isLoading ? (

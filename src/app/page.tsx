@@ -118,6 +118,7 @@ export default function Home() {
         debugDrawTags: false,
         tts: false,
         musicControl: false,
+        showMiniPlayer: true,
         terminalRequestLog: false,
         terminalLog: false,
         engineeringTransition: false,
@@ -359,6 +360,7 @@ export default function Home() {
                         : prev.imageSettings,
                     tts: false, // TTS is under development
                     musicControl: false,
+                    showMiniPlayer: saved.showMiniPlayer !== false,
                     terminalRequestLog: false,
                     terminalLog: false,
                     engineeringTransition: typeof saved.engineeringTransition === "boolean" ? saved.engineeringTransition : false,
@@ -381,12 +383,12 @@ export default function Home() {
     useEffect(() => {
         if (!settingsHydrated) return;
         try {
-            const { webSearch, webToolConfig, imageGen, danmakuEnabled, danmakuCount, debugDrawTags, tts, musicControl, engineeringTransition, curtainTransition, geminiNarrativeStyle, engineeringLoreRelationships, engineeringLoreExperiences, contextWindowTokens, storyTheme, imageSettings } = config;
-            window.localStorage.setItem("shiorivia_local_preferences_v1", JSON.stringify({ webSearch, webToolConfig, imageGen, danmakuEnabled, danmakuCount, debugDrawTags, tts: false, musicControl, engineeringTransition, curtainTransition, geminiNarrativeStyle, engineeringLoreRelationships, engineeringLoreExperiences, contextWindowTokens, storyTheme, imageSettings, disabledProviders, apiProvider, providerCapabilities, providerModels, providerAliases }));
+            const { webSearch, webToolConfig, imageGen, danmakuEnabled, danmakuCount, debugDrawTags, tts, musicControl, showMiniPlayer, engineeringTransition, curtainTransition, geminiNarrativeStyle, engineeringLoreRelationships, engineeringLoreExperiences, contextWindowTokens, storyTheme, imageSettings } = config;
+            window.localStorage.setItem("shiorivia_local_preferences_v1", JSON.stringify({ webSearch, webToolConfig, imageGen, danmakuEnabled, danmakuCount, debugDrawTags, tts: false, musicControl, showMiniPlayer, engineeringTransition, curtainTransition, geminiNarrativeStyle, engineeringLoreRelationships, engineeringLoreExperiences, contextWindowTokens, storyTheme, imageSettings, disabledProviders, apiProvider, providerCapabilities, providerModels, providerAliases }));
         } catch {
             // Local settings are best-effort; chat saves use their own storage.
         }
-    }, [settingsHydrated, config.webSearch, config.webToolConfig, config.imageGen, config.danmakuEnabled, config.danmakuCount, config.debugDrawTags, config.tts, config.musicControl, config.terminalRequestLog, config.terminalLog, config.engineeringTransition, config.curtainTransition, config.geminiNarrativeStyle, config.engineeringLoreRelationships, config.engineeringLoreExperiences, config.contextWindowTokens, config.storyTheme, config.imageSettings, disabledProviders, apiProvider, providerCapabilities, providerModels, providerAliases]);
+    }, [settingsHydrated, config.webSearch, config.webToolConfig, config.imageGen, config.danmakuEnabled, config.danmakuCount, config.debugDrawTags, config.tts, config.musicControl, config.showMiniPlayer, config.terminalRequestLog, config.terminalLog, config.engineeringTransition, config.curtainTransition, config.geminiNarrativeStyle, config.engineeringLoreRelationships, config.engineeringLoreExperiences, config.contextWindowTokens, config.storyTheme, config.imageSettings, disabledProviders, apiProvider, providerCapabilities, providerModels, providerAliases]);
 
     const displayProviders = useMemo(() => allProviders.map(p => ({
         ...p, label: p.custom ? providerAliases[p.id] || p.label : p.label,
@@ -821,6 +823,8 @@ export default function Home() {
                     syncStatus={cloud.status}
                 />
                 <SettingsCenter
+                    showMiniPlayer={config.showMiniPlayer}
+                    onToggleMiniPlayer={() => setConfig(prev => ({ ...prev, showMiniPlayer: !prev.showMiniPlayer }))}
                     open={showSettingsCenter}
                     onClose={() => setShowSettingsCenter(false)}
                     values={config}
@@ -918,6 +922,8 @@ export default function Home() {
                     notify={ui.showToast}
                 />
                 <SettingsCenter
+                    showMiniPlayer={config.showMiniPlayer}
+                    onToggleMiniPlayer={() => setConfig(prev => ({ ...prev, showMiniPlayer: !prev.showMiniPlayer }))}
                     open={showSettingsCenter}
                     onClose={() => setShowSettingsCenter(false)}
                     values={config}
@@ -992,6 +998,7 @@ export default function Home() {
         return renderWithTransition(
             <>
             <NovelInterface
+                showMiniPlayer={config.showMiniPlayer}
                 currentSession={currentSession}
                 initialSelectedModel={config.customModelId || config.selectedModel}
                 provider={effectiveApiProvider}
@@ -1045,6 +1052,8 @@ export default function Home() {
                 updateSessionInfo={(id: string, up: any) => cloud.setSessions(p => p.map(s => s.id === id ? { ...s, ...up } : s))}
             />
             <SettingsCenter
+                showMiniPlayer={config.showMiniPlayer}
+                onToggleMiniPlayer={() => setConfig(prev => ({ ...prev, showMiniPlayer: !prev.showMiniPlayer }))}
                 open={showSettingsCenter}
                 onClose={() => setShowSettingsCenter(false)}
                 values={config}
@@ -1220,6 +1229,7 @@ export default function Home() {
                 />
 
                 <ChatInterface
+                    showMiniPlayer={config.showMiniPlayer}
                     onOpenHub={() => setShowModeHub(true)}
                     onOpenSettings={() => setShowSettingsCenter(true)}
                     onOpenMemory={() => currentSession?.memoryMode === "infinite"
@@ -1387,6 +1397,8 @@ export default function Home() {
             />
 
             <SettingsCenter
+                showMiniPlayer={config.showMiniPlayer}
+                onToggleMiniPlayer={() => setConfig(prev => ({ ...prev, showMiniPlayer: !prev.showMiniPlayer }))}
                 open={showSettingsCenter}
                 onClose={() => setShowSettingsCenter(false)}
                 values={config}
