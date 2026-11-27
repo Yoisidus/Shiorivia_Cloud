@@ -1,3 +1,4 @@
+import { deepText } from "../lib/i18nDeep";
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -52,7 +53,7 @@ export function useViaeEngine({ session, updateSession, provider, model, notify,
   const send = async (regenerate = false) => {
     if (busyRef.current || !activeGroup || !provider) return;
     if (!model.trim()) {
-      dialog.notify("请先为当前供应商选择模型，确认后再发送。");
+      dialog.notify(deepText(locale, "engine.viaeModelRequired"));
       return;
     }
     if (activeGroup.pov === "insider" && !activeSelf) { notify?.("参与模式需要当前 Charta 启用的自设。"); return; }
@@ -201,7 +202,7 @@ export function useViaeEngine({ session, updateSession, provider, model, notify,
         notify?.("本轮 VIAE 状态不完整，可点击「补齐状态」。");
       }
       if (legacyRefresh) {
-        dialog.notify("旧存档回复已刷新；原有 STM/LTM 与时间线未自动修改，请按需检查记忆档案。",
+        dialog.notify(deepText(locale, "engine.viaeLegacyRefresh"),
           { tone: "viae", type: "warning" });
       }
     } catch (error) {
@@ -233,12 +234,12 @@ export function useViaeEngine({ session, updateSession, provider, model, notify,
   const repairMessage = async (index: number) => {
     if (!activeGroup || busyRef.current || isLoading) return;
     if (index !== activeGroup.messages.length - 1) {
-      dialog.notify("只能补齐当前道路的最后一轮状态。", { type: "error", tone: "viae" });
+      dialog.notify(deepText(locale, "engine.viaeRepairLast"), { type: "error", tone: "viae" });
       return;
     }
     const target = activeGroup.messages[index];
     if (!target || target.role !== "assistant" || !target.metadataRepairMissing) return;
-    if (!await dialog.confirm("确认调用当前模型补齐 VIAE 消息协议或记忆吗？请求期间会锁定输入框，原消息不会被自动摘要覆盖。",
+    if (!await dialog.confirm(deepText(locale, "engine.viaeRepairConfirm"),
       { title: "VIAE · 补齐状态", tone: "viae", confirmLabel: "确认补齐" })) return;
     if (busyRef.current) return;
     const phoneOwnerId = activeGroup.members.includes(activeGroup.defaultPovChar || "")
@@ -263,7 +264,7 @@ export function useViaeEngine({ session, updateSession, provider, model, notify,
     abortRef.current = controller;
     busyRef.current = true;
     setIsLoading(true);
-    dialog.notify("正在补齐 VIAE 状态…", { tone: "viae" });
+    dialog.notify(deepText(locale, "engine.viaeRepairing"), { tone: "viae" });
     try {
       const prompt = [
         "Restore ONLY missing machine metadata from the completed VIAE dialogue. Never continue the conversation.",
@@ -337,9 +338,9 @@ export function useViaeEngine({ session, updateSession, provider, model, notify,
             ? { ...msg, content: restoredChat, metadataRepairMissing: false, memoryRepairMissing: false } : msg),
         };
       });
-      dialog.notify("VIAE 状态补齐成功。", { tone: "viae", type: "success" });
+      dialog.notify(deepText(locale, "engine.viaeRepaired"), { tone: "viae", type: "success" });
     } catch (error) {
-      if (!controller.signal.aborted) dialog.notify("VIAE 状态补齐失败：" +
+      if (!controller.signal.aborted) dialog.notify(deepText(locale, "engine.viaeRepairFailed") +
         (error instanceof Error ? error.message : String(error)), { tone: "viae", type: "error" });
     } finally {
       if (abortRef.current === controller) abortRef.current = null;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session, ChatFolder } from "../types";
-import { collectAppendDeltas, completedTurns } from "../lib/appendSync";
+import { collectAppendDeltas, completedTurns, hasMajorMessageLoss } from "../lib/appendSync";
 import type { LocalSyncPreferences } from "../lib/localSyncPreferences";
 import { browserRead, browserWrite, browserMutate } from "../lib/browserStore";
 import { withCloudGenesisSession } from "../lib/cloudGenesisSession";
@@ -39,7 +39,7 @@ export const useLocalFileSync = (isGlobalGenerating: boolean, showToast: (msg: s
 
   const performSync = useCallback(async (mode: "auto" | "manual" | "force_push" | "force_pull") => {
     if (saveInFlight.current) return;
-    if (mode === "auto" && (isGlobalGenerating || !preferences.autoSync)) return;
+    if (mode === "auto" && (isGlobalGenerating || !preferences.autoSync || conflictModal.isOpen)) return;
     saveInFlight.current = true;
     try {
       if (mode === "manual" && !await dialog.confirm(deepText(locale, "cloud.storage.saveConfirm"))) return;
@@ -84,6 +84,7 @@ export const useLocalFileSync = (isGlobalGenerating: boolean, showToast: (msg: s
         return;
       }
       if (mode === "auto") {
+        if (hasMajorMessageLoss(sessions, saved?.data.sessions || [])) { setStatus("unsaved"); return; }
         const previous = JSON.parse(lastSnapshot.current) as SavedSessionState;
         const delta = collectAppendDeltas(sessions, previous.sessions || []);
         if (completedTurns(delta) < preferences.autoSyncInterval) { setStatus("unsaved"); return; }
@@ -97,8 +98,7 @@ export const useLocalFileSync = (isGlobalGenerating: boolean, showToast: (msg: s
         dialog.notify(deepText(locale, "cloud.storage.alreadySaved"));
         setStatus("idle"); return;
       }
-      if (mode === "manual" && (saved?.data.sessions || []).reduce((n,s)=>n+(s.messages?.length || 0),0) >= 10 &&
-          sessions.reduce((n,s)=>n+(s.messages?.length || 0),0) < (saved?.data.sessions || []).reduce((n,s)=>n+(s.messages?.length || 0),0) / 2) {
+      if (mode === "manual" && hasMajorMessageLoss(sessions, saved?.data.sessions || [])) {
         setConflictModal({
           isOpen: true, cloudData: { ...saved?.data, _ts: saved?.lastModified },
           localData: { ...payload, _ts: Date.now() }, reason: "mass_loss",
@@ -120,7 +120,7 @@ export const useLocalFileSync = (isGlobalGenerating: boolean, showToast: (msg: s
       saveInFlight.current = false;
     }
   }, [sessions, folders, globalWorldInfo, bgImage, initLoaded, preferences.autoSync,
-    preferences.autoSyncInterval, isGlobalGenerating, dialog, locale]);
+    preferences.autoSyncInterval, isGlobalGenerating, dialog, locale, conflictModal.isOpen]);
 
   useEffect(() => { void performSync("force_pull"); }, []);
   useEffect(() => {
@@ -128,11 +128,11 @@ export const useLocalFileSync = (isGlobalGenerating: boolean, showToast: (msg: s
     dirty.current = JSON.stringify({ sessions, folders, globalWorldInfo, bgImage }) !== lastSnapshot.current;
     if (!dirty.current) { setStatus(s => s === "syncing" ? s : "idle"); return; }
     setStatus(s => s === "syncing" ? s : "unsaved");
-    if (!preferences.autoSync || isGlobalGenerating) return;
+    if (!preferences.autoSync || isGlobalGenerating || conflictModal.isOpen) return;
     const timer = setTimeout(() => { void performSync("auto"); }, 2500);
     return () => clearTimeout(timer);
   }, [initLoaded, sessions, folders, globalWorldInfo, bgImage,
-    preferences.autoSync, preferences.autoSyncInterval, isGlobalGenerating]);
+    preferences.autoSync, preferences.autoSyncInterval, isGlobalGenerating, conflictModal.isOpen]);
 
   useEffect(() => {
     const onUnload = (event: BeforeUnloadEvent) => {

@@ -792,6 +792,16 @@ export default function Home() {
     const renderWithTransition = (screen: ReactNode) => (
         <>
             {screen}
+            <SyncConflictModal
+                isOpen={cloud.conflictModal.isOpen}
+                cloudData={cloud.conflictModal.cloudData}
+                localData={cloud.conflictModal.localData}
+                reason={cloud.conflictModal.reason}
+                onResolve={(choice: "cloud" | "local") => {
+                    cloud.setConflictModal(prev => ({ ...prev, isOpen: false }));
+                    void cloud.triggerSync(choice === "cloud" ? "force_pull" : "force_push");
+                }}
+            />
             <TransitionEffects key={curtainCycle} effect={ui.effect} onComplete={handleEffectComplete} />
         </>
     );
@@ -1346,16 +1356,6 @@ export default function Home() {
                 onBindProject={(project: string) => cloud.setSessions(prev => prev.map(s =>
                     s.id === currentSessionId && s.memoryMode === "infinite"
                         ? { ...s, engineeringProjectRoot: project, updatedAt: Date.now() } : s))} />
-            <SyncConflictModal
-                isOpen={cloud.conflictModal.isOpen}
-                cloudData={cloud.conflictModal.cloudData}
-                localData={cloud.conflictModal.localData}
-                reason={cloud.conflictModal.reason}
-                onResolve={(choice: "cloud" | "local") => {
-                    cloud.setConflictModal(prev => ({ ...prev, isOpen: false }));
-                    void cloud.triggerSync(choice === "cloud" ? "force_pull" : "force_push");
-                }}
-            />
             <WorldInfoModal isOpen={ui.showLocalWorld} onClose={() => ui.setShowLocalWorld(false)}
                 title={currentSession?.memoryMode === "infinite" ? `Officina · ${deepText(locale, "app.guideTitle")}`
                     : currentSession?.memoryMode === "sliding" ? `Via Lata · ${deepText(locale, "app.storyNotesTitle")}` : `Umbra · ${deepText(locale, "app.chatNotesTitle")}`}

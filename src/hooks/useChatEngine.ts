@@ -68,13 +68,13 @@ export const useChatEngine = ({
         if (isLoading || !currentSession) return;
 
         if ((currentSession.memoryMode === "sliding" || currentSession.memoryMode === "novel") && !parseStoryWorldline(currentSession.storyWorldline)) {
-            showToast("请先打开右侧世界线，设置世界观、ERA 和 PERIOD，再开始故事。");
+            showToast(deepText(locale, "engine.storyWorldRequired"));
             return;
         }
         const isRegen = overrideMessages !== undefined;
         const modelToUse = (config.customModelId || config.selectedModel || "").trim();
         if (!modelToUse) {
-            dialog.notify("请先在模型配置中选择当前供应商的模型，确认后再发送。");
+            dialog.notify(deepText(locale, "engine.modelRequired"));
             return;
         }
         const txt = overrideInput !== undefined ? overrideInput : input.trim();
@@ -83,7 +83,7 @@ export const useChatEngine = ({
             const worldline = parseStoryWorldline(currentSession.storyWorldline);
             const char = [...CHARACTERS, ...customCharacters].find((item: any) => item.id === activeCharacterId);
             if (!worldline || !char || !storyCastAllowed(char, worldline)) {
-                showToast("请先配置 Umbra 世界线，并从当前世界线选择一位聊天角色。");
+                showToast(deepText(locale, "engine.umbraRequired"));
                 return;
             }
         }
@@ -91,11 +91,11 @@ export const useChatEngine = ({
             const engineerId = currentSession.characterId || "";
             if (!engineerId || engineerId !== activeCharacterId ||
                 ![...CHARACTERS, ...customCharacters].some((char: any) => char.id === engineerId)) {
-                showToast("请先在右侧栏选择一位角色工程师，再发送消息。");
+                showToast(deepText(locale, "engine.engineerRequired"));
                 return;
             }
             if (!isRegen && !isEngineeringCharacterLocked(currentSession)) {
-                if (!await dialog.confirm("确认与当前角色开启 Officina 工程会话吗？\n发送第一条消息后，将永久绑定此角色，当前会话无法切换。")) return;
+                if (!await dialog.confirm(deepText(locale, "engine.officinaBind"))) return;
             }
         }
         // Only share browser IDE source with the selected model after explicit user approval.
@@ -140,12 +140,12 @@ export const useChatEngine = ({
             ? (currentSession.storySelfSnapshot || customSelves.find((self: any) => self.id === selectedSelfId))
             : null;
         if ((currentSession.memoryMode === "sliding" || novelMode) && storyRole === "participant" && !selectedSelf) {
-            showToast("请先在 Charta 创建并启用一个自设，再开始参与模式");
+            showToast(deepText(locale, "engine.selfRequired"));
             return;
         }
         if (novelMode && storyRole === "participant" && selectedSelf?.worldId
             && !enabledWorldIds(parseStoryWorldline(currentSession.storyWorldline)!).includes(selectedSelf.worldId)) {
-            showToast("当前自设与小说世界线不匹配，请重新设置故事身份。");
+            showToast(deepText(locale, "engine.selfMismatch"));
             return;
         }
         const previousStoryTurns = (overrideMessages || currentSession.messages).filter((message: any) => message.role === "user").length;
@@ -370,7 +370,7 @@ export const useChatEngine = ({
                     };
                 }));
 
-                if (needsFallback) showToast("本轮聊天记忆不完整，可点击「补齐状态」手动恢复。");
+                if (needsFallback) showToast(deepText(locale, "engine.chatMemoryMissing"));
                 return;
             }
 
@@ -392,7 +392,7 @@ export const useChatEngine = ({
                 // Preserve prose and the previous valid state. Manual completion is
                 // available on this assistant bubble; it never runs invisibly.
                 storyProtocolMissing = true;
-                showToast("本轮故事状态不完整；可以点击消息下方的「补齐状态」。");
+                showToast(deepText(locale, "engine.storyStateMissing"));
             }
             let currentText = fullText;
             let novelState = currentSession.memoryMode === "novel" ? extractNovelState(fullText) : null;
@@ -415,7 +415,7 @@ export const useChatEngine = ({
             if (currentSession.memoryMode === "novel") {
                 // A malformed or missing chapter state must never erase the last good state.
                 if (!novelState) {
-                    showToast("本章没有返回完整的 novel_state：正文已保留，环境和事件未更新。");
+                    showToast(deepText(locale, "engine.novelStateMissing"));
                 } else {
                     const worldline = parseStoryWorldline(currentSession.storyWorldline);
                     const allowed = new Set([...CHARACTERS, ...customCharacters].filter((char: any) =>
@@ -678,7 +678,7 @@ export const useChatEngine = ({
                             showToast(`已在浏览器 IDE 修改 ${previews.length} 个文件`);
                         } catch (editError: any) {
                             currentText += `\n\n**IDE 局部修改未执行：** ${editError.message}`;
-                            dialog.notify(`IDE 局部编辑失败：${editError.message}`);
+                            dialog.notify(deepText(locale, "engine.ideEditFailed") + String(editError.message));
                         }
                     } else if (previews.length) {
                         currentText += "\n\n*IDE 局部修改已取消，浏览器项目文件未更改。*";
@@ -686,7 +686,7 @@ export const useChatEngine = ({
                 } catch (editError: any) {
                     console.warn("IDE edit rejected:", editError);
                     currentText += `\n\n**IDE 局部修改未执行：** ${editError.message}`;
-                    dialog.notify(`无法应用 IDE 局部修改：${editError.message}`);
+                    dialog.notify(deepText(locale, "engine.ideApplyFailed") + String(editError.message));
                 }
             }
 
@@ -877,7 +877,7 @@ export const useChatEngine = ({
             if (e.name !== 'AbortError') {
                 showToast(e.message);
                 if (currentSession.memoryMode === "infinite" && /(?:联网搜索|搜索供应商|web_search|web search|grounding)/i.test(String(e.message))) {
-                    dialog.notify("联网搜索工具调用失败：" + String(e.message), { type: "error", duration: 5000 });
+                    dialog.notify(deepText(locale, "engine.searchFailed") + String(e.message), { type: "error", duration: 5000 });
                 }
             }
         } finally {
@@ -920,7 +920,7 @@ export const useChatEngine = ({
                     ...m, content: m.content.replace(originalTag, `${completedTag}\n\n![Generated](${url})`),
                   })),
             })));
-            showToast('🎨 插图已保存');
+            showToast(deepText(locale, "engine.illustrationSaved"));
         } finally {
             setIsGlobalGenerating(false);
         }
@@ -950,7 +950,7 @@ export const useChatEngine = ({
             currentSession.messages.length !== pendingStoryRegeneration.messagesLength) return;
         setPendingStoryRegeneration(null);
         if (currentSession.messages[currentSession.messages.length - 1]?.role !== "user") {
-            showToast("没有找到可以重新生成的用户输入。"); return;
+            showToast(deepText(locale, "engine.noRegenerateInput")); return;
         }
         void handleSend(undefined, [...currentSession.messages]);
     }, [pendingStoryRegeneration, currentSession, currentSessionId, isLoading]);
@@ -960,20 +960,20 @@ export const useChatEngine = ({
         const target = currentSession.messages[idx];
         if (!target || target.role !== "assistant") return;
         if ((currentSession.memoryMode === "sliding" || currentSession.memoryMode === "novel") && idx !== currentSession.messages.length - 1) {
-            showToast("请从最后一轮开始刷新，以便正确回退状态与记忆。"); return;
+            showToast(deepText(locale, "engine.refreshLatest")); return;
         }
         if (!await dialog.confirm(currentSession.memoryMode === "sliding"
-            ? "确认刷新这轮故事吗？将恢复本轮之前的自身状态、角色数值、剧情引导与记忆，然后重新生成。"
+            ? deepText(locale, "engine.regenerateStory")
             : currentSession.memoryMode === "novel"
-              ? "确认重写最后一章吗？将回退本章的环境、事件、登场角色与记忆，保留世界线和 Style。"
-              : "确认重新生成这条 AI 回复吗？当前回复会被替换。")) return;
+              ? deepText(locale, "engine.regenerateNovel")
+              : deepText(locale, "engine.regenerateChat"))) return;
         if (currentSession.memoryMode !== "sliding" && currentSession.memoryMode !== "novel") {
             void handleSend(undefined, currentSession.messages.slice(0, idx));
             return;
         }
         const keptMessages = currentSession.messages.slice(0, idx);
         if (keptMessages[keptMessages.length - 1]?.role !== "user") {
-            showToast("没有找到可用于重新生成的最后一条用户消息。");
+            showToast(deepText(locale, "engine.noLastUser"));
             return;
         }
         const snapshot = target.storyStateBefore || currentSession.messages[idx - 1]?.storyStateBefore;
@@ -988,7 +988,7 @@ export const useChatEngine = ({
         if (!currentSession || isLoading) return;
         const target = currentSession.messages[idx];
         if (!target || target.role !== "user" || !revisedText.trim()) {
-            showToast("请输入要重新生成的用户消息。");
+            showToast(deepText(locale, "engine.enterRegenerate"));
             return;
         }
         if (currentSession.memoryMode !== "sliding") {
@@ -997,7 +997,7 @@ export const useChatEngine = ({
         }
         const trailing = currentSession.messages.slice(idx + 1);
         if (trailing.length > 1 || (trailing.length === 1 && trailing[0].role !== "assistant")) {
-            showToast("故事模式只能修改最后一轮的用户消息，以保证故事状态正确回退。");
+            showToast(deepText(locale, "engine.editLastStory"));
             return;
         }
         const snapshot = target.storyStateBefore || trailing[0]?.storyStateBefore;
@@ -1011,12 +1011,12 @@ export const useChatEngine = ({
         const latestAssistant = role === "assistant" ? oldMessages[idx] : oldMessages[idx + 1]?.role === "assistant" ? oldMessages[idx + 1] : null;
         const lastTurn = idx === oldMessages.length - 1 || (role === "user" && idx === oldMessages.length - 2);
         if ((currentSession.memoryMode === "sliding" || currentSession.memoryMode === "novel") && !lastTurn) {
-            showToast("故事／小说模式仅支持从最后一轮向前删除，以确保状态与记忆同步回退。");
+            showToast(deepText(locale, "engine.deleteLatestOnly"));
             return;
         }
         if (!await dialog.confirm(currentSession.memoryMode === "novel"
-            ? "确定删除最新章节并回退环境、事件、登场角色和记忆吗？世界线与 Style 会保留。"
-            : "确定删除最后一条消息并回退故事状态与记忆吗？")) return;
+            ? deepText(locale, "engine.deleteNovel")
+            : deepText(locale, "engine.deleteStory"))) return;
         const newMsgs = [...oldMessages];
         if (role === "assistant") newMsgs.splice(idx, 1);
         else if (role === "user") newMsgs.splice(idx, newMsgs[idx + 1]?.role === "assistant" ? 2 : 1);
@@ -1046,14 +1046,14 @@ export const useChatEngine = ({
     const completeStoryState = async (index: number) => {
         if (!currentSession || currentSession.memoryMode !== "sliding" || isLoading) return;
         if (index !== currentSession.messages.length - 1) {
-            showToast("只能补齐最新一轮的状态，避免覆盖后续剧情。"); return;
+            showToast(deepText(locale, "engine.repairLatestStory")); return;
         }
         const target = currentSession.messages[index];
         if (!target || target.role !== "assistant" || !target.storyProtocolMissing) return;
-        if (!await dialog.confirm("确认调用当前模型补齐本轮故事状态吗？仅恢复 game_state，不续写正文。补齐期间将暂时锁定输入框。")) return;
+        if (!await dialog.confirm(deepText(locale, "engine.repairStory"))) return;
         if (isLoading) return;
         const modelToUse = (config.customModelId || config.selectedModel || "").trim();
-        if (!modelToUse) { showToast("请先选择模型。"); return; }
+        if (!modelToUse) { showToast(deepText(locale, "engine.chooseModel")); return; }
         const previous = target.storyStateBefore?.fields;
         const controller = new AbortController();
         abortControllerRef.current = controller;
@@ -1186,9 +1186,9 @@ export const useChatEngine = ({
                     updatedAt: Date.now(),
                 };
             }));
-            dialog.notify("故事状态已补齐，正文保持不变。", { type: "success", tone: "story" });
+            dialog.notify(deepText(locale, "engine.storyRepaired"), { type: "success", tone: "story" });
         } catch (error) {
-            if (!controller.signal.aborted) dialog.notify("补齐状态失败：" + String(error instanceof Error ? error.message : error), { type: "error", tone: "story" });
+            if (!controller.signal.aborted) dialog.notify(deepText(locale, "engine.repairFailed") + String(error instanceof Error ? error.message : error), { type: "error", tone: "story" });
         } finally {
             if (abortControllerRef.current === controller) abortControllerRef.current = null;
             setStoryStateRepairing(false);
@@ -1203,15 +1203,15 @@ export const useChatEngine = ({
         const mode = currentSession.memoryMode;
         if (!["chat", "novel", "sliding"].includes(mode || "")) return;
         if (index !== currentSession.messages.length - 1) {
-            dialog.notify("只能补齐最后一轮，避免覆盖新的对话。", { type: "error" }); return;
+            dialog.notify(deepText(locale, "engine.repairLastOnly"), { type: "error" }); return;
         }
         const target = currentSession.messages[index];
         if (!target || target.role !== "assistant" || !target.metadataRepairMissing) return;
-        if (!await dialog.confirm("确认调用当前模型补齐本轮缺失的状态或记忆吗？只恢复结构化信息，不修改正文。补齐期间会锁定输入框。",
+        if (!await dialog.confirm(deepText(locale, "engine.repairMetadata"),
             { title: "确认补齐状态", confirmLabel: "确认补齐" })) return;
         if (isLoading || storyStateRepairing) return;
         const chosenModel = String(config.customModelId || config.selectedModel || "").trim();
-        if (!chosenModel) { dialog.notify("请先选择模型。", { type: "error" }); return; }
+        if (!chosenModel) { dialog.notify(deepText(locale, "engine.chooseModel"), { type: "error" }); return; }
         const speakerId = target.characterId || activeCharacterId;
         const previous = mode === "chat"
             ? currentSession.chatCharacterMemories?.[speakerId] || { stm: "", ltm: "" }
@@ -1224,7 +1224,7 @@ export const useChatEngine = ({
         abortControllerRef.current = controller;
         setStoryStateRepairing(true);
         setIsLoading(true);
-        dialog.notify("正在调用当前模型补齐状态…", { tone: mode === "novel" ? "tela" : mode === "chat" ? "umbra" : "story" });
+        dialog.notify(deepText(locale, "engine.repairing"), { tone: mode === "novel" ? "tela" : mode === "chat" ? "umbra" : "story" });
         try {
             const prompt = [
                 "Repair only the missing machine metadata of this completed response. Do not continue narration or dialogue.",
@@ -1318,10 +1318,10 @@ export const useChatEngine = ({
                     updatedAt: Date.now(),
                 };
             }));
-            dialog.notify("状态补齐成功，原正文已保留。",
+            dialog.notify(deepText(locale, "engine.repaired"),
                 { type: "success", tone: mode === "novel" ? "tela" : mode === "chat" ? "umbra" : "story" });
         } catch (error) {
-            if (!controller.signal.aborted) dialog.notify("补齐状态失败：" + (error instanceof Error ? error.message : String(error)),
+            if (!controller.signal.aborted) dialog.notify(deepText(locale, "engine.repairFailed") + (error instanceof Error ? error.message : String(error)),
                 { type: "error", tone: mode === "novel" ? "tela" : mode === "chat" ? "umbra" : "story" });
         } finally {
             if (abortControllerRef.current === controller) abortControllerRef.current = null;
@@ -1333,7 +1333,7 @@ export const useChatEngine = ({
     const completeEngineeringOutput = async (index: number) => {
         if (!currentSession || currentSession.memoryMode !== "infinite" || isLoading) return;
         if (!currentSession.messages[index]?.engineeringOutputIncomplete) return;
-        if (!await dialog.confirm("确认要求当前角色工程师补全缺失的代码文件吗？这会额外调用一次所选模型。")) return;
+        if (!await dialog.confirm(deepText(locale, "engine.completeCode"))) return;
         void handleSend(OFFICINA_COMPLETION_REQUEST);
     };
 

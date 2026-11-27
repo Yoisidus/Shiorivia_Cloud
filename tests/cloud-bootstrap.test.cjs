@@ -47,3 +47,25 @@ test("first-run checkpoint is saved before hydration and therefore not dirty",as
   const same=await browserMutate("sessions", current=>current?.data?.sessions?.length?current:null);
   assert.deepEqual(same,checkpoint);
 });
+
+test("sync conflict dialog is mounted once in the shared screen host", () => {
+  const source = fs.readFileSync(require("node:path").join(__dirname, "..", "src/app/page.tsx"), "utf8");
+  assert.equal((source.match(/<SyncConflictModal\b/g) || []).length, 1);
+  const host = source.indexOf("const renderWithTransition");
+  const modal = source.indexOf("<SyncConflictModal", host);
+  const firstMode = source.indexOf("if (showCharta && cloud.initLoaded)", host);
+  assert.ok(host >= 0 && modal > host && firstMode > modal);
+  assert.ok(source.indexOf("{screen}", host) < modal);
+});
+
+test("major deletion protection includes VIAE roads even alongside unrelated chats", () => {
+  const { countSavedMessages, hasMajorMessageLoss } = require("../src/lib/appendSync.ts");
+  const messages = n => Array.from({length:n}, () => ({role:"user",content:"x"}));
+  const ordinary = {id:"chat",messages:messages(80)};
+  const road = n => ({id:"viae",messages:[],limeGroups:[{id:"road",messages:messages(n)}]});
+  assert.equal(countSavedMessages([ordinary,road(12)]),92);
+  assert.equal(hasMajorMessageLoss([ordinary,road(5)],[ordinary,road(12)]),true);
+  assert.equal(hasMajorMessageLoss([ordinary,road(6)],[ordinary,road(12)]),false);
+  assert.equal(hasMajorMessageLoss([ordinary],[ordinary,road(12)]),true);
+  assert.equal(hasMajorMessageLoss([road(4)],[road(8)]),false);
+});

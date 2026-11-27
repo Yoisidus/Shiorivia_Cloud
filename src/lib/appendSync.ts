@@ -40,3 +40,19 @@ export function completedTurns(deltas: AppendDelta[]): number {
     return sum + rounds;
   }, 0);
 }
+
+/** Include VIAE's nested road messages in overwrite protection. */
+export function countSavedMessages(sessions: Session[]): number {
+  return sessions.reduce((n, s) => n + (s.messages?.length || 0) +
+    (s.limeGroups || []).reduce((sum, g) => sum + (g.messages?.length || 0), 0), 0);
+}
+
+/** Preserve the existing 10-message / half-loss threshold; also protect individual VIAE roads. */
+export function hasMajorMessageLoss(current: Session[], saved: Session[]): boolean {
+  const major = (now: number, before: number) => before >= 10 && now < before / 2;
+  if (major(countSavedMessages(current), countSavedMessages(saved))) return true;
+  return saved.some(s => (s.limeGroups || []).some(g => {
+    const next = current.find(c => c.id === s.id)?.limeGroups?.find(c => c.id === g.id);
+    return major(next?.messages?.length || 0, g.messages?.length || 0);
+  }));
+}
