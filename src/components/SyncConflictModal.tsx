@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, HardDrive, Monitor, Save } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
+import { countSavedMessages } from "../lib/appendSync";
 
 export const SyncConflictModal = ({ isOpen, cloudData, localData, onResolve, reason }: any) => {
     const { locale } = useLanguage();
@@ -13,8 +14,8 @@ export const SyncConflictModal = ({ isOpen, cloudData, localData, onResolve, rea
     const diskTime = cloudData?._ts ? new Date(cloudData._ts).toLocaleTimeString(locale) : deepText(locale, "syncConflict.unknown");
     const memoryTime = localData?._ts ? new Date(localData._ts).toLocaleTimeString(locale) : deepText(locale, "syncConflict.now");
     
-    const diskCount = cloudData?.sessions?.length || 0;
-    const memoryCount = localData?.sessions?.length || 0;
+    const diskCount = countSavedMessages(cloudData?.sessions || []);
+    const memoryCount = countSavedMessages(localData?.sessions || []);
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -46,7 +47,7 @@ export const SyncConflictModal = ({ isOpen, cloudData, localData, onResolve, rea
                         </div>
                         <div className="text-xs font-bold text-gray-500 uppercase">{deepText(locale, "syncConflict.disk")}</div>
                         <div className="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-500 font-mono">{diskTime}</div>
-                        <div className="text-sm font-bold text-gray-700">{diskCount} {deepText(locale, "syncConflict.chats")}</div>
+                        <div className="text-sm font-bold text-gray-700">{diskCount} {deepText(locale, "syncConflict.messages")}</div>
                     </div>
 
                     <div className="flex flex-col items-center justify-center">
@@ -62,7 +63,7 @@ export const SyncConflictModal = ({ isOpen, cloudData, localData, onResolve, rea
                         </div>
                         <div className="text-xs font-bold text-emerald-600 uppercase">{deepText(locale, "syncConflict.memory")}</div>
                         <div className="text-[10px] bg-emerald-100 px-2 py-1 rounded text-emerald-600 font-mono">{memoryTime}</div>
-                        <div className="text-sm font-bold text-emerald-700">{memoryCount} {deepText(locale, "syncConflict.chats")}</div>
+                        <div className="text-sm font-bold text-emerald-700">{memoryCount} {deepText(locale, "syncConflict.messages")}</div>
                     </div>
                 </div>
 

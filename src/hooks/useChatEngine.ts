@@ -675,7 +675,7 @@ export const useChatEngine = ({
                                 }
                                 ideEditedFiles.push({ path: file.path, operations: file.edits.length, added, removed });
                             }
-                            showToast(`已在浏览器 IDE 修改 ${previews.length} 个文件`);
+                            showToast(deepText(locale, "engine.ideEdited").replace("{count}", String(previews.length)));
                         } catch (editError: any) {
                             currentText += `\n\n**IDE 局部修改未执行：** ${editError.message}`;
                             dialog.notify(deepText(locale, "engine.ideEditFailed") + String(editError.message));
@@ -761,11 +761,11 @@ export const useChatEngine = ({
                         });
                         outputProject = targetProject;
                         diskWriteSucceeded = true;
-                        showToast(`已保存到浏览器 IDE/${outputProject} · ${generated.length} 个文件`);
+                        showToast(deepText(locale, "engine.ideWritten").replace("{count}", String(generated.length)).replace("{project}", outputProject));
                     }
                 } catch (error: any) {
                     console.warn("Officina project write failed:", error);
-                    showToast(`IDE 文件写入失败；代码已附在回复下方：${error.message}`);
+                    showToast(deepText(locale, "engine.ideWriteFailed") + String(error.message));
                     currentText += "\n\n**[IDE 文件未全部保存 · 以下是生成的源码备份]**\n"
                         + Object.entries(newFiles).map(([name, file]: [string, any]) =>
                             `\n**${name}**\n\x60\x60\x60${file.language || "text"}\n${file.content}\n\x60\x60\x60`

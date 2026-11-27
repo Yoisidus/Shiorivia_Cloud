@@ -69,3 +69,15 @@ test("major deletion protection includes VIAE roads even alongside unrelated cha
   assert.equal(hasMajorMessageLoss([ordinary],[ordinary,road(12)]),true);
   assert.equal(hasMajorMessageLoss([road(4)],[road(8)]),false);
 });
+
+test("localized dialog messages resolve in all five supported languages", () => {
+  const { deepText } = require("../src/lib/i18nDeep.ts");
+  for (const key of ["cloud.storage.saveConfirm","engine.officinaBind","engine.repairMetadata","engine.viaeRepairConfirm","engine.ideWriteFailed","syncConflict.messages"]) {
+    const values = ["zh-CN","zh-TW","en","ja","ko"].map(locale => deepText(locale,key));
+    for (const value of values) { assert.ok(value && value !== key, key); }
+    assert.ok(!/[\u3400-\u9fff]/.test(values[2]), key);
+    assert.notEqual(values[0],values[2],key);
+    assert.notEqual(values[0],values[3],key);
+    assert.notEqual(values[0],values[4],key);
+  }
+});

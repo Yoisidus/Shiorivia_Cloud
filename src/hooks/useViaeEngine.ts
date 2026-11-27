@@ -1,5 +1,6 @@
-import { deepText } from "../lib/i18nDeep";
 "use client";
+
+import { deepText } from "../lib/i18nDeep";
 
 import { useEffect, useRef, useState } from "react";
 import type { ViaeConversation, ViaeMessage, Session } from "../types";

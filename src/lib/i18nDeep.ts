@@ -2,6 +2,10 @@ import type { Locale } from "./locale";
 
 /** Localizable interface copy; never use these strings as persisted IDs. */
 const strings: Record<string, readonly [string, string, string, string, string]> = {
+  "engine.ideEdited": ["已在浏览器 IDE 修改 {count} 个文件","已在瀏覽器 IDE 修改 {count} 個檔案","Edited {count} files in the browser IDE.","ブラウザ IDE の {count} ファイルを編集しました。","브라우저 IDE에서 파일 {count}개를 수정했습니다."],
+  "engine.ideWritten": ["已保存到浏览器 IDE/{project} · {count} 个文件","已儲存至瀏覽器 IDE/{project} · {count} 個檔案","Saved {count} files to browser IDE/{project}.","ブラウザ IDE/{project} に {count} ファイルを保存しました。","브라우저 IDE/{project}에 파일 {count}개를 저장했습니다."],
+  "engine.ideWriteFailed": ["IDE 文件写入失败；代码已附在回复下方：","IDE 檔案寫入失敗；程式碼已附於回覆下方：","IDE write failed; code is attached below the reply: ","IDE のファイル保存に失敗しました。コードは返信の下に添付されています：","IDE 파일 쓰기 실패. 코드는 응답 아래에 첨부되었습니다: "],
+  "syncConflict.messages": ["条消息","則訊息","messages","件のメッセージ","개 메시지"],
   "engine.modelRequired": ["请先在模型配置中选择当前供应商的模型，确认后再发送。","請先在模型設定中選擇目前供應商的模型，確認後再傳送。","Select and confirm a model for the current provider before sending.","送信する前に現在のプロバイダーのモデルを選択し、確定してください。","전송하기 전에 현재 제공업체의 모델을 선택하고 확인하세요."],
   "engine.officinaBind": ["确认与当前角色开启 Officina 工程会话吗？\n发送第一条消息后，将永久绑定此角色，当前会话无法切换。","確認與目前角色開啟 Officina 工程對話嗎？\n傳送第一則訊息後，此角色將永久綁定至目前對話，無法切換。","Start an Officina engineering session with this character?\nAfter the first message, this character will be permanently linked to this session and cannot be changed.","このキャラクターと Officina のエンジニアリングセッションを開始しますか？\n最初のメッセージ送信後は、このセッションのキャラクターを変更できません。","이 캐릭터와 Officina 엔지니어링 세션을 시작할까요?\n첫 메시지를 전송하면 이 세션의 캐릭터는 고정되며 변경할 수 없습니다."],
   "engine.ideEditFailed": ["IDE 局部编辑失败：","IDE 局部編輯失敗：","IDE partial edit failed: ","IDE の部分編集に失敗しました：","IDE 부분 편집 실패: "],
