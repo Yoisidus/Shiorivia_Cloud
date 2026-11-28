@@ -205,3 +205,53 @@ test("project count and file byte limits are checked without partial saves", asy
   const current = await browserIde("snapshot", { project });
   assert.deepEqual(current.files, original.files);
 });
+
+test("Officina file and edit labels follow the active UI locale", () => {
+  const { deepText } = require("../src/lib/i18nDeep.ts");
+  const cases = [
+    ["zh-CN", "文件", "正在生成…"],
+    ["zh-TW", "檔案", "正在產生…"],
+    ["en", "File", "Generating…"],
+    ["ja", "ファイル", "生成中…"],
+    ["ko", "파일", "생성 중…"],
+  ];
+  for (const [locale, file, generating] of cases) {
+    assert.equal(deepText(locale, "officina.display.file"), file);
+    assert.equal(deepText(locale, "officina.display.generating"), generating);
+    for (const key of ["preparingFile", "parsingEdits", "moreEdits", "editPreview", "preparingEdits"]) {
+      assert.notEqual(deepText(locale, "officina.display." + key), "officina.display." + key);
+    }
+  }
+  const readSource = p => fs.readFileSync(require("node:path").join(__dirname, "..", p), "utf8");
+  assert.ok(readSource("src/components/ChatInterface.tsx").includes("formatOfficinaStreamingDisplay(cleanDrawTag(answer), locale)"));
+  const source = readSource("src/lib/engineeringDisplay.ts");
+  assert.ok(source.includes('deepText(locale, "officina.display.file")'));
+  assert.ok(source.includes('deepText(locale, "officina.display.generating")'));
+  assert.ok(source.includes('deepText(locale, "officina.display.preparingEdits")), locale)'));
+});
+
+test("Officina formatter localizes complete and streaming files without translating code", () => {
+  const { formatOfficinaStreamingDisplay, formatOfficinaFullFiles } = require("../src/lib/engineeringDisplay.ts");
+  const code = 'const label = "文件 · 正在生成";';
+  const complete = '<file name="index.html">' + code + '</file>';
+  const partial = '<file name="style.css">body { color: red; }';
+  for (const [locale, file, generating] of [
+    ["zh-CN", "文件", "正在生成…"], ["zh-TW", "檔案", "正在產生…"],
+    ["en", "File", "Generating…"], ["ja", "ファイル", "生成中…"], ["ko", "파일", "생성 중…"]
+  ]) {
+    const rendered = formatOfficinaStreamingDisplay(complete + "\n" + partial, locale);
+    assert.ok(rendered.includes(file + " · index.html\n"));
+    assert.ok(rendered.includes(file + " · style.css · " + generating));
+    assert.ok(rendered.includes(code));
+    assert.ok(rendered.includes("body { color: red; }"));
+    assert.ok(!formatOfficinaFullFiles(complete, locale).includes("index.html · " + generating));
+  }
+  assert.ok(formatOfficinaStreamingDisplay('<file name="index', "en").includes("Preparing the full code file…"));
+  assert.ok(formatOfficinaStreamingDisplay('<ide_edit path="index.html">', "en").includes("Preparing IDE partial edits…"));
+  assert.ok(formatOfficinaStreamingDisplay('<ide_edit path="index.html">bad</ide_edit>', "en").includes("Parsing IDE edit preview…"));
+  const edits = Array.from({length: 11}, (_, i) => ({op:"replace",startLine:i+1,expected:"old",text:"new"}));
+  const preview = formatOfficinaStreamingDisplay('<ide_edit path="index.html">' + JSON.stringify({edits}) + '</ide_edit>', "en");
+  assert.ok(preview.includes("IDE code edit preview · index.html"));
+  assert.ok(preview.includes("1 more edits will appear in the review dialog"));
+  assert.ok(preview.includes("- old") && preview.includes("+ new"));
+});

@@ -673,7 +673,7 @@ export const ChatInterface = ({
                                                         pre: ({ children }) => <pre className="my-3 max-w-full overflow-x-auto rounded-xl border border-[#ceddf0] bg-[#f0f6fd] px-3 py-3 text-[12px] leading-5 text-[#254060] whitespace-pre">{children}</pre>,
                                                         code: ({ className, children }) => <code className={className ? `font-mono ${className}` : "rounded bg-[#eaf2fb] px-1 py-0.5 font-mono text-[12px] text-[#28518a]"}>{children}</code>,
                                                         img: ({ src, alt }) => typeof src === "string" ? <IllustratedImage src={src} alt={alt || deepText(locale, "chat.picture")} onOpen={setPreviewImage} className="my-2" /> : null,
-                                                    }}>{formatOfficinaStreamingDisplay(cleanDrawTag(answer))}</ReactMarkdown>
+                                                    }}>{formatOfficinaStreamingDisplay(cleanDrawTag(answer), locale)}</ReactMarkdown>
                                                 </div>
                                                 : renderContent(answer, setPreviewImage, locale, selfColors)
                                             : <div className="whitespace-pre-wrap">{answer}</div>}

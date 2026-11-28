@@ -2,6 +2,13 @@ import type { Locale } from "./locale";
 
 /** Localizable interface copy; never use these strings as persisted IDs. */
 const strings: Record<string, readonly [string, string, string, string, string]> = {
+  "officina.display.file": ["文件","檔案","File","ファイル","파일"],
+  "officina.display.generating": ["正在生成…","正在產生…","Generating…","生成中…","생성 중…"],
+  "officina.display.preparingFile": ["正在准备完整代码文件…","正在準備完整程式碼檔案…","Preparing the full code file…","コードファイルを準備中…","전체 코드 파일을 준비하는 중…"],
+  "officina.display.parsingEdits": ["IDE 修改预览正在解析…","IDE 修改預覽正在解析…","Parsing IDE edit preview…","IDE 編集プレビューを解析中…","IDE 수정 미리보기 분석 중…"],
+  "officina.display.moreEdits": ["…其余 {count} 处修改将在审核窗口显示","…其餘 {count} 處修改將在檢閱視窗顯示","…{count} more edits will appear in the review dialog","…残り {count} 件の変更は確認画面に表示されます","…나머지 {count}개 수정 사항은 검토 창에 표시됩니다"],
+  "officina.display.editPreview": ["IDE 代码修改预览","IDE 程式碼修改預覽","IDE code edit preview","IDE コード編集プレビュー","IDE 코드 수정 미리보기"],
+  "officina.display.preparingEdits": ["正在准备 IDE 局部修改…","正在準備 IDE 局部修改…","Preparing IDE partial edits…","IDE の部分編集を準備中…","IDE 부분 수정 준비 중…"],
   "chat.placeholderUmbra": ["和{name}聊聊天…","和{name}聊聊天…","Chat with {name}…","{name}とおしゃべり…","{name}에게 메시지 보내기…"],
   "chat.placeholderOfficina": ["与{name}交流…","與{name}交流…","Speak to {name}…","{name}に話しかける…","{name}에게 이야기하기…"],
   "chat.placeholderStory": ["开始你的梦境…","開始你的夢境…","Start your dream…","夢を紡ぎ始める…","꿈을 시작하세요…"],
