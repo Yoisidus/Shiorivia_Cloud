@@ -14,7 +14,7 @@ import { ThinkingBlock } from "./Common";
 import { buildDrawRequest } from "../lib/drawRequest";
 import { CHARACTERS } from "../types";
 import { useLanguage } from "../context/LanguageContext";
-import { deepText } from "../lib/i18nDeep";
+import { deepText, chatComposerPlaceholder } from "../lib/i18nDeep";
 import type { Locale } from "../lib/locale";
 import { useAppDialog } from "../context/DialogContext";
 import { characterDisplayName } from "../lib/characterNames";
@@ -856,7 +856,7 @@ export const ChatInterface = ({
                         boxShadow: isLoading ? `0 0 10px ${currentCharacter.hex}20` : 'none'
                     }}
                 >
-                    <textarea value={input} disabled={inputLocked} style={{ caretColor: currentCharacter.hex }} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!inputLocked) handleSend() } }} placeholder={storyStateRepairing ? deepText(locale, "chat.waitRepair") : requiresChatWorldline ? deepText(locale, "chat.waitUmbraWorldline") : requiresChatCharacter ? deepText(locale, "chat.waitCharacter") : requiresEngineer ? deepText(locale, "chat.waitEngineer") : requiresWorldline ? deepText(locale, "chat.waitWorldline") : currentSession?.memoryMode === 'sliding' ? "Start your dream..." : currentSession?.memoryMode === 'chat' ? `${deepText(locale, "chat.talkPrefix")}${currentCharacter.name}${deepText(locale, "chat.talkSuffix")}` : `Speak to ${currentCharacter.name}...`} className="w-full bg-transparent border-none outline-none py-3 pl-4 pr-20 resize-none min-h-[50px] max-h-32 text-sm disabled:cursor-not-allowed disabled:bg-[#f8f6f1] disabled:text-[#9a988c]" />
+                    <textarea value={input} disabled={inputLocked} style={{ caretColor: currentCharacter.hex }} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!inputLocked) handleSend() } }} placeholder={storyStateRepairing ? deepText(locale, "chat.waitRepair") : requiresChatWorldline ? deepText(locale, "chat.waitUmbraWorldline") : requiresChatCharacter ? deepText(locale, "chat.waitCharacter") : requiresEngineer ? deepText(locale, "chat.waitEngineer") : requiresWorldline ? deepText(locale, "chat.waitWorldline") : chatComposerPlaceholder(locale, currentSession?.memoryMode, characterDisplayName(currentCharacter.id, currentCharacter.name, locale))} className="w-full bg-transparent border-none outline-none py-3 pl-4 pr-20 resize-none min-h-[50px] max-h-32 text-sm disabled:cursor-not-allowed disabled:bg-[#f8f6f1] disabled:text-[#9a988c]" />
                     <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept=".txt,.md,.markdown,.json,.jsonl,.csv,.tsv,.xml,.yaml,.yml,.toml,.ini,.log,.js,.jsx,.ts,.tsx,.py,.css,.scss,.html,.htm,.sql,.sh,.bash,.ps1,.java,.kt,.go,.rs,.rb,.php,.c,.cc,.cpp,.h,.hpp,.cs,.swift,.lua,.vue,.svelte,.mjs,.cjs,text/plain,text/markdown,text/csv,application/json" />
                     <div className="absolute bottom-2 right-2 flex gap-1">
                         {isMultimodal && <button disabled={inputLocked} onClick={() => fileInputRef.current?.click()} className="p-1.5 text-gray-400 hover:text-emerald-500 disabled:opacity-30"><Paperclip size={18} /></button>}

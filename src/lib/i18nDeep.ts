@@ -2,6 +2,9 @@ import type { Locale } from "./locale";
 
 /** Localizable interface copy; never use these strings as persisted IDs. */
 const strings: Record<string, readonly [string, string, string, string, string]> = {
+  "chat.placeholderUmbra": ["和{name}聊聊天…","和{name}聊聊天…","Chat with {name}…","{name}とおしゃべり…","{name}에게 메시지 보내기…"],
+  "chat.placeholderOfficina": ["与{name}交流…","與{name}交流…","Speak to {name}…","{name}に話しかける…","{name}에게 이야기하기…"],
+  "chat.placeholderStory": ["开始你的梦境…","開始你的夢境…","Start your dream…","夢を紡ぎ始める…","꿈을 시작하세요…"],
   "engine.ideEdited": ["已在浏览器 IDE 修改 {count} 个文件","已在瀏覽器 IDE 修改 {count} 個檔案","Edited {count} files in the browser IDE.","ブラウザ IDE の {count} ファイルを編集しました。","브라우저 IDE에서 파일 {count}개를 수정했습니다."],
   "engine.ideWritten": ["已保存到浏览器 IDE/{project} · {count} 个文件","已儲存至瀏覽器 IDE/{project} · {count} 個檔案","Saved {count} files to browser IDE/{project}.","ブラウザ IDE/{project} に {count} ファイルを保存しました。","브라우저 IDE/{project}에 파일 {count}개를 저장했습니다."],
   "engine.ideWriteFailed": ["IDE 文件写入失败；代码已附在回复下方：","IDE 檔案寫入失敗；程式碼已附於回覆下方：","IDE write failed; code is attached below the reply: ","IDE のファイル保存に失敗しました。コードは返信の下に添付されています：","IDE 파일 쓰기 실패. 코드는 응답 아래에 첨부되었습니다: "],
@@ -1067,4 +1070,10 @@ export function deepText(locale: Locale, key: DeepTextKey): string {
 /** Chapter labels use the locale’s complete numbering pattern; an empty suffix is intentional. */
 export function novelChapterLabel(locale: Locale, number: number): string {
   return `${deepText(locale, "novel.toolbar.chapterPrefix")}${number}${deepText(locale, "novel.toolbar.chapterSuffix")}`;
+}
+
+/** Complete locale-specific sentences avoid fixed prefix/suffix word order. */
+export function chatComposerPlaceholder(locale: Locale, mode: string | undefined, displayName: string): string {
+  const key = mode === "sliding" ? "chat.placeholderStory" : mode === "chat" ? "chat.placeholderUmbra" : "chat.placeholderOfficina";
+  return deepText(locale, key).replace("{name}", () => displayName);
 }

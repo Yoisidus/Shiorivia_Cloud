@@ -116,3 +116,28 @@ test("DOCX fallback chapter titles use the current locale and preserve authored 
   assert.deepEqual(extractNovelChapters(messages, "ja").map(ch => ch.title), ["第1章", "A chosen title"]);
   assert.equal(JSON.stringify(messages), before);
 });
+
+test("composer placeholders use localized character names and natural word order", () => {
+  const { chatComposerPlaceholder } = require("../src/lib/i18nDeep.ts");
+  const { characterDisplayName } = require("../src/lib/characterNames.ts");
+  const cases = [
+    ["zh-CN", "和千早 爱音聊聊天…"],
+    ["zh-TW", "和千早 愛音聊聊天…"],
+    ["en", "Chat with Chihaya Anon…"],
+    ["ja", "千早 愛音とおしゃべり…"],
+    ["ko", "Chihaya Anon에게 메시지 보내기…"],
+  ];
+  for (const [locale, expected] of cases) {
+    const name = characterDisplayName("anon", "千早 爱音", locale);
+    assert.equal(chatComposerPlaceholder(locale, "chat", name), expected);
+    assert.ok(!chatComposerPlaceholder(locale, "infinite", name).includes("{name}"));
+    assert.ok(!chatComposerPlaceholder(locale, "sliding", name).includes(name));
+  }
+  assert.equal(chatComposerPlaceholder("en", "infinite", characterDisplayName("uika", "三角 初华", "en")), "Speak to Misumi Uika…");
+  assert.equal(chatComposerPlaceholder("en", "chat", characterDisplayName("custom-id", "OC $&", "en")), "Chat with OC $&…");
+  assert.equal(chatComposerPlaceholder("en", "sliding", ""), "Start your dream…");
+  const source = fs.readFileSync(require("node:path").join(__dirname, "..", "src/components/ChatInterface.tsx"), "utf8");
+  assert.ok(source.startsWith('"use client";'));
+  assert.ok(source.includes("chatComposerPlaceholder(locale, currentSession?.memoryMode, characterDisplayName(currentCharacter.id, currentCharacter.name, locale))"));
+  assert.ok(source.includes('storyStateRepairing ? deepText(locale, "chat.waitRepair")'));
+});
