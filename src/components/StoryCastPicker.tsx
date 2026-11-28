@@ -8,6 +8,7 @@ import { CHAR_DATA } from "../data/char_config";
 import type { ChartaCharacter } from "../lib/charta";
 import type { ChartaWorld } from "../lib/chartaWorld";
 import { nameForCharta } from "../lib/charta";
+import { characterDisplayName } from "../lib/characterNames";
 import { BANG_DREAM_WORLD_ID, BANG_DREAM_WORLD_NAME, parseStoryWorldline } from "../lib/storyWorldline";
 import { MAX_STORY_CAST, selectStoryCastIds, storyCastAllowed, storyCastOrigin } from "../lib/storyCast";
 import type { Session } from "../types";
@@ -34,7 +35,7 @@ export function StoryCastPicker({ session, worlds, customCharacters, busy, onApp
   const world = parseStoryWorldline(session.storyWorldline);
   const started = session.messages.some(message => message.role === "user");
   const catalog = useMemo<CastOption[]>(() => [
-    ...CHAR_DATA.map(char => ({ id: char.id, name: char.name, color: char.hex, origin: BANG_DREAM_WORLD_ID })),
+    ...CHAR_DATA.map(char => ({ id: char.id, name: characterDisplayName(char.id, char.name, locale), color: char.hex, origin: BANG_DREAM_WORLD_ID })),
     ...customCharacters.map(char => ({ id: char.id, name: nameForCharta(char, locale), color: char.hex, origin: storyCastOrigin(char) })),
   ], [customCharacters, locale]);
   const currentIds = session.storyNextCastIds ?? (mode === "novel" ? session.novelDraft?.selectedCharIds : session.sceneCastIds) ?? [];

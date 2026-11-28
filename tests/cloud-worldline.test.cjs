@@ -72,3 +72,19 @@ test("AU baseline label is translated without changing the timeline ID", () => {
   assert.match(english, /First high-school year/);
   assert.doesNotMatch(english, /基准/);
 });
+
+test("story and novel cast picker localizes built-in names without changing IDs or custom names", () => {
+  const source = fs.readFileSync(require("node:path").join(__dirname, "..", "src/components/StoryCastPicker.tsx"), "utf8");
+  const { characterDisplayName, CHARACTER_NAMES } = require("../src/lib/characterNames.ts");
+  assert.ok(source.startsWith('"use client";'));
+  assert.ok(source.includes('id: char.id, name: characterDisplayName(char.id, char.name, locale)'));
+  assert.ok(source.includes('id: char.id, name: nameForCharta(char, locale)'));
+  assert.ok(source.includes('[customCharacters, locale]'));
+  assert.ok(source.includes('catalog.find(char => char.id === id)?.name'));
+  for (const [id, names] of Object.entries(CHARACTER_NAMES)) {
+    for (const [locale, expected] of [["zh-CN", names.zh], ["zh-TW", names.ja], ["en", names.romanized], ["ja", names.ja], ["ko", names.romanized]]) {
+      assert.equal(characterDisplayName(id, names.zh, locale), expected);
+    }
+  }
+  assert.equal(characterDisplayName("custom-cast-id", "原创角色", "en"), "原创角色");
+});
