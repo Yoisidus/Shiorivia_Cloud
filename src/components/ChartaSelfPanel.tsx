@@ -4,6 +4,8 @@ import { useAppDialog } from "../context/DialogContext";
 import { Check, Download, Plus, Save, Trash2 } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { deepText } from "../lib/i18nDeep";
+import { SELF_AVATAR_PRESETS } from "../lib/selfAvatar";
+import { SelfAvatar } from "./SelfAvatar";
 import { localizeChartaError } from "../lib/chartaErrorText";
 import { type ChartaGender } from "../lib/charta";
 import { newChartaSelf, parseChartaSelf, selfName, SELF_LANGUAGES, type ChartaSelf } from "../lib/chartaSelf";
@@ -112,6 +114,16 @@ export function ChartaSelfPanel({ selves, activeId, loaded, error, saveSelf, rem
     <section className="rounded-2xl border border-[#dce4dc] bg-white/90 p-5 shadow-sm sm:p-8">
       {!draft ? <div className="flex min-h-[440px] flex-col items-center justify-center gap-3 text-[#91a595]"><span className="font-serif text-5xl">✧</span><p className="text-sm">{deepText(locale, "charta.self.select")}</p></div> : <div className="space-y-6">
         <div className="border-b border-[#edf0e9] pb-5"><span className="text-[10px] font-semibold tracking-widest text-[#799682]">CHARTA · SELF PROFILE</span><h2 className="mt-1 font-serif text-2xl">{draft.names[draft.primaryLanguage] || deepText(locale, "charta.self.untitled")}</h2></div>
+        <fieldset className="space-y-3 rounded-xl border border-[#dce5dd] bg-[#f8faf8] p-4">
+          <legend className="px-2 text-xs font-semibold text-[#587562]">{deepText(locale, "self.avatar.title")}</legend>
+          <div className="flex flex-wrap items-center gap-3">
+            <SelfAvatar self={draft} className="h-16 w-16"/>
+            <div className="flex flex-wrap gap-2">
+              {SELF_AVATAR_PRESETS.map(preset => <button key={preset} type="button" disabled={busy} aria-label={deepText(locale, "self.avatar." + preset)} title={deepText(locale, "self.avatar." + preset)} aria-pressed={!draft.avatarImage && (draft.avatarPreset || "star") === preset} onClick={() => update({ ...draft, avatarPreset: preset, avatarImage: undefined })} className={`rounded-full p-1 transition disabled:opacity-50 ${!draft.avatarImage && (draft.avatarPreset || "star") === preset ? "ring-2 ring-[#60856a]" : "hover:bg-[#e3ebe3]"}`}><SelfAvatar self={{ avatarPreset: preset, hex: draft.hex }} className="h-10 w-10"/></button>)}
+            </div>
+          </div>
+          <p className="text-[11px] text-[#718879]">{deepText(locale, "self.avatar.presetsOnly")}</p>
+        </fieldset>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="text-xs text-[#6e8472]">{deepText(locale, "charta.self.name")} *<input maxLength={100} value={draft.names[draft.primaryLanguage] || ""} onChange={e => update({ ...draft, names: { ...draft.names, [draft.primaryLanguage]: e.target.value } })} className="mt-2 w-full rounded-xl border border-[#d7e0d6] bg-[#fbfcf9] px-3 py-3 text-sm"/></label>
           <label className="text-xs text-[#6e8472]">{deepText(locale, "charta.self.nameLanguage")} *<select value={draft.primaryLanguage} onChange={e => update({ ...draft, primaryLanguage: e.target.value, names: { ...draft.names, [e.target.value]: draft.names[e.target.value] || "" } })} className="mt-2 w-full rounded-xl border border-[#d7e0d6] bg-[#fbfcf9] px-3 py-3 text-sm">{[...new Set([draft.primaryLanguage, ...SELF_LANGUAGES.filter(x => x.code !== "other").map(x => x.code), ...Object.keys(draft.names)])].map(lang => <option key={lang} value={lang}>{SELF_LANGUAGES.find(x => x.code === lang)?.label || lang}</option>)}</select></label>

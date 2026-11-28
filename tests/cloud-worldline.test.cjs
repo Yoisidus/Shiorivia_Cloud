@@ -141,3 +141,27 @@ test("composer placeholders use localized character names and natural word order
   assert.ok(source.includes("chatComposerPlaceholder(locale, currentSession?.memoryMode, characterDisplayName(currentCharacter.id, currentCharacter.name, locale))"));
   assert.ok(source.includes('storyStateRepairing ? deepText(locale, "chat.waitRepair")'));
 });
+
+test("self avatar presets are backward compatible and upload policy matches edition", () => {
+  const { parseSelfAvatar, SELF_AVATAR_PRESETS, SELF_AVATAR_UPLOAD_ENABLED } = require("../src/lib/selfAvatar.ts");
+  assert.deepEqual(parseSelfAvatar(null), {avatarPreset:"star"});
+  assert.deepEqual(parseSelfAvatar({avatarPreset:"unknown"}), {avatarPreset:"star"});
+  for (const avatarPreset of SELF_AVATAR_PRESETS) assert.deepEqual(parseSelfAvatar({avatarPreset}), {avatarPreset});
+  assert.equal(SELF_AVATAR_UPLOAD_ENABLED, false);
+  const image = "data:image/jpeg;base64,/9j/abcd";
+  assert.deepEqual(parseSelfAvatar({avatarPreset:"moon",avatarImage:image}), {avatarPreset:"moon"});
+  assert.equal(parseSelfAvatar({avatarImage:"https://example.com/avatar.png"}).avatarImage, undefined);
+  assert.equal(parseSelfAvatar({avatarImage:"data:image/svg+xml;base64,AAAA"}).avatarImage, undefined);
+  assert.equal(parseSelfAvatar({avatarImage:"data:image/jpeg;base64,/9j/"+"A".repeat(180001)}).avatarImage, undefined);
+  const { parseChartaSelf, asChartaSelfPromptData } = require("../src/lib/chartaSelf.ts");
+  const self = parseChartaSelf({id:"self-12345678",primaryLanguage:"en",names:{en:"Tester"},gender:"undisclosed",hex:"#799783",description:"",avatarPreset:"compass",avatarImage:image});
+  assert.equal(self.avatarPreset,"compass");
+  assert.equal(self.avatarImage, undefined);
+  assert.equal(asChartaSelfPromptData(self).avatarImage, undefined);
+  assert.equal(asChartaSelfPromptData(self).avatarPreset, undefined);
+  const readSource = p => fs.readFileSync(require("node:path").join(__dirname, "..", p), "utf8");
+  assert.ok(readSource("src/app/page.tsx").includes("activeSelf={selfLibrary.activeSelf}"));
+  assert.ok(readSource("src/components/ChatInterface.tsx").includes("<SelfAvatar self={activeSelf}"));
+  assert.ok(readSource("src/components/ViaeInterface.tsx").includes("<SelfAvatar self={activeSelf}"));
+  assert.equal(readSource("src/components/ChartaSelfPanel.tsx").includes('type="file"'), false);
+});

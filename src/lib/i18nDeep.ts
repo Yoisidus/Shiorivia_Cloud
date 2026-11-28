@@ -2,6 +2,17 @@ import type { Locale } from "./locale";
 
 /** Localizable interface copy; never use these strings as persisted IDs. */
 const strings: Record<string, readonly [string, string, string, string, string]> = {
+  "self.avatar.title": ["头像","頭像","Avatar","アバター","아바타"],
+  "self.avatar.star": ["星星","星星","Star","星","별"],
+  "self.avatar.moon": ["月亮","月亮","Moon","月","달"],
+  "self.avatar.sun": ["太阳","太陽","Sun","太陽","해"],
+  "self.avatar.compass": ["罗盘","羅盤","Compass","コンパス","나침반"],
+  "self.avatar.sparkles": ["星光","星光","Starlight","星明かり","별빛"],
+  "self.avatar.heart": ["爱心","愛心","Heart","ハート","하트"],
+  "self.avatar.presetsOnly": ["云端版仅支持预设头像。","雲端版僅支援預設頭像。","Cloud Edition supports preset avatars only.","Cloud 版ではプリセットのみ使用できます。","Cloud 버전은 기본 아바타만 지원합니다."],
+  "self.avatar.upload": ["上传自定义头像","上傳自訂頭像","Upload a custom avatar","画像をアップロード","사용자 이미지 업로드"],
+  "self.avatar.localHelp": ["支持 PNG、JPEG、WebP（最大 8 MB）；图片在本地裁剪并保存。","支援 PNG、JPEG、WebP（最大 8 MB）；圖片在本機裁切並儲存。","PNG, JPEG or WebP (up to 8 MB). Cropped and saved locally.","PNG・JPEG・WebP（最大8 MB）。ローカルで切り抜いて保存します。","PNG, JPEG, WebP(최대 8 MB). 로컬에서 잘라 저장합니다."],
+  "self.avatar.uploadFailed": ["头像读取失败，请选择有效的 PNG、JPEG 或 WebP 图片。","頭像讀取失敗，請選擇有效的 PNG、JPEG 或 WebP 圖片。","Unable to load avatar. Select a valid PNG, JPEG or WebP image.","画像を読み込めませんでした。有効な PNG、JPEG、WebP を選択してください。","아바타를 읽지 못했습니다. 올바른 PNG, JPEG 또는 WebP 이미지를 선택하세요."],
   "officina.display.file": ["文件","檔案","File","ファイル","파일"],
   "officina.display.generating": ["正在生成…","正在產生…","Generating…","生成中…","생성 중…"],
   "officina.display.preparingFile": ["正在准备完整代码文件…","正在準備完整程式碼檔案…","Preparing the full code file…","コードファイルを準備中…","전체 코드 파일을 준비하는 중…"],

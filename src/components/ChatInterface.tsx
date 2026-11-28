@@ -18,6 +18,7 @@ import { deepText, chatComposerPlaceholder } from "../lib/i18nDeep";
 import type { Locale } from "../lib/locale";
 import { useAppDialog } from "../context/DialogContext";
 import { characterDisplayName } from "../lib/characterNames";
+import { SelfAvatar } from "./SelfAvatar";
 import { parseStoryWorldline } from "../lib/storyWorldline";
 import { MiniPlayer } from "./MiniPlayer";
 import { MusicPlayerModal } from "./MusicPlayerModalV2";
@@ -261,7 +262,7 @@ export const ChatInterface = ({
     rightSidebarOpen, setRightSidebarOpen,
     setShowLocalWorld, onOpenStoryWorldline, onOpenChatWorldline,
 
-    currentCharacter, currentSession,
+    currentCharacter, currentSession, activeSelf = null,
     input, setInput, isLoading,
 
     selectedModel, customModelId, isMultimodal,
@@ -821,7 +822,7 @@ export const ChatInterface = ({
                                     )}
                                 </div>
                             </div>
-                            {msg.role === 'user' && <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-gray-500 flex-shrink-0"><Moon size={14} /></div>}
+                            {msg.role === 'user' && <SelfAvatar self={activeSelf} />}
                         </motion.div>
                     )
                 })}

@@ -20,6 +20,7 @@ import { canExtendWorldline } from "../lib/worldlineLock";
 import { storyCastAllowed } from "../lib/storyCast";
 import type { ChartaWorld } from "../lib/chartaWorld";
 import type { ChartaSelf } from "../lib/chartaSelf";
+import { SelfAvatar } from "./SelfAvatar";
 import { useLanguage } from "../context/LanguageContext";
 import { useAppDialog } from "../context/DialogContext";
 import { characterDisplayName } from "../lib/characterNames";
@@ -495,7 +496,7 @@ export function ViaeInterface({ session, updateSession, characters, customCharac
                     const isPhoneOwner = isObserving && !isUser && part.charId === (viewChar?.id || activeGroup.members[0]);
                     const isOutgoing = isUser || isPhoneOwner;
                     return <div key={i} className={`flex max-w-[94%] items-end gap-2 sm:max-w-[80%] ${isOutgoing ? "flex-row-reverse" : "flex-row"} ${isPhoneOwner ? "self-end" : ""}`}>
-                      {!isUser && !isPhoneOwner && <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e1e7ea] bg-white text-lg">{char?.avatar || "✦"}</span>}
+                      {isUser ? <SelfAvatar self={activeSelf} className="h-9 w-9"/> : !isPhoneOwner && <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e1e7ea] bg-white text-lg">{char?.avatar || "✦"}</span>}
                       <div className="min-w-0"><div className={`mb-1 flex items-center gap-2 text-[10px] text-[#93a0ac] ${isOutgoing ? "justify-end" : ""}`}>
                         <span>{isUser ? deepText(locale, "common.you") : char?.name || (partial ? deepText(locale, "viae.actions.loading") : "Viae")}</span>
                         <span>{time(message.createdAt)}</span>

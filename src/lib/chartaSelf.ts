@@ -1,7 +1,8 @@
 import { CHARTA_LANGUAGES, type ChartaGender } from "./charta";
+import { parseSelfAvatar, type SelfAvatarChoice } from "./selfAvatar";
 import { parseChartaIdentityExtras, parseChartaLoreProfile, type ChartaIdentityExtras, type ChartaLoreProfile, formatChartaLore } from "./chartaLore";
 
-export type ChartaSelf = ChartaIdentityExtras & {
+export type ChartaSelf = ChartaIdentityExtras & SelfAvatarChoice & {
   id: string;
   primaryLanguage: string;
   names: Record<string, string>;
@@ -17,7 +18,7 @@ export type ChartaSelf = ChartaIdentityExtras & {
 
 export const newChartaSelf = (language = "zh-CN"): ChartaSelf => ({
   id: `self-${crypto.randomUUID()}`, primaryLanguage: language,
-  names: { [language]: "" }, gender: "undisclosed", hex: "#799783",
+  names: { [language]: "" }, gender: "undisclosed", hex: "#799783", avatarPreset: "star",
   description: "", profile: { intro:"", personality:"", relationshipNotes:"", relationships:[], experienceNotes:"", experiences:[], guidance:"" }, createdAt: Date.now(), updatedAt: Date.now(),
 });
 
@@ -52,7 +53,7 @@ export function parseChartaSelf(input: unknown): ChartaSelf {
   return {
     id: data.id, primaryLanguage: data.primaryLanguage, names, gender,
     ...(gender === "custom" ? { genderCustom } : {}), hex: data.hex,
-    description, profile, ...identity, ...(worldId ? { worldId } : {}),
+    description, profile, ...identity, ...parseSelfAvatar(data), ...(worldId ? { worldId } : {}),
     createdAt: typeof data.createdAt === "number" && Number.isFinite(data.createdAt) ? data.createdAt : Date.now(),
     updatedAt: Date.now(),
   };
