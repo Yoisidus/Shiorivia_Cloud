@@ -3,6 +3,8 @@
  * Store-mode ZIP keeps this entirely client-side without extra npm packages.
  */
 import { stripNovelSuggestions } from "./novelSuggestions";
+import { novelChapterLabel } from "./i18nDeep";
+import type { Locale } from "./locale";
 
 export type NovelChapter = { title: string; body: string };
 
@@ -13,12 +15,12 @@ const cleanXml = (value: string): string => value
   .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 
 /** Exclude metadata, controls, options and illustration references from reading copies. */
-export function extractNovelChapters(messages: Array<{ role: string; content: unknown }>): NovelChapter[] {
+export function extractNovelChapters(messages: Array<{ role: string; content: unknown }>, locale: Locale = "zh-CN"): NovelChapter[] {
   return messages.filter(m => m.role === "assistant" && typeof m.content === "string")
     .map((m, index) => {
       const source = m.content as string;
       const meta = source.match(/<meta\b[^>]*\bchapter\s*=\s*["']([^"']+)["'][^>]*\/?\s*>/i);
-      const title = meta?.[1]?.trim() || `第 ${index + 1} 章`;
+      const title = meta?.[1]?.trim() || novelChapterLabel(locale, index + 1);
       const body = stripNovelSuggestions(source)
         .replace(/<meta\b[^>]*\/?>/gi, "")
         .replace(/<draw\b[^>]*>[\s\S]*?<\/draw\s*>/gi, "")

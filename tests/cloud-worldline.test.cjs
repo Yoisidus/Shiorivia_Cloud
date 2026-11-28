@@ -88,3 +88,31 @@ test("story and novel cast picker localizes built-in names without changing IDs 
   }
   assert.equal(characterDisplayName("custom-cast-id", "原创角色", "en"), "原创角色");
 });
+
+test("Tela chapter numbering preserves intentionally empty English suffix", () => {
+  const { deepText, novelChapterLabel } = require("../src/lib/i18nDeep.ts");
+  assert.equal(deepText("en", "novel.toolbar.chapterSuffix"), "");
+  for (const [locale, expected] of [["zh-CN", "第1章"], ["zh-TW", "第1章"], ["en", "Chapter 1"], ["ja", "第1章"], ["ko", "제1장"]]) {
+    assert.equal(novelChapterLabel(locale, 1), expected);
+  }
+  assert.equal(novelChapterLabel("en", 12), "Chapter 12");
+  assert.equal(deepText("en", "missing.test.key"), "missing.test.key");
+  const readSource = p => fs.readFileSync(require("node:path").join(__dirname, "..", p), "utf8");
+  const ui = readSource("src/components/NovelInterface.tsx");
+  assert.equal((ui.match(/novelChapterLabel\(locale, i \+ 1\)/g) || []).length, 3);
+  assert.ok(readSource("src/hooks/useChatEngine.ts").includes("previousTitle || novelChapterLabel(locale, chapterCount)"));
+  assert.ok(readSource("src/components/NovelArchiveActions.tsx").includes("extractNovelChapters(session.messages, locale)"));
+  assert.ok(readSource("src/lib/novelDocx.ts").includes("meta?.[1]?.trim() || novelChapterLabel(locale, index + 1)"));
+});
+
+test("DOCX fallback chapter titles use the current locale and preserve authored titles", () => {
+  const { extractNovelChapters } = require("../src/lib/novelDocx.ts");
+  const messages = [
+    {role:"assistant", content:"First chapter prose."},
+    {role:"assistant", content:'<meta title="Novel" chapter="A chosen title" />\nSecond chapter prose.'}
+  ];
+  const before = JSON.stringify(messages);
+  assert.deepEqual(extractNovelChapters(messages, "en").map(ch => ch.title), ["Chapter 1", "A chosen title"]);
+  assert.deepEqual(extractNovelChapters(messages, "ja").map(ch => ch.title), ["第1章", "A chosen title"]);
+  assert.equal(JSON.stringify(messages), before);
+});

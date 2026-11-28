@@ -1061,5 +1061,10 @@ export type DeepTextKey = keyof typeof strings;
 const order: Locale[] = ["zh-CN", "zh-TW", "en", "ja", "ko"];
 export function deepText(locale: Locale, key: DeepTextKey): string {
   const values = strings[key];
-  return values ? (values[Math.max(0, order.indexOf(locale))] || values[0]) : key;
+  return values ? (values[Math.max(0, order.indexOf(locale))] ?? values[0]) : key;
+}
+
+/** Chapter labels use the locale’s complete numbering pattern; an empty suffix is intentional. */
+export function novelChapterLabel(locale: Locale, number: number): string {
+  return `${deepText(locale, "novel.toolbar.chapterPrefix")}${number}${deepText(locale, "novel.toolbar.chapterSuffix")}`;
 }

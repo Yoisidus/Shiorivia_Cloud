@@ -26,7 +26,7 @@ import { cleanDrawTag } from "../lib/parseDraw";
 import { MemoryVaultModal } from "./MemoryVaultModal";
 import { parseLocalMemoryEntries } from "../lib/localMemory";
 import { useLanguage } from "../context/LanguageContext";
-import { deepText } from "../lib/i18nDeep";
+import { deepText, novelChapterLabel } from "../lib/i18nDeep";
 import { characterDisplayName } from "../lib/characterNames";
 import { localText } from "../lib/i18nLocal";
 
@@ -508,11 +508,11 @@ export const NovelInterface = ({
                                 <div className={`text-[10px] font-bold ${theme.text} opacity-60 uppercase mb-2`}>{deepText(locale, "novel.toolbar.chapters")}</div>
                                 {chapters.map((msg: any, i: number) => {
                                     const match = msg.content.match(/chapter="(.*?)"/);
-                                    const title = match ? match[1] : `${deepText(locale, "novel.toolbar.chapterPrefix")}${i + 1}${deepText(locale, "novel.toolbar.chapterSuffix")}`;
+                                    const title = match ? match[1] : novelChapterLabel(locale, i + 1);
                                     return (
                                         <div key={i} className="group relative">
                                             <button className={`w-full text-left p-3 rounded-lg ${theme.hover} transition-all border border-transparent`} onClick={() => document.getElementById(`chapter-${i}`)?.scrollIntoView({ behavior: 'smooth' })}>
-                                                <div className={`text-xs ${theme.accent} mb-1 font-mono flex justify-between`}><span>{deepText(locale, "novel.toolbar.chapterPrefix")}{i + 1}{deepText(locale, "novel.toolbar.chapterSuffix")}</span>{i === chapters.length - 1 && <span className="opacity-100 md:opacity-0 md:group-hover:opacity-100 flex gap-1"><span onClick={(e) => { e.stopPropagation(); const userIndex = msg.realIndex - 1; deleteMessage?.(userIndex >= 0 && currentSession.messages[userIndex]?.role === "user" ? userIndex : msg.realIndex, userIndex >= 0 && currentSession.messages[userIndex]?.role === "user" ? "user" : "assistant"); }} title={deepText(locale, "novel.toolbar.deleteLatest")} className="opacity-60 hover:opacity-100 hover:text-red-400 cursor-pointer p-1"><Trash2 size={12} /></span></span>}</div>
+                                                <div className={`text-xs ${theme.accent} mb-1 font-mono flex justify-between`}><span>{novelChapterLabel(locale, i + 1)}</span>{i === chapters.length - 1 && <span className="opacity-100 md:opacity-0 md:group-hover:opacity-100 flex gap-1"><span onClick={(e) => { e.stopPropagation(); const userIndex = msg.realIndex - 1; deleteMessage?.(userIndex >= 0 && currentSession.messages[userIndex]?.role === "user" ? userIndex : msg.realIndex, userIndex >= 0 && currentSession.messages[userIndex]?.role === "user" ? "user" : "assistant"); }} title={deepText(locale, "novel.toolbar.deleteLatest")} className="opacity-60 hover:opacity-100 hover:text-red-400 cursor-pointer p-1"><Trash2 size={12} /></span></span>}</div>
                                                 <div className={`text-sm ${theme.title} font-bold truncate`}>{title}</div>
                                             </button>
                                         </div>
@@ -555,7 +555,7 @@ export const NovelInterface = ({
                         {chapters.map((msg: any, i: number) => {
                             const cleanContent = stripNovelState(msg.content).replace(/<meta.*?\/>/, '').trim();
                             const match = msg.content.match(/chapter="(.*?)"/);
-                            const title = match ? match[1] : `${deepText(locale, "novel.toolbar.chapterPrefix")}${i + 1}${deepText(locale, "novel.toolbar.chapterSuffix")}`;
+                            const title = match ? match[1] : novelChapterLabel(locale, i + 1);
                             return (
                                 <div key={i} id={`chapter-${i}`} className="animate-fade-in-up">
                                     <div className="flex items-center gap-4 mb-8 opacity-30 justify-center"><div className={`h-px ${theme.text} w-12`}></div><span className="font-mono text-xs tracking-widest uppercase">{title}</span><div className={`h-px ${theme.text} w-12`}></div></div>

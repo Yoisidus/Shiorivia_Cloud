@@ -30,7 +30,7 @@ export function NovelArchiveActions({ session, draft, onImport, disabled = false
       const basename = `Shiorivia-Novel-${session.title.replace(/[\\/:*?"<>|]/g, "_").slice(0, 50) || "Dream"}`;
       let blob: Blob;
       if (exportFormat === "docx") {
-        const chapters = extractNovelChapters(session.messages);
+        const chapters = extractNovelChapters(session.messages, locale);
         if (!chapters.length) throw new Error(deepText(locale, "archive.noChapters"));
         const docx = createNovelDocx(session.title || deepText(locale, "archive.untitled"), chapters);
         // Make an ordinary ArrayBuffer to satisfy DOM BlobPart types on TS 5.x.
